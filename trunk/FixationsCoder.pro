@@ -85,6 +85,10 @@ FORMS    += \
 
 INCLUDEPATH += $$PWD/TRUNCATED_KERNEL_BF
 
+
+INCLUDEPATH += $$PWD/../../armadillo-3.930.1/include
+
+
 macx: LIBS += -L$$PWD/../../../Codes/libraries/armadillo-3.4.4/ -larmadillo
 macx: LIBS += $$PWD/../armadillo-3.910.0/include -larmadillo
 
