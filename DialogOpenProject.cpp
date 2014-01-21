@@ -129,7 +129,6 @@ void DialogOpenProject::fncItemDoubleClicked(QModelIndex index)
 }
 
 
-
 void DialogOpenProject::on_tableViewParticipants_customContextMenuRequested(const QPoint &pos)
 {
     QPoint globalPos = ui->tableViewParticipants->mapToGlobal(pos);

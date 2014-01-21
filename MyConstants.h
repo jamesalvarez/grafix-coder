@@ -1,8 +1,17 @@
 #ifndef MYCONSTANTS_H
 #define MYCONSTANTS_H
 
+#include <QPair>
 #include <QString>
+#include <QList>
 
+typedef struct config { QString first;
+                 int second;
+                 bool operator==(config a)
+                 {
+                     return (a.first == this->first && a.second == this->second);
+                 }
+                      } GrafixConfiguration;
 
 class Consts
 {
@@ -106,6 +115,16 @@ public:
     static const QString SETTING_SMOOTHING_SIGMA_R;
     static const QString SETTING_SMOOTHING_USE_OTHER_EYE;
     static const QString SETTINGS_CONFIGURATION_CHANGED_DATE;
+    static const QString SETTING_CONFIGURATION;
+    static const QString SETTING_CONFIGURATION_ID;
+    static const QString SETTING_CONFIGURATION_NAME;
+    static const QString SETTING_PARTICIPANT_DIRECTORY;
+    static const QString SETTING_NUMBER_CONFIGURATIONS;
+    static const QString SETTING_NUMBER_PARTICIPANTS;
+    static const QString SETTING_LAST_SAVED;
+
+    static const GrafixConfiguration ACTIVE_CONFIGURATION();
+    static const QList<QString> LIST_CONFIGURATION_SETTINGS();
 
     static const QString PSETTING_NAME;
     static const QString PSETTING_ROUGH_PATH;

@@ -20,7 +20,7 @@ class DialogConfig : public QDialog
     
 public:
     explicit DialogConfig(QWidget *parent = 0);
-    void loadData(GrafixProject* project, GrafixConfiguration configuration);
+    void loadData(GrafixProject* project);
     ~DialogConfig();
 
 public slots:

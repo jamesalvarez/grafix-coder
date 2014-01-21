@@ -8,6 +8,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    this->setWindowFlags(Qt::Window | Qt::FramelessWindowHint |  Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowSystemMenuHint);
+
     //default initialise parameters
     this->_index_active_participant = 0;
     this->p_active_participant = NULL;
@@ -29,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->_secsFragment = Consts::DEFAULT_SETTING_SECS_FRAGMENT;
     this->_currentAction = Consts::AC_NOACTION; // create/ merge/ delete fixation
     this->_fixInAction = Consts::FIX_OFF;   // If we are painting a fixation or not
-
+    this->_configuration_changed = true;
 
     // Allow the main widget to track the mouse
     centralWidget()->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -49,6 +51,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( ui->subMenuDetectFixations, SIGNAL(triggered()), this,SLOT(fncPress_subMenuDetectFixations()));
     connect( ui->subMenuManualFixationEditing, SIGNAL(triggered()), this, SLOT(fncPress_subMenuManualEditing()));
     connect( ui->subMenuAdjustParameters, SIGNAL( triggered()), this, SLOT(fncPress_subMenuAdjustParameters()));
+    connect( ui->subMenuChangeConfiguration, SIGNAL(triggered()), this, SLOT(fncPress_subMenuChangeConfiguration()));
+    connect( ui->subMenuClose, SIGNAL( triggered()), this, SLOT( fncPress_subMenuClose()));
 
     // Main Buttons
     connect( ui->bNext, SIGNAL( clicked() ), this, SLOT( fncPress_bNext() ) );
@@ -74,10 +78,21 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( ui->sliderMinFixation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sMinFixation() ) );
     connect( ui->sliderVelocity, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocity() ) );
     connect( ui->sliderVelocityVariance, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocityVariance() ) );
+    connect( ui->sliderSigmaR, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sSigmaR()));
+    connect( ui->sliderSigmaS, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sSigmaS()));
+
+    connect( ui->leInterpolation, SIGNAL(editingFinished()), this, SLOT( fncChange_tInterpolation() ) );
+    connect( ui->leDisplacInterpolate, SIGNAL( editingFinished()), this, SLOT( fncChange_tDisplacInterpolate() ) );
+    connect( ui->leDisplacement, SIGNAL( editingFinished()), this, SLOT( fncChange_tDisplacement() ) );
+    connect( ui->leMinFixation, SIGNAL( editingFinished()), this, SLOT( fncChange_tMinFixation() ) );
+    connect( ui->leVelocity, SIGNAL( editingFinished()), this, SLOT( fncChange_tVelocity() ) );
+    connect( ui->leVelocityVariance, SIGNAL( editingFinished()), this, SLOT( fncChange_tVelocityVariance() ) );
+    connect( ui->leSigmaR, SIGNAL( editingFinished()), this, SLOT( fncChange_tSigmaR()));
+    connect( ui->leSigmaS, SIGNAL( editingFinished()), this, SLOT( fncChange_tSigmaS()));
+
     connect( ui->cb_displacement, SIGNAL( clicked()), this, SLOT( fncPress_cbDisplacement() ) );
     connect( ui->cb_minFixation, SIGNAL( clicked()), this, SLOT( fncPress_cbMinFixation() ) );
     connect( ui->cb_velocityVariance, SIGNAL( clicked()), this, SLOT( fncPress_cbVelocityVariance() ) );
-    connect( ui->tDegreePerPixel, SIGNAL(textChanged(QString)), this, SLOT (fncChange_tDegreePerPixel(QString)));
 
     p_roughM = &roughM;   // [time ms, 0 , left x , left y, right x, right y]
     p_smoothM = &smoothM;  // [time ms, interpolation(0 or 1), x, y]
@@ -85,6 +100,19 @@ MainWindow::MainWindow(QWidget *parent) :
     p_experimentalSegmentsM = &experimentalSegmentsM;
     p_autoFixAllM = &autoFixAllM; // Automatic detection of fixation durations
 
+    //set slider maxes etc
+    ui->sliderDisplacInterpolate->setMinimum(0);
+    ui->sliderDisplacInterpolate->setMaximum(60);
+    ui->sliderDisplacement->setMinimum(0);
+    ui->sliderDisplacement->setMaximum(60);
+    ui->sliderVelocityVariance->setMinimum(0);
+    ui->sliderVelocityVariance->setMaximum(60);
+    ui->sliderVelocity->setMinimum(0);
+    ui->sliderVelocity->setMaximum(50);
+    ui->sliderInterpolation->setMaximum(180);
+    ui->sliderInterpolation->setMinimum(0);
+    ui->sliderMinFixation->setMinimum(0);
+    ui->sliderMinFixation->setMaximum(200);
 
     //start new label
     this->p_over_display_label = new QLabel(this);
@@ -95,7 +123,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->p_over_display_label->setAttribute(Qt::WA_TransparentForMouseEvents);
     this->p_over_display_label->raise();
 
-    ui->dockWidgetEstimation->hide();
+    //DOCKui->dockWidgetEstimation->hide();
 
     fncInitializeProject();
 
@@ -105,7 +133,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    delete &_project;
+    _project.SaveSettings();
+    delete this->p_over_display_label;
     delete ui;
 }
 
@@ -116,7 +145,8 @@ void MainWindow::fncInitializeProject()
     QSettings settings("options.ini", QSettings::IniFormat);
 
     // If there is not a project opened (in the settings file), we open the openProject dialog.
-    if (settings.value(Consts::SETTING_PROJECT).isNull())
+    while (settings.value(Consts::SETTING_PROJECT).isNull() ||
+            !(_project.LoadProjectSettings(settings.value(Consts::SETTING_PROJECT).toString())))
     {
         DialogOpenProject w(&_project);
         w.setWindowTitle(tr("Select project or create new one"));
@@ -125,10 +155,6 @@ void MainWindow::fncInitializeProject()
         //saves directory of this project
         settings.setValue(Consts::SETTING_PROJECT,_project.GetFullDirectory());
     }
-    else
-        _project.LoadSettings(settings.value(Consts::SETTING_PROJECT).toString());
-
-
 
     //set current participant
     if (_project.numParticipants()>0)
@@ -136,7 +162,8 @@ void MainWindow::fncInitializeProject()
         qDebug() << "Participants out:" << _project.numParticipants() << "\n";
         fncSetActiveParticipant(0);//TODO: Settings remember last participant
     }
-    qDebug() << "End Initialise";
+
+    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());
 }
 
 void MainWindow::fncWaitForLoad()
@@ -183,8 +210,6 @@ void MainWindow::fncSetActiveParticipant(int position)
 
         if(this->_index_active_participant == position)
         {
-            _configuration = p_active_participant->GetConfiguration();
-            fncLoadSettings(_configuration);
             fncResetDisplayParams();
             paintAll();
         }
@@ -210,7 +235,7 @@ void MainWindow::fncSetActiveParticipantThread(int position)
 
 void MainWindow::fncLoadSettings(GrafixConfiguration configuration)
 {
-    // Read the Configuration info from settings. If there is nothing, use defaut values.
+    // Read the Configuration info from settings.
 
     _expHeight = _project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, configuration).toInt();
     _expWidth = _project.GetProjectSetting(Consts::SETTING_EXP_WIDTH, configuration).toInt();
@@ -218,41 +243,35 @@ void MainWindow::fncLoadSettings(GrafixConfiguration configuration)
     _secsFragment = _project.GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, configuration).toInt();
     _degPerPixel = _project.GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, configuration).toDouble();
 
-    ui->tDegreePerPixel->setText(QString::number(_degPerPixel));
+    ui->sliderSigmaS->setValue(
+                _project.GetProjectSetting(
+                        Consts::SETTING_SMOOTHING_SIGMA_S, configuration).toInt());
+
+    ui->sliderSigmaR->setValue(
+                _project.GetProjectSetting(
+                        Consts::SETTING_SMOOTHING_SIGMA_R, configuration).toInt());
 
 
-    ui->sliderInterpolation->setMaximum(180);
-    ui->sliderInterpolation->setMinimum(0);
     ui->sliderInterpolation->setValue(
                 _project.GetProjectSetting(
                         Consts::SETTING_INTERP_LATENCY, configuration).toInt());
 
-    ui->sliderMinFixation->setMinimum(0);
-    ui->sliderMinFixation->setMaximum(200);
     ui->sliderMinFixation->setValue(
                 _project.GetProjectSetting(
                         Consts::SETTING_POSTHOC_MIN_DURATION_VAL, configuration).toInt());
 
-    ui->sliderVelocity->setMinimum(0);
-    ui->sliderVelocity->setMaximum(50);
     ui->sliderVelocity->setValue(
                 _project.GetProjectSetting(
                         Consts::SETTING_INTERP_VELOCITY_THRESHOLD, configuration).toInt());
 
-    ui->sliderVelocityVariance->setMinimum(0);
-    ui->sliderVelocityVariance->setMaximum(60);
     ui->sliderVelocityVariance->setValue(
                 (int)(_project.GetProjectSetting(
                         Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, configuration).toDouble() * 100));
 
-    ui->sliderDisplacement->setMinimum(0);
-    ui->sliderDisplacement->setMaximum(60);
     ui->sliderDisplacement->setValue(
                 (int)(_project.GetProjectSetting(
                           Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, configuration).toDouble() * 100));
 
-    ui->sliderDisplacInterpolate->setMinimum(0);
-    ui->sliderDisplacInterpolate->setMaximum(60);
     ui->sliderDisplacInterpolate->setValue(
                 (int)(_project.GetProjectSetting(
                           Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, configuration).toDouble() * 100));
@@ -387,55 +406,60 @@ void MainWindow::paintAll()
 void MainWindow::paintExperimentalSegments(){
     // The method paints grey boxes in the areas that don't need to be coded
     //TODO: Expand to all other boxes too
-    if (experimentalSegmentsM.is_empty()) return;
+
     QPixmap pixmap2(this->p_over_display_label->width(), this->p_over_display_label->height());
     pixmap2.fill(Qt::transparent);
-    QPainter painter(&pixmap2);
 
-    painter.setBrush(QBrush(QColor(192, 192, 192, 127)));
+    if (!experimentalSegmentsM.is_empty())
+    {
+        QPainter painter(&pixmap2);
 
-    // Order the segments depending on time
-    uvec indices = sort_index(experimentalSegmentsM.cols(1,1));
-    mat expSegAux = experimentalSegmentsM.rows(indices);
+        painter.setBrush(QBrush(QColor(192, 192, 192, 127)));
 
-    // find the segments that may be involved in the current fragment
-    uvec fixIndex =  arma::find(expSegAux.col(2) >= _displayStartIndex);
-    mat startSAux = expSegAux.rows(fixIndex);
-    fixIndex =  arma::find(startSAux.col(1) <= _displayStopIndex);
+        // Order the segments depending on time
+        uvec indices = sort_index(experimentalSegmentsM.cols(1,1));
+        mat expSegAux = experimentalSegmentsM.rows(indices);
 
-    if (fixIndex.is_empty()){ // If it's empty that means that there is not segment in this fragment, hence, all is grey
-        painter.drawRect(QRect( 0 ,0,pixmap2.width(), pixmap2.height()));
-    }else{
+        // find the segments that may be involved in the current fragment
+        uvec fixIndex =  arma::find(expSegAux.col(2) >= _displayStartIndex);
+        mat startSAux = expSegAux.rows(fixIndex);
+        fixIndex =  arma::find(startSAux.col(1) <= _displayStopIndex);
 
-        startSAux =  startSAux.rows(fixIndex); // in this matrix we have all the segments that start in the current fragment
-        fixIndex = arma::find(expSegAux.col(0) == startSAux(0,0)); // We find the first segment that starts in the current fragment
+        if (fixIndex.is_empty()){ // If it's empty that means that there is not segment in this fragment, hence, all is grey
+            painter.drawRect(QRect( 0 ,0,pixmap2.width(), pixmap2.height()));
+        }else{
 
-        bool isNextSegment = false;
-        uword segmentNumber = fixIndex(0,0);
-        while (!isNextSegment && segmentNumber < expSegAux.n_rows){
-            if (fixIndex(0,0) <= 0 || expSegAux(fixIndex(0,0)-1,2) <= _displayStartIndex){ // this is the very first segment or it is the first segment of the fragment
-                painter.drawRect(QRect( 0 ,0,(expSegAux(0,1)- _displayStartIndex) * (1/_displayIncrement ), pixmap2.height()));
+            startSAux =  startSAux.rows(fixIndex); // in this matrix we have all the segments that start in the current fragment
+            fixIndex = arma::find(expSegAux.col(0) == startSAux(0,0)); // We find the first segment that starts in the current fragment
 
-            }
-            if (segmentNumber > 0){
-                if (expSegAux(segmentNumber,1) >=_displayStopIndex){
-                    painter.drawRect(QRect( (expSegAux(segmentNumber-1,2)- _displayStartIndex) * (1/_displayIncrement ) ,0,pixmap2.width(), pixmap2.height()));
-                }else{
-                    int x1 = (expSegAux(segmentNumber-1,2)- _displayStartIndex) * (1/_displayIncrement );
-                    int x2 = ((expSegAux(segmentNumber,1)- _displayStartIndex) * (1/_displayIncrement )) - x1;
+            bool isNextSegment = false;
+            uword segmentNumber = fixIndex(0,0);
+            while (!isNextSegment && segmentNumber < expSegAux.n_rows){
+                if (fixIndex(0,0) <= 0 || expSegAux(fixIndex(0,0)-1,2) <= _displayStartIndex){ // this is the very first segment or it is the first segment of the fragment
+                    painter.drawRect(QRect( 0 ,0,(expSegAux(0,1)- _displayStartIndex) * (1/_displayIncrement ), pixmap2.height()));
 
-                    painter.drawRect(QRect( x1 ,0,x2, pixmap2.height()));
                 }
-            }
-            if (expSegAux(segmentNumber,2) >=_displayStopIndex){
-                isNextSegment = true;
-            }
-            segmentNumber = segmentNumber + 1;
-        }
+                if (segmentNumber > 0){
+                    if (expSegAux(segmentNumber,1) >=_displayStopIndex){
+                        painter.drawRect(QRect( (expSegAux(segmentNumber-1,2)- _displayStartIndex) * (1/_displayIncrement ) ,0,pixmap2.width(), pixmap2.height()));
+                    }else{
+                        int x1 = (expSegAux(segmentNumber-1,2)- _displayStartIndex) * (1/_displayIncrement );
+                        int x2 = ((expSegAux(segmentNumber,1)- _displayStartIndex) * (1/_displayIncrement )) - x1;
 
+                        painter.drawRect(QRect( x1 ,0,x2, pixmap2.height()));
+                    }
+                }
+                if (expSegAux(segmentNumber,2) >=_displayStopIndex){
+                    isNextSegment = true;
+                }
+                segmentNumber = segmentNumber + 1;
+            }
+
+        }
+        painter.end();
     }
     this->p_over_display_label->setPixmap(pixmap2);
-    painter.end();
+
 }
 
 void MainWindow::paintRoughData()
@@ -873,7 +897,6 @@ void MainWindow::paintCurrentFixationOnList(int from, int to)
 
 void MainWindow::paintLabels()
 {
-    ui->tDegreePerPixel->setText(QString::number(_degPerPixel));
 
     if (p_active_participant == NULL) return;
     // Find Max Pupil dilation and paint the number
@@ -935,10 +958,10 @@ void MainWindow::fncPress_bAcceptEstimation(){
     if (!p_smoothM->is_empty()) GPMatrixFunctions::saveFile((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
     if (!p_fixAllM->is_empty()) GPMatrixFunctions::saveFile((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
-    ui->dockWidgetEstimation->hide();
+    //DOCKui->dockWidgetEstimation->hide();
     qApp->processEvents();
-    ui->dockWidgetMainButtons->show();
-    this->resize(this->_maximised_size);
+    //DOCKui->dockWidgetMainButtons->show();
+    //this->resize(this->_maximised_size);
     paintSmoothData();
     paintFixations();
 
@@ -946,9 +969,6 @@ void MainWindow::fncPress_bAcceptEstimation(){
 
 void MainWindow::fncPress_bInterpolate()
 {
-    _project.SetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, _configuration,
-                                 ui->tDegreePerPixel->text().toDouble());
-
     DialogInterpolation w;
     w.setWindowTitle(tr("Interpolate smoothed data"));
     w.loadData(p_active_participant, (*p_smoothM));
@@ -1245,13 +1265,11 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *e)
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
    QMainWindow::resizeEvent(event);
-
+    //now resize over display label
    int x = ui->centralWidget->x() + ui->lPanelMissingData->geometry().x();
    int y = ui->centralWidget->y() + ui->lPanelMissingData->geometry().y();
 
    QPoint p(x,y);
-
-
    int w = ui->lPanelMissingData->width();
    int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
 
@@ -1267,18 +1285,18 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
 void MainWindow::fncPress_subMenuDetectFixations()
 {
-    ui->dockWidgetMainButtons->hide();
+    //DOCKui->dockWidgetMainButtons->hide();
     qApp->processEvents();
-    ui->dockWidgetEstimation->show();
-    this->resize(this->_maximised_size);
+    //DOCKui->dockWidgetEstimation->show();
+    //this->resize(this->_maximised_size);
 }
 
 void MainWindow::fncPress_subMenuManualEditing()
 {
-    ui->dockWidgetEstimation->hide();
+    //DOCKui->dockWidgetEstimation->hide();
     qApp->processEvents();
-    ui->dockWidgetMainButtons->show();
-    this->resize(this->_maximised_size);
+    //DOCKui->dockWidgetMainButtons->show();
+    //this->resize(this->_maximised_size);
 }
 
 void MainWindow::fncPress_subMenuDialogConfig()
@@ -1287,14 +1305,14 @@ void MainWindow::fncPress_subMenuDialogConfig()
 
     //TODO: change to load participant settings
     DialogConfig w;
-    w.loadData(&_project, _configuration);
+    w.loadData(&_project);
     w.setWindowTitle(tr("Configure Options"));
     w.exec();
 
     // update parameters
-    fncLoadSettings(_configuration);
+    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());
     fncResetDisplayParams();
-
+    fncSettingsChanged();
     fncSetActiveParticipant(0);
 }
 
@@ -1350,10 +1368,7 @@ void MainWindow::fncPress_subMenuVisualizeCurrentFragment()
     fncWaitForLoad();
     DialogVisualization w;
     w.setWindowTitle(tr("Visualize Fragment"));
-    w.loadData(_currentFragment,_secsFragment, _hz,
-               _project.GetProjectSetting(Consts::SETTING_EXP_WIDTH, _configuration).toInt(),
-               _project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, _configuration).toInt(),
-               p_roughM, p_smoothM, p_fixAllM);
+    w.loadData(_currentFragment, p_active_participant, roughM, smoothM, fixAllM);
     w.exec();
 }
 
@@ -1362,10 +1377,7 @@ void MainWindow::fncPress_subMenuVisualizeSegments()
     fncWaitForLoad();
     DialogVisualizationSegments w;
     w.setWindowTitle(tr("Visualize Segment"));
-    w.loadData(p_active_participant, _secsFragment, _hz,
-               _project.GetProjectSetting(Consts::SETTING_EXP_WIDTH, _configuration).toInt(),
-               _project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, _configuration).toInt(),
-               roughM, smoothM, fixAllM, experimentalSegmentsM);
+    w.loadData(p_active_participant, roughM, smoothM, fixAllM, experimentalSegmentsM);
     w.exec();
 }
 
@@ -1387,8 +1399,9 @@ void MainWindow::fncPress_subMenuRecalculateFixations()
     // It recalcules all the values for the fixations
     fncWaitForLoad();
     fixAllM = GPFixationOperations::fncRecalculateFixations(roughM, fixAllM,
-                                           _project.GetProjectSetting(Consts::SETTING_EXP_WIDTH, _configuration).toInt(),
-                                           _project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, _configuration).toInt(),_degPerPixel);
+                                                            this->_project.GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt(),
+                                                            this->_project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt(),
+                                                            this->_project.GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, Consts::ACTIVE_CONFIGURATION()).toInt());
 
     if (!fixAllM.is_empty())
         GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
@@ -1416,9 +1429,29 @@ void MainWindow::fncPress_subMenuAdjustParameters()
     DialogTestSmoothParameters d;
     d.loadData(roughM,_displayStartIndex,_displayStopIndex,p_active_participant);
     d.exec();
-    fncLoadSettings(_configuration);
+    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());  //reload parameters after adjustment
 }
 
+void MainWindow::fncPress_subMenuChangeConfiguration()
+{
+    fncWaitForLoad();
+    DialogSaveNewConfiguration d;
+    d.loadData(&this->_configuration, &this->_project);
+    d.exec();
+    if (!(this->_configuration == Consts::ACTIVE_CONFIGURATION()))
+    {
+        _project.ActivateConfiguration(_configuration);
+        fncLoadSettings(_configuration);
+        this->_configuration_changed = false;
+        ui->lConfigurationStatus->setText("Active Configuration: " + _configuration.first);
+    }
+
+}
+
+void MainWindow::fncPress_subMenuClose()
+{
+    this->close();
+}
 
 void MainWindow::fncChange_tParticipantNumber()
 {
@@ -1432,52 +1465,133 @@ void MainWindow::fncChange_tParticipantNumber()
         this->fncSetActiveParticipant(number-1);
 }
 
+void MainWindow::fncSettingsChanged()
+{
+    this->_configuration_changed = true;
+    this->_configuration = Consts::ACTIVE_CONFIGURATION();
+    ui->lConfigurationStatus->setText("Active Configuration: Unsaved.");
+}
 
+void MainWindow::fncChange_tInterpolation()
+{
+    _project.SetProjectSetting(Consts::SETTING_INTERP_LATENCY, Consts::ACTIVE_CONFIGURATION(),
+                                 ui->leInterpolation->text().toInt());
+    ui->sliderInterpolation->setValue((int)ui->leInterpolation->text().toInt());
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tDisplacement()
+{
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, Consts::ACTIVE_CONFIGURATION(),
+                                 ui->leInterpolation->text().toDouble());
+    ui->sliderDisplacement->setValue((int)(ui->leInterpolation->text().toDouble()*100));
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tDisplacInterpolate()
+{
+    _project.SetProjectSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, Consts::ACTIVE_CONFIGURATION(),
+                                 ui->leDisplacInterpolate->text().toDouble());
+    ui->sliderDisplacInterpolate->setValue((int)(ui->leDisplacInterpolate->text().toDouble()*100));
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tMinFixation()
+{
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL, Consts::ACTIVE_CONFIGURATION(),
+                                 ui->leMinFixation->text().toInt());
+    ui->sliderMinFixation->setValue((int)ui->leMinFixation->text().toInt());
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tVelocity()
+{
+    _project.SetProjectSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD, Consts::ACTIVE_CONFIGURATION(),
+                                 ui->leVelocity->text().toInt());
+    ui->sliderVelocity->setValue((int)ui->leVelocity->text().toInt());
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tVelocityVariance()
+{
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, Consts::ACTIVE_CONFIGURATION(),
+                                 (ui->leVelocityVariance->text().toDouble()));
+    ui->sliderVelocityVariance->setValue((int)(ui->leVelocityVariance->text().toDouble()*100));
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tSigmaS()
+{
+    _project.SetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_S, Consts::ACTIVE_CONFIGURATION(),
+                               (double) ui->leSigmaS->text().toDouble());
+    ui->sliderSigmaS->setValue((int)ui->leSigmaS->text().toInt());
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_tSigmaR()
+{
+    _project.SetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_R, Consts::ACTIVE_CONFIGURATION(),
+                               (double) ui->leSigmaR->text().toDouble());
+    ui->sliderSigmaR->setValue((int)ui->leSigmaR->text().toInt());
+    fncSettingsChanged();
+}
+
+void MainWindow::fncChange_sSigmaS()
+{
+    _project.SetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_S, Consts::ACTIVE_CONFIGURATION(),
+                               (double) ui->sliderSigmaS->value());
+    ui->leSigmaS->setText(QString::number(ui->sliderSigmaS->value()));
+    fncSettingsChanged();
+}
+void MainWindow::fncChange_sSigmaR()
+{
+    _project.SetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_R, Consts::ACTIVE_CONFIGURATION(),
+                               (double) ui->sliderSigmaR->value());
+    ui->leSigmaR->setText(QString::number(ui->sliderSigmaR->value()));
+    fncSettingsChanged();
+}
 void MainWindow::fncChange_sDisplacement(){
-    ui->lDisplacement->clear();
+    ui->leDisplacement->clear();
     std::ostringstream o;
     o << ((double)ui->sliderDisplacement->value()/100);
-    ui->lDisplacement->setText( o.str().c_str() );
+    ui->leDisplacement->setText( o.str().c_str() );
 
-    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, Consts::ACTIVE_CONFIGURATION(),
                                  ((double)ui->sliderDisplacement->value()/100));
+    fncSettingsChanged();
 }
 
 void MainWindow::fncChange_sDisplacInterpolate(){
-    ui->lDisplacInterpolate->clear();
+    ui->leDisplacInterpolate->clear();
     std::ostringstream o;
     o << ((double)ui->sliderDisplacInterpolate->value()/100);
-    ui->lDisplacInterpolate->setText( o.str().c_str() );
+    ui->leDisplacInterpolate->setText( o.str().c_str() );
 
-    _project.SetProjectSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, Consts::ACTIVE_CONFIGURATION(),
                                  ((double)ui->sliderDisplacInterpolate->value()/100));
+    fncSettingsChanged();
 }
 
 void MainWindow::fncChange_sInterpolation(){
-    ui->lInterpolation->clear();
+    ui->leInterpolation->clear();
     std::ostringstream o;
     o << ui->sliderInterpolation->value();
-    ui->lInterpolation->setText( o.str().c_str() );
+    ui->leInterpolation->setText( o.str().c_str() );
 
-    _project.SetProjectSetting(Consts::SETTING_INTERP_LATENCY, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_INTERP_LATENCY, Consts::ACTIVE_CONFIGURATION(),
                                  ui->sliderInterpolation->value());
+    fncSettingsChanged();
 }
 
 void MainWindow::fncChange_sMinFixation(){
-    ui->lMinFixation->clear();
+    ui->leMinFixation->clear();
     std::ostringstream o;
     o << ui->sliderMinFixation->value();
-    ui->lMinFixation->setText( o.str().c_str() );
-    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL, _configuration,
+    ui->leMinFixation->setText( o.str().c_str() );
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL, Consts::ACTIVE_CONFIGURATION(),
                                  ui->sliderMinFixation->value());
+    fncSettingsChanged();
 }
 
 
 void MainWindow::fncChange_sVelocity(){
-    ui->lVelocity->clear();
+    ui->leVelocity->clear();
     std::ostringstream o;
     o << ui->sliderVelocity->value();
-    ui->lVelocity->setText( o.str().c_str() );
+    ui->leVelocity->setText( o.str().c_str() );
 
     /*/ Draw the line
     QPixmap pixmap(ui->lPanelVelocityAux->width(),ui->lPanelVelocityAux->height());
@@ -1494,43 +1608,43 @@ void MainWindow::fncChange_sVelocity(){
 
     painter.end();*/
 
-    _project.SetProjectSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD, Consts::ACTIVE_CONFIGURATION(),
                                  ui->sliderVelocity->value());
 
+    fncSettingsChanged();
     paintVelocity();
 
 }
 
-void MainWindow::fncChange_tDegreePerPixel(QString string){
-    //TODO check its a double.
-    _degPerPixel = string.toDouble();
-    _project.SetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, _configuration,
-                                 string.toDouble());
-}
+
 
 void MainWindow::fncChange_sVelocityVariance(){
-    ui->lVelocityVariance->clear();
+    ui->leVelocityVariance->clear();
     std::ostringstream o;
     o << ((double)ui->sliderVelocityVariance->value()/100);
-    ui->lVelocityVariance->setText( o.str().c_str() );
+    ui->leVelocityVariance->setText( o.str().c_str() );
 
-    _project.SetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, Consts::ACTIVE_CONFIGURATION(),
                                  ((double)ui->sliderVelocityVariance->value()/100));
+    fncSettingsChanged();
 }
 
 void MainWindow::fncPress_cbDisplacement(){
-    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG, Consts::ACTIVE_CONFIGURATION(),
                                  ui->cb_displacement->checkState());
+    fncSettingsChanged();
 }
 
 void MainWindow::fncPress_cbMinFixation(){
-    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG, Consts::ACTIVE_CONFIGURATION(),
                                  ui->cb_minFixation->checkState());
+    fncSettingsChanged();
 }
 
 void MainWindow::fncPress_cbVelocityVariance(){
-    _project.SetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG, _configuration,
+    _project.SetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG, Consts::ACTIVE_CONFIGURATION(),
                                  ui->cb_velocityVariance->checkState());
+    fncSettingsChanged();
 }
 
 
