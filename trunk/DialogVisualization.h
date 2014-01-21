@@ -2,6 +2,7 @@
 #define DialogVisualization_H
 
 #include "MyConstants.h"
+#include "GrafixProject.h"
 
 #include <QtWidgets/QMainWindow>
 #include <QtGui>
@@ -32,13 +33,14 @@ public:
     explicit DialogVisualization(QWidget *parent = 0);
     ~DialogVisualization();
 
-    void loadData(int currentFragment, int secsFragment, int hz,int expWidth, int expHeight,  mat* p_roughM_in, mat* p_smoothM_in, mat* p_fixAllM_in);
+    void loadData(int currentFragment, GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in);
     
 private:
 
     Ui::DialogVisualization *ui;
 
     int currentFragment;
+    GrafixParticipant* _participant;
     mat* p_roughM;
     mat* p_smoothM;
     mat* p_fixAllM;

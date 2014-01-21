@@ -13,10 +13,10 @@ DialogConfig::DialogConfig(QWidget *parent) :
 }
 
 
-void DialogConfig::loadData(GrafixProject *project, GrafixConfiguration configuration)
+void DialogConfig::loadData(GrafixProject *project)
 {
     _project        = project;
-    _configuration  = configuration;
+    _configuration  = Consts::ACTIVE_CONFIGURATION();
     _expHeight      = _project->GetProjectSetting(Consts::SETTING_EXP_HEIGHT,
                                                   _configuration).toInt();
     _expWidth       = _project->GetProjectSetting(Consts::SETTING_EXP_WIDTH,

@@ -18,6 +18,7 @@
 #include "DialogOpenProject.h"
 #include "DialogInterpolation.h"
 #include "DialogEstimateFixations.h"
+#include "DialogSaveNewConfiguration.h"
 
 #include <QProgressDialog>
 #include <QtWidgets/QMainWindow>
@@ -103,6 +104,7 @@ private:
     QLabel* p_over_display_label;
     int _previous_mouse_posX;
     QRgb _previous_colour;
+    bool _configuration_changed;
 
     //changing participant / display / editing
     void fncLoadSettings(GrafixConfiguration configuration);
@@ -113,6 +115,7 @@ private:
     void fncResetDisplayParams();//Resets the display parameters i.e. when switching participant
     void fncSetDisplayParams();//Sets the display parameters i.e. when switching fragment
     void fncManipulateFix(int from, int to);
+    void fncSettingsChanged();
 
     //saving loading files
     bool fncReadAllFiles(GrafixParticipant* participant);
@@ -146,12 +149,19 @@ public slots:
     void fncChange_sMinFixation() ;
     void fncChange_sVelocity() ;
     void fncChange_sVelocityVariance() ;
-    void fncChange_tDegreePerPixel(QString string);
+    void fncChange_sSigmaS();
+    void fncChange_sSigmaR();
+
+    void fncChange_tInterpolation();
+    void fncChange_tDisplacement();
+    void fncChange_tDisplacInterpolate();
+    void fncChange_tMinFixation() ;
+    void fncChange_tVelocity() ;
+    void fncChange_tVelocityVariance() ;
+    void fncChange_tSigmaS();
+    void fncChange_tSigmaR();
     void fncChange_tParticipantNumber();
-    //void fncPress_max();
-    //void fncPress_min();
-    //void fncPress_bNext();
-    //void fncPress_bPrevious();
+
     void fncPress_cbDisplacement();
     void fncPress_cbMinFixation() ;
     void fncPress_cbVelocityVariance();
@@ -169,6 +179,8 @@ public slots:
     void fncPress_subMenuDetectFixations();
     void fncPress_subMenuManualEditing();
     void fncPress_subMenuAdjustParameters();
+    void fncPress_subMenuChangeConfiguration();
+    void fncPress_subMenuClose();
 
     void fncPress_bNext();
     void fncPress_bPrevious();

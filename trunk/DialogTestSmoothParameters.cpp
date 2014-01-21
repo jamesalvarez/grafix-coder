@@ -194,7 +194,7 @@ void DialogTestSmoothParameters::apply()
 void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartIndex, uword displayStopIndex, GrafixParticipant *p)
 {
     this->p_participant = p;
-    this->_configuration = p->GetConfiguration();
+    this->_configuration = Consts::ACTIVE_CONFIGURATION();
     _temp_settings = "tempsettings";
     QFile(_temp_settings).remove();
     QFile::copy(p->GetProject()->GetProjectSettingsPath(),_temp_settings);

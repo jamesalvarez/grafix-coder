@@ -35,7 +35,7 @@ void DialogSmoothXY::loadData(GrafixParticipant &participant,mat const &roughM, 
 
     this->_participant = &participant;
     this->_project = _participant->GetProject();
-    this->_configuration = _participant->GetConfiguration();
+    this->_configuration = Consts::ACTIVE_CONFIGURATION();
 
     ui->cb_eyes->setChecked(_project->GetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE, _configuration).toBool());
 

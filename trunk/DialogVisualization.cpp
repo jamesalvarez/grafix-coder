@@ -30,16 +30,17 @@ DialogVisualization::~DialogVisualization()
 /**
   *    PUBLIC METHODS
   **/
-void DialogVisualization::loadData(int currentFragment, int secsFragment, int hz,int expWidth, int expHeight, mat* p_roughM_in, mat* p_smoothM_in, mat* p_fixAllM_in){
+void DialogVisualization::loadData(int currentFragment, GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in){
 
-    this->p_roughM = p_roughM_in;
-    this->p_smoothM = p_smoothM_in;
-    this->p_fixAllM = p_fixAllM_in;
+    this->_participant = participant;
+    this->p_roughM = &p_roughM_in;
+    this->p_smoothM = &p_smoothM_in;
+    this->p_fixAllM = &p_fixAllM_in;
     this->currentFragment = currentFragment;
-    this->secsFragment = secsFragment;
-    this->hz = hz;
-    this->expWidth = expWidth;
-    this->expHeight = expHeight;
+    this->secsFragment = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, Consts::ACTIVE_CONFIGURATION()).toInt();
+    this->hz = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_HZ, Consts::ACTIVE_CONFIGURATION()).toInt();
+    this->expWidth = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt();
+    this->expHeight = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt();
 
     std::ostringstream o;
     o << secsFragment << "s";

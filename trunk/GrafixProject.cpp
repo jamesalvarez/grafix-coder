@@ -85,20 +85,6 @@ QString GrafixParticipant::GetName()
     return _name;
 }
 
-GrafixConfiguration GrafixParticipant::GetConfiguration()
-{
-    return _configuration;
-}
-
-void GrafixParticipant::SetConfiguration(GrafixConfiguration configuration)
-{
-    QSettings settings(this->GetParticipantSettingsPath(), QSettings::IniFormat);
-    settings.setValue(Consts::PSETTING_CONFIGURATION, configuration);
-    settings.setValue(Consts::PSETTING_CONFIGURATION_CHANGE_DATE, QDateTime::currentDateTime());
-    _configuration = configuration;
-}
-
-
 void GrafixParticipant::SetParticipantSetting(QString setting, QVariant value)
 {
     QSettings settings(this->GetParticipantSettingsPath(), QSettings::IniFormat);
@@ -117,7 +103,6 @@ GrafixParticipant::GrafixParticipant(GrafixProject* parent, QString directory)
     this->_project = parent;
     this->_participantdirectory = directory;
     this->_name = directory;
-    this->_configuration = 0;
 }
 
 QString GrafixParticipant::GetParticipantSettingsPath()
@@ -176,7 +161,6 @@ void GrafixParticipant::SaveSettings()
     settings.setValue(Consts::PSETTING_ROUGH_PATH,this->PATH_ROUGH);
     settings.setValue(Consts::PSETTING_SEGMENTS_PATH,this->EXPE_SEGMETS_PATH);
     settings.setValue(Consts::PSETTING_NOTES, this->Notes);
-    settings.setValue(Consts::PSETTING_CONFIGURATION, this->_configuration);
 }
 
 void GrafixParticipant::LoadSettings()
@@ -186,7 +170,6 @@ void GrafixParticipant::LoadSettings()
     this->PATH_ROUGH = settings.value(Consts::PSETTING_ROUGH_PATH).toString();
     this->EXPE_SEGMETS_PATH = settings.value(Consts::PSETTING_SEGMENTS_PATH).toString();
     this->Notes = settings.value(Consts::PSETTING_NOTES).toString();
-    this->_configuration = settings.value(Consts::PSETTING_CONFIGURATION).toUInt();
 }
 
 QString GrafixParticipant::GetRelativeDirectory()
@@ -287,8 +270,8 @@ GrafixProject::~GrafixProject()
 void GrafixProject::cleanParticipants()
 {
     //Delete Grafix Participant
-    foreach (GrafixParticipant* p, _participants)
-        delete p;
+    _configurations.clear();
+    _configurations.insert(0,Consts::ACTIVE_CONFIGURATION());
     _participants.clear();
 }
 
@@ -299,7 +282,7 @@ int GrafixProject::numParticipants()
 
 GrafixParticipant* GrafixProject::GetParticipant(int id)
 {
-    return _participants[id];
+    return &_participants[id];
 }
 
 bool GrafixProject::HasParticipant(int pos)
@@ -314,9 +297,10 @@ GrafixParticipant* GrafixProject::AddParticipant(QString existing_directory)
     QString newpath = this->_directory + "/" + existing_directory;
     if(QDir(newpath).exists())
     {
-        GrafixParticipant *n = new GrafixParticipant(this,existing_directory);
-        _participants.insert(_participants.size(),n); //should i push back this with pointer?
-        return n;
+        GrafixParticipant n(this,existing_directory);
+        int index_to_add = _participants.size();
+        _participants.insert(index_to_add,n); //should i push back this with pointer?
+        return &(_participants[index_to_add]);
     }
     else
     {
@@ -350,7 +334,7 @@ void GrafixProject::AddParticipant(int position)
     QString newpath = this->_directory + "/" + oss;
     if(QDir().mkdir(newpath))
     {
-        GrafixParticipant *n = new GrafixParticipant(this,oss);
+        GrafixParticipant n(this,oss);
         _participants.insert(position,n); //should i push back this with pointer?
     }
     else
@@ -362,7 +346,6 @@ void GrafixProject::AddParticipant(int position)
 
 void GrafixProject::RemoveParticipant(int position)
 {
-    delete _participants[position];
     _participants.removeAt(position);
 }
 
@@ -394,7 +377,7 @@ QString GrafixProject::GetProjectSettingsPath()
 void GrafixProject::SetProjectSetting(QString setting, GrafixConfiguration configuration, QVariant value)
 {
     QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
-    settings.setValue(setting + "_" + QString::number(configuration), value);
+    settings.setValue(setting + "_" + QString::number(configuration.second), value);
     settings.setValue(Consts::SETTINGS_CONFIGURATION_CHANGED_DATE, QDateTime::currentDateTime());
 }
 
@@ -402,7 +385,7 @@ QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration c
 {
      QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
 
-     QVariant value = settings.value(setting + "_" + QString::number(configuration));
+     QVariant value = settings.value(setting + "_" + QString::number(configuration.second));
 
      if (value.isNull())
      {
@@ -434,10 +417,49 @@ QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration c
              return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_R);
          else if (setting == Consts::SETTING_SMOOTHING_SIGMA_S)
              return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_S);
+         else if (setting == Consts::SETTING_CONFIGURATION)
+             return QVariant(false);
          else
              return value;
      }
      return value;
+}
+
+QList<GrafixConfiguration> *GrafixProject::GetConfigurations()
+{
+    return &_configurations;
+}
+
+void GrafixProject::ActivateConfiguration(GrafixConfiguration configuration)
+{
+    this->CopyConfiguration(configuration, Consts::ACTIVE_CONFIGURATION());
+}
+
+void GrafixProject::SaveConfiguration(GrafixConfiguration configuration)
+{
+    this->CopyConfiguration(Consts::ACTIVE_CONFIGURATION(), configuration);
+}
+
+void GrafixProject::CopyConfiguration(GrafixConfiguration from, GrafixConfiguration to)
+{
+    //check source configuration header and that it is in list of configurations
+    if (!this->GetProjectSetting(Consts::SETTING_CONFIGURATION, from).toBool()  ||
+        !this->_configurations.contains(from))
+        return;
+
+    //if to configuration does not exist in list, create it
+    if (!this->_configurations.contains(to))
+        _configurations.insert(_configurations.size(),to);
+
+    //1st save configuration header
+    this->SetProjectSetting(Consts::SETTING_CONFIGURATION,to, QVariant(true));
+
+    QList<QString> sets = Consts::LIST_CONFIGURATION_SETTINGS();
+
+    for (int i = 0; i < sets.size(); ++i)
+    {
+        this->SetProjectSetting(sets[i], to,this->GetProjectSetting(sets[i], from));
+    }
 }
 
 bool GrafixProject::HasSettings()
@@ -449,15 +471,69 @@ void GrafixProject::SaveSettings()
 {
     //Save project
     QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
-    settings.setValue("Last Saved:",QDateTime::currentDateTime());
-    settings.setValue("Participants:",QString::number(_participants.size()));
+    settings.setValue(Consts::SETTING_LAST_SAVED, QDateTime::currentDateTime());
+    settings.setValue(Consts::SETTING_NUMBER_PARTICIPANTS, QString::number(_participants.size()));
+    settings.setValue(Consts::SETTING_NUMBER_CONFIGURATIONS, QString::number(_configurations.size()));
     //Save participants
     for (int i=0;i<_participants.size();i++)
     {
-        QString pcode = "ParticipantD:" + QString::number(i);
-        settings.setValue(pcode,_participants[i]->GetRelativeDirectory());
-        _participants[i]->SaveSettings();
+        QString pcode = Consts::SETTING_PARTICIPANT_DIRECTORY + QString::number(i);
+        settings.setValue(pcode,_participants[i].GetRelativeDirectory());
+        _participants[i].SaveSettings();
     }
+    //Save configuration names
+    for (int i = 0; i < _configurations.size(); ++i)
+    {
+        QString code = Consts::SETTING_CONFIGURATION_ID + QString::number(i);
+        settings.setValue(code, _configurations[i].second);
+        code = Consts::SETTING_CONFIGURATION_NAME + QString::number(i);
+        settings.setValue(code, _configurations[i].first);
+    }
+}
+
+bool GrafixProject::LoadProjectSettings(QString d)
+{
+    this->cleanParticipants();
+    _directory = d;
+
+
+    if (this->HasDirectory() && this->HasSettings())
+    {
+        QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
+        int numberparticipants = settings.value(Consts::SETTING_NUMBER_PARTICIPANTS).toInt();
+        for (int i = 0; i < numberparticipants; i++)
+        {
+            QString pcode = Consts::SETTING_PARTICIPANT_DIRECTORY + QString::number(i);
+            QString path = settings.value(pcode).toString();
+            GrafixParticipant n(this,path);
+            _participants.insert(i,n);
+            _participants[i].LoadSettings();
+        }
+
+        int numberconfigs = settings.value(Consts::SETTING_NUMBER_CONFIGURATIONS).toInt();
+        for (int i = 0; i < numberconfigs; ++i)
+        {
+            QString code = Consts::SETTING_CONFIGURATION_ID + QString::number(i);
+            GrafixConfiguration gc;
+            gc.second = settings.value(code).toInt();
+            code = Consts::SETTING_CONFIGURATION_NAME + QString::number(i);
+            gc.first = settings.value(code).toString();
+
+            //stop from loading active configuration, which is always there
+            if (!(gc == Consts::ACTIVE_CONFIGURATION()))
+                _configurations.insert(i, gc);
+        }
+        return true;
+    }
+    else
+    {
+        _directory = "";
+        QMessageBox msgBox;
+        msgBox.setText("Cannot load project or no project.ini file found - please create new project.");
+        msgBox.exec();
+        return false;
+    }
+
 }
 
 void GrafixProject::NewBlankProject(QString dir)
@@ -466,6 +542,8 @@ void GrafixProject::NewBlankProject(QString dir)
     QString PATH_ROUGH = "";
     QString EXPE_SEGMETS_PATH = "";
     QString Name = "";
+    //1st save configuration header (active is always on)
+    this->SetProjectSetting(Consts::SETTING_CONFIGURATION,Consts::ACTIVE_CONFIGURATION(),QVariant(true));
     cleanParticipants();
 }
 
@@ -577,30 +655,3 @@ void GrafixProject::NewProjectFromExistingDirectory(QString dir, QWidget* _paren
     }
     DialogGrafixError::LogNewError(NULL,"Project built.");
 }
-void GrafixProject::LoadSettings(QString d)
-{
-
-    _directory = d;
-
-    if (this->HasDirectory() && this->HasSettings())
-    {
-        QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
-        int numberparticipants = settings.value("Participants:").toInt();
-        for (int i = 0; i < numberparticipants; i++)
-        {
-            QString pcode = "ParticipantD:" + QString::number(i);
-            QString path = settings.value(pcode).toString();
-            GrafixParticipant *n = new GrafixParticipant(this,path);
-            _participants.insert(i,n);
-            n->LoadSettings();
-        }
-    }
-    else
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Cannot load project or no project.ini file found - please create new project.");
-        msgBox.exec();
-    }
-
-}
-

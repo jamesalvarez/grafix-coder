@@ -35,7 +35,7 @@ public:
     explicit DialogVisualizationSegments(QWidget *parent = 0);
     ~DialogVisualizationSegments();
 
-    void loadData(GrafixParticipant *participant,int secsFragment, int hz,int expWidth, int expHeight,  mat roughM, mat smoothM, mat fixAllM, mat segmentsM);
+    void loadData(GrafixParticipant *participant, mat roughM, mat smoothM, mat fixAllM, mat segmentsM);
     
 private:
     Ui::DialogVisualizationSegments *ui;

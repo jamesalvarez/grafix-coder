@@ -37,6 +37,45 @@ const QString Consts::PSETTING_CONFIGURATION_CHANGE_DATE= "PSETTING_CONFIGURATIO
 const QString Consts::SETTING_SMOOTHING_SIGMA_S =              "SETTING_SMOOTHING_SIGMA_S";
 const QString Consts::SETTING_SMOOTHING_SIGMA_R =              "SETTING_SMOOTHING_SIGMA_R";
 const QString Consts::SETTING_SMOOTHING_USE_OTHER_EYE=         "SETTING_SMOOTH_USE_OTHER_EYE";
+
+const QString Consts::SETTING_CONFIGURATION =                   "SETTING_CONFIGURATION";
+const QString Consts::SETTING_CONFIGURATION_ID=                 "SETTING_CONFIGURATION_ID";
+const QString Consts::SETTING_CONFIGURATION_NAME=               "SETTING_CONFIGURATION_NAME";
+const QString Consts::SETTING_PARTICIPANT_DIRECTORY=            "SETTING_PARTICIPANT_DIRECTORY";
+const QString Consts::SETTING_NUMBER_CONFIGURATIONS=            "SETTING_NUMBER_CONFIGURATIONS";
+const QString Consts::SETTING_NUMBER_PARTICIPANTS=              "SETTING_NUMBER_PARTICIPANTS";
+const QString Consts::SETTING_LAST_SAVED=                       "SETTING_LAST_SAVED";
+
+const GrafixConfiguration Consts::ACTIVE_CONFIGURATION()
+{
+    GrafixConfiguration gc;
+    gc.first = "Active";
+    gc.second = 0;
+    return gc;
+}
+
+const QList<QString> Consts::LIST_CONFIGURATION_SETTINGS()
+{
+    QList<QString> ret;
+    ret.append(Consts::SETTING_HZ);
+    ret.append(Consts::SETTING_EXP_WIDTH);
+    ret.append(Consts::SETTING_EXP_HEIGHT);
+    ret.append(Consts::SETTING_SECS_FRAGMENT);
+    ret.append(Consts::SETTING_DEGREE_PER_PIX);
+    ret.append(Consts::SETTING_INTERP_LATENCY);
+    ret.append(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL);
+    ret.append(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT);
+    ret.append(Consts::SETTING_POSTHOC_MIN_DURATION_VAL);
+    ret.append(Consts::SETTING_INTERP_VELOCITY_THRESHOLD);
+    ret.append(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL);
+    ret.append(Consts::SETTING_SMOOTHING_USE_OTHER_EYE);
+    ret.append(Consts::SETTING_SMOOTHING_SIGMA_R);
+    ret.append(Consts::SETTING_SMOOTHING_SIGMA_S);
+    ret.append(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG);
+    ret.append(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG);
+    ret.append(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG);
+    return ret;
+}
 Consts::Consts(void)
 {
 }

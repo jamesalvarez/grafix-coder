@@ -229,7 +229,7 @@ void GPTabelModel::LoadData(QString dir)
 {
     //check for project.ini file
     this->beginResetModel();
-    _project->LoadSettings(dir);
+    _project->LoadProjectSettings(dir);
     this->endResetModel();
 }
 
@@ -241,7 +241,7 @@ void GPTabelModel::NewProject(QString dir)
         _project->NewBlankProject(dir);
         this->endResetModel();
         DialogConfig w;
-        w.loadData(_project, 0);
+        w.loadData(_project);
         w.setWindowTitle(tr("Configure Default Options"));
         w.exec();
     }
@@ -265,7 +265,7 @@ void GPTabelModel::NewProjectFromExistingDirectory(QString dir)
         _project->NewProjectFromExistingDirectory(dir,_parent);
         this->endResetModel();
         DialogConfig w;
-        w.loadData(_project, 0);
+        w.loadData(_project);
         w.setWindowTitle(tr("Configure Default Options"));
         w.exec();
     }

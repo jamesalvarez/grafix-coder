@@ -178,7 +178,7 @@ void DialogPlot::loadVelData(GrafixParticipant *p)
 
     // generate some data:
     QVector<double> x(n_fixations-1), y(n_fixations-1); //
-    for (int i=0; i<n_fixations-1; ++i)
+    for (uword i=0; i<n_fixations-1; ++i)
     {
       x[i] = 1+i; // x goes from -1 to 1
       y[i] = velocities.at(i,0); // let's plot a quadratic function

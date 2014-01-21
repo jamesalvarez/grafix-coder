@@ -21,7 +21,7 @@ using namespace arma;
 
 class GrafixProject;
 
-typedef unsigned int GrafixConfiguration;
+//typedef struct { QString first; int second; } GrafixConfiguration;
 
 //Class holds participant information as well as methods for
 //accessing settings, matrixes, and file names.
@@ -91,18 +91,10 @@ public:
 
     QString     GetName();
 
-    //Returns the configuration used by the participant
-    GrafixConfiguration GetConfiguration();
-
-    //Sets which configuration to use - all settings for the configuration
-    //should be applied to the project
-    void        SetConfiguration(GrafixConfiguration configuration);
-
 private:
     GrafixProject*  _project;
     QString         _participantdirectory;
     QString         _name;
-    GrafixConfiguration   _configuration;
 };
 
 //class holds all participant objects, and provides methods to save
@@ -158,7 +150,7 @@ public:
     void        SaveSettings();
 
     //Loads all participants and their settings
-    void        LoadSettings(QString d);
+    bool        LoadProjectSettings(QString d);
 
     //Returns full path to project.ini
     QString     GetProjectSettingsPath();
@@ -169,14 +161,25 @@ public:
     //Gets a project.ini setting
     void        SetProjectSetting(QString setting, GrafixConfiguration configuration, QVariant value);
 
+    //Saves a new configuration
+    void        SaveConfiguration(GrafixConfiguration configuration);
+
+    //Loads a new configuration
+    void        ActivateConfiguration(GrafixConfiguration configuration);
+
+    //gets all configurations
+    QList<GrafixConfiguration> *GetConfigurations();
 
 private:
-
-    QList<GrafixParticipant*> _participants;
+    QList<GrafixConfiguration> _configurations;
+    QList<GrafixParticipant> _participants;
     QString _directory;
 
     //deletes all participant objects and clears list
     void cleanParticipants();
+
+    //Copies a configuration to a new slot
+    void CopyConfiguration(GrafixConfiguration from, GrafixConfiguration to);
 };
 
 #endif // GRAFIXPROJECT_H

@@ -34,7 +34,7 @@ DialogVisualizationSegments::~DialogVisualizationSegments()
 /**
   *    PUBLIC METHODS
   **/
-void DialogVisualizationSegments::loadData(GrafixParticipant *participant, int secsFragment, int hz,int expWidth, int expHeight, mat roughM, mat smoothM, mat fixAllM, mat segmentsM){
+void DialogVisualizationSegments::loadData(GrafixParticipant *participant, mat roughM, mat smoothM, mat fixAllM, mat segmentsM){
 
     this->_participant = participant;
     this->roughM = roughM;
@@ -42,10 +42,10 @@ void DialogVisualizationSegments::loadData(GrafixParticipant *participant, int s
     this->fixAllM = fixAllM;
     this->currentFragment = 1;
     this->currentSegment = 1;
-    this->secsFragment = secsFragment;
-    this->hz = hz;
-    this->expWidth = expWidth;
-    this->expHeight = expHeight;
+    this->secsFragment = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, Consts::ACTIVE_CONFIGURATION()).toInt();
+    this->hz = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_HZ, Consts::ACTIVE_CONFIGURATION()).toInt();
+    this->expWidth = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt();
+    this->expHeight = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt();
 
     if (segmentsM.n_rows == 0)
     {
