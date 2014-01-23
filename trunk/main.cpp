@@ -1,6 +1,7 @@
 #include <QtWidgets/QApplication>
-#include "MainWindow.h"
+#include "MainWindow2.h"
 
+#include <QSettings>
 
 
 
@@ -19,7 +20,7 @@ int main(int argc, char *argv[])
         a.addLibraryPath(sDir+"../Frameworks/QtCore.framework");
         a.addLibraryPath(sDir+"../Frameworks/QtGui.framework");
 
-        MainWindow w;
+        MainWindow2 w;
         w.show();
 
         return a.exec();

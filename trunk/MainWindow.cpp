@@ -8,8 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    this->setWindowFlags(Qt::Window | Qt::FramelessWindowHint |  Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowSystemMenuHint);
-
+    //this->setWindowFlags(this->windowFlags() | Qt::WindowMinMaxButtonsHint);
     //default initialise parameters
     this->_index_active_participant = 0;
     this->p_active_participant = NULL;
@@ -32,10 +31,6 @@ MainWindow::MainWindow(QWidget *parent) :
     this->_currentAction = Consts::AC_NOACTION; // create/ merge/ delete fixation
     this->_fixInAction = Consts::FIX_OFF;   // If we are painting a fixation or not
     this->_configuration_changed = true;
-
-    // Allow the main widget to track the mouse
-    centralWidget()->setAttribute(Qt::WA_TransparentForMouseEvents);
-    setMouseTracking(true);
 
     // Menu events
     connect( ui->subMenuActionProject_config, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuDialogConfig() ) );
@@ -94,6 +89,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( ui->cb_minFixation, SIGNAL( clicked()), this, SLOT( fncPress_cbMinFixation() ) );
     connect( ui->cb_velocityVariance, SIGNAL( clicked()), this, SLOT( fncPress_cbVelocityVariance() ) );
 
+
     p_roughM = &roughM;   // [time ms, 0 , left x , left y, right x, right y]
     p_smoothM = &smoothM;  // [time ms, interpolation(0 or 1), x, y]
     p_fixAllM = &fixAllM;
@@ -116,20 +112,135 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //start new label
     this->p_over_display_label = new QLabel(this);
-    this->p_over_display_label->setGeometry(ui->lPanelMissingData->x()+100,
-                                            ui->lPanelMissingData->y(),
-                                            ui->lPanelMissingData->width(),
-                                            500);
     this->p_over_display_label->setAttribute(Qt::WA_TransparentForMouseEvents);
     this->p_over_display_label->raise();
 
-    //DOCKui->dockWidgetEstimation->hide();
+    //ui->lPanelMissingData->setAttribute(Qt::WA_TransparentForMouseEvents);
+    ui->frameData->setAttribute(Qt::WA_TransparentForMouseEvents);
+    this->setAttribute(Qt::WA_TransparentForMouseEvents);
+    // Allow the main widget to track the mouse
+    //ui->centralWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    this->setMouseTracking(true);
+
+    ui->stackedWidget->setCurrentWidget(ui->page_manual);
+
+    qApp->installEventFilter(this);
 
     fncInitializeProject();
 
     //show maximised and remember size, for some reason it sometimes expands a little TODO: fix this
-    this->showMaximized();
+    QDesktopWidget *desktop = QApplication::desktop();
+    int h = desktop->availableGeometry().height() - 100;
+    int w = desktop->availableGeometry().width();
 }
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (!obj->isWindowType()) return false;
+
+    int posX = -1;
+
+    if (event->type() == QEvent::MouseMove ||
+        event->type() == QEvent::MouseButtonPress ||
+        event->type() == QEvent::MouseButtonRelease)
+    {
+        // When we move the mouse and we are executing an action, we paint the fixation!
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+        QPoint mouse_pos = this->p_over_display_label->mapFromGlobal(mouseEvent->pos());
+
+        posX = mouse_pos.x() <= 0 ? 0 : mouse_pos.x();
+//        if (mouse_pos.x() <= 0 )
+//        {
+//            posX = 0;
+//        }
+//        else
+//        {
+//            posX = mouse_pos.x();
+//        }
+    }
+
+    if (event->type() == QEvent::MouseMove)
+    {
+        paintExperimentalSegments();
+
+        // If the cursor is in the central area we draw a line
+        if (posX >= 0 && posX <=ui->lPanelFixations->width() )
+        {
+            QPixmap pixmap = *this->p_over_display_label->pixmap();
+            QPainter painter(&pixmap);
+            QPen myPen(Qt::green, 1, Qt::SolidLine);
+            painter.drawLine(posX,0,posX,pixmap.height());
+            this->p_over_display_label->setPixmap(pixmap);
+            painter.end();
+        }
+
+        // Convert the posX value to the real one in the file:
+        int file_posX = _displayStartIndex + (posX * _displayIncrement);
+
+        if (_fixInAction == Consts::FIX_OFF)
+        {
+            // Paint the  FRom/to labels
+            ui->lFrom->clear();
+            ui->lFrom->setText(QString::number(file_posX));
+        }
+        else
+        {
+            // If we are manipulating a fixation
+            paintFixations();
+            if (_fixStartPos >= file_posX)
+            {
+                // If "to" is smaller than "from", do nothing
+                file_posX = 0;
+            }
+            else
+            {
+                // "from" is bigger than "to". Paint rectangle
+               paintCurrentFixation(_fixStartPos, file_posX);
+               paintCurrentFixationOnList(_fixStartPos, file_posX);
+            }
+
+            ui->lTo->clear();                   // Change "lTo" label
+            ui->lTo->setText(QString::number(file_posX));
+        }
+    }
+
+    if (event->type() == QEvent::MouseButtonRelease)
+    {
+         _fixInAction = Consts::FIX_OFF;
+         int fixStopPos = _displayStartIndex + (posX * _displayIncrement);
+         ui->lTo->setText("0");
+         // function for create/ merge/ delete depending in the action.
+         fncManipulateFix(_fixStartPos, fixStopPos);
+         _fixStartPos = -1;
+    }
+
+    if (event->type() == QEvent::MouseButtonPress)
+    {
+       _fixInAction = Consts::FIX_ON;
+       // store start value
+       _fixStartPos = _displayStartIndex + (posX * _displayIncrement);
+       statusBar()->showMessage(QString("Mouse clicked on ") + obj->objectName());
+    }
+    return false;
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+   //QMainWindow::resizeEvent(event);
+   int w = ui->lPanelMissingData->width();
+   int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
+
+   QPoint new_pos = ui->lPanelMissingData->mapToGlobal(QPoint(0,0));
+   this->p_over_display_label->setGeometry(new_pos.x(),
+                                           new_pos.y(),
+                                           w,
+                                           h);
+
+   this->p_over_display_label->raise();
+   statusBar()->showMessage("Resized");
+   paintAll();
+}
+
 
 MainWindow::~MainWindow()
 {
@@ -325,7 +436,7 @@ void MainWindow::fncManipulateFix(int from, int to)
                 fixAllM = GPFixationOperations::fncDeleteFixations(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
                 break;
             case Consts::AC_MERGE:
-                fixAllM = GPFixationOperations::fncMergeFixations(fixAllM,roughM, _hz,  _secsFragment,  _currentFragment, from,  to, _expWidth, _expHeight, _degPerPixel);
+                fixAllM = GPFixationOperations::fncMergeFixations(fixAllM, roughM, _hz,  _secsFragment,  _currentFragment, from,  to, _expWidth, _expHeight, _degPerPixel);
                 break;
             case Consts::AC_SMOOTH_PURSUIT:
                 fixAllM = GPFixationOperations::fncSmoothPursuitFixation(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
@@ -409,7 +520,7 @@ void MainWindow::paintExperimentalSegments(){
 
     QPixmap pixmap2(this->p_over_display_label->width(), this->p_over_display_label->height());
     pixmap2.fill(Qt::transparent);
-
+    //pixmap2.fill(Qt::white);
     if (!experimentalSegmentsM.is_empty())
     {
         QPainter painter(&pixmap2);
@@ -958,10 +1069,8 @@ void MainWindow::fncPress_bAcceptEstimation(){
     if (!p_smoothM->is_empty()) GPMatrixFunctions::saveFile((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
     if (!p_fixAllM->is_empty()) GPMatrixFunctions::saveFile((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
-    //DOCKui->dockWidgetEstimation->hide();
-    qApp->processEvents();
-    //DOCKui->dockWidgetMainButtons->show();
-    //this->resize(this->_maximised_size);
+    ui->stackedWidget->setCurrentWidget(ui->page_manual);
+
     paintSmoothData();
     paintFixations();
 
@@ -1152,132 +1261,6 @@ void MainWindow::fncPress_bExecuteManual(int from, int to)
 }
 
 
-/**
-  *        MOUSE EVENTS
-  */
-
-// When we click, we start an action.
-void MainWindow::mousePressEvent( QMouseEvent *e )
-{
-   _fixInAction = Consts::FIX_ON;
-   // store start value
-   int startIndex = ((_currentFragment-1) * _secsFragment * _hz);
-   QPoint mouse_pos = ui->lPanelFixations->mapFromGlobal(e->pos());
-   _fixStartPos = startIndex + (mouse_pos.x() * _displayIncrement);
-
-}
-
-// When we move the mouse and we are executing an action, we paint the fixation!
-void MainWindow::mouseMoveEvent( QMouseEvent *e ){
-
-    QPoint mouse_pos = ui->lPanelFixations->mapFromGlobal(e->pos());
-
-    int posX = -1;
-    if (mouse_pos.x() <= 0 ){
-        posX = 0;
-    }else{
-        posX = mouse_pos.x();
-    }
-
-
-
-
-    paintExperimentalSegments();
-
-    // If the cursor is in the central area we draw a line
-    if (posX >= 0 && posX <=ui->lPanelFixations->width() )
-    {
-        QPixmap pixmap = *this->p_over_display_label->pixmap();
-        QPainter painter(&pixmap);
-        //QPen myPen(_previous_colour, 1, Qt::SolidLine);
-        //painter.drawLine(_previous_mouse_posX,0,_previous_mouse_posX,pixmap.height());
-        QPen myPen(Qt::green, 1, Qt::SolidLine);
-        painter.drawLine(posX,0,posX,pixmap.height());
-        this->p_over_display_label->setPixmap(pixmap);
-        //update previous values
-        //_previous_colour = pixmap.toImage().pixel(posX,1);
-        //_previous_mouse_posX = posX;
-        painter.end();
-    }
-
-
-    // Convert the posX value to the real one in the file:
-
-    posX = _displayStartIndex + (posX * _displayIncrement);
-
-    std::ostringstream o;
-    o << posX;
-
-    if (_fixInAction == Consts::FIX_OFF){ // Paint the  FRom/to labels
-        ui->lFrom->clear();
-        ui->lFrom->setText(o.str().c_str());
-    }else{    // If we are manipulating a fixation
-        if (_fixStartPos >= posX){ // If "to" is smaller than "from", do nothing
-
-            posX= 0;
-            paintFixations();
-
-        }else{   // "from" is bigger than "to". Paint rectangle
-
-            paintFixations();
-           paintCurrentFixation(_fixStartPos, posX);
-           paintCurrentFixationOnList(_fixStartPos, posX);
-        }
-
-        ui->lTo->clear();                   // Change "lTo" label
-        ui->lTo->setText(o.str().c_str());
-
-        // Paint a rectangle
-    }
-}
-
-
-void MainWindow::mouseReleaseEvent(QMouseEvent *e)
-{
-     _fixInAction = Consts::FIX_OFF;
-     QPoint mouse_pos = ui->lPanelFixations->mapFromGlobal(e->pos());
-
-     int posX = -1;
-     if (mouse_pos.x() <= 0 ){
-         posX = 0;
-     }
-     else{
-         posX = mouse_pos.x(); //it can go over the limit, to allow fixations to cross the border
-     }
-     posX = _displayStartIndex + (posX * _displayIncrement);
-     int fixStopPos = posX;
-     ui->lTo->clear();
-     ui->lTo->setText("0");
-
-     // function for create/ merge/ delete depending in the action.
-     fncManipulateFix(_fixStartPos, fixStopPos);
-
-     _fixStartPos = -1;
-
-}
-
-void MainWindow::mouseDoubleClickEvent(QMouseEvent *e)
-{
-    Q_UNUSED(e)
-     // cout << "mouse double clinck!!" << endl;
-}
-
-void MainWindow::resizeEvent(QResizeEvent* event)
-{
-   QMainWindow::resizeEvent(event);
-    //now resize over display label
-   int x = ui->centralWidget->x() + ui->lPanelMissingData->geometry().x();
-   int y = ui->centralWidget->y() + ui->lPanelMissingData->geometry().y();
-
-   QPoint p(x,y);
-   int w = ui->lPanelMissingData->width();
-   int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
-
-   this->p_over_display_label->setGeometry(p.x(), p.y(), w, h);
-   this->p_over_display_label->raise();
-   paintAll();
-}
-
 
 /**
   *     MENU EVENTS
@@ -1285,18 +1268,12 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
 void MainWindow::fncPress_subMenuDetectFixations()
 {
-    //DOCKui->dockWidgetMainButtons->hide();
-    qApp->processEvents();
-    //DOCKui->dockWidgetEstimation->show();
-    //this->resize(this->_maximised_size);
+    ui->stackedWidget->setCurrentWidget(ui->page_auto);
 }
 
 void MainWindow::fncPress_subMenuManualEditing()
 {
-    //DOCKui->dockWidgetEstimation->hide();
-    qApp->processEvents();
-    //DOCKui->dockWidgetMainButtons->show();
-    //this->resize(this->_maximised_size);
+    ui->stackedWidget->setCurrentWidget(ui->page_manual);
 }
 
 void MainWindow::fncPress_subMenuDialogConfig()

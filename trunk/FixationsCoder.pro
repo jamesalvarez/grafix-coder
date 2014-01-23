@@ -36,7 +36,8 @@ SOURCES += main.cpp \
     DialogVisualization.cpp \
     DialogVisualizationSegments.cpp \
     MainWindow.cpp \
-    DialogSaveNewConfiguration.cpp
+    DialogSaveNewConfiguration.cpp \
+    MainWindow2.cpp
 
 HEADERS  += \
     MyConstants.h \
@@ -63,7 +64,8 @@ HEADERS  += \
     DialogVisualization.h \
     DialogVisualizationSegments.h \
     MainWindow.h \
-    DialogSaveNewConfiguration.h
+    DialogSaveNewConfiguration.h \
+    MainWindow2.h
 
 FORMS    += \
     DialogTestSmoothParameters.ui \
@@ -83,7 +85,8 @@ FORMS    += \
     DialogVisualization.ui \
     DialogVisualizationSegments.ui \
     MainWindow.ui \
-    DialogSaveNewConfiguration.ui
+    DialogSaveNewConfiguration.ui \
+    MainWindow2.ui
 
 
 INCLUDEPATH += $$PWD/TRUNCATED_KERNEL_BF
