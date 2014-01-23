@@ -21,7 +21,7 @@
 #include "DialogSaveNewConfiguration.h"
 
 #include <QProgressDialog>
-#include <QtWidgets/QMainWindow>
+#include <QMainWindow>
 #include <QtGui>
 #include <QtWidgets/QWidget>
 #include <QMutex>
@@ -136,11 +136,8 @@ private:
     void paintClear();
 
 protected:
-    void  mousePressEvent( QMouseEvent * );
-    void  mouseMoveEvent( QMouseEvent * );
-    void  mouseReleaseEvent( QMouseEvent * );
-    void  mouseDoubleClickEvent(QMouseEvent *e);
     void  resizeEvent(QResizeEvent* event);
+    bool  eventFilter(QObject *obj, QEvent *event);
 
 public slots:
     void fncChange_sInterpolation();
@@ -197,6 +194,8 @@ public slots:
     void fncPress_bInterpolate();
     void fncPress_bSmooth();
     void fncPress_bEstimateFixations();
+
+
 
 };
 

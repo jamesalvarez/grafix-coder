@@ -93,7 +93,10 @@ mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int
     return fixAllM;
 }
 
-mat GPFixationOperations::fncDeleteFixations(mat fixAllM, int hz, int secsSegment,int segment, int from, int to){
+mat GPFixationOperations::fncDeleteFixations(mat fixAllM, int hz, int secsSegment,int segment, int from, int to)
+{
+
+    if (fixAllM.n_rows == 0) return fixAllM;
 
     if (from >= 0 && fixAllM.n_rows >0) {
         int startIndexSegment = ((segment-1) * secsSegment * hz);
@@ -143,8 +146,9 @@ mat GPFixationOperations::fncDeleteFixations(mat fixAllM, int hz, int secsSegmen
 }
 
 
-mat GPFixationOperations::fncSmoothPursuitFixation(mat fixAllM, int hz, int secsSegment,int segment, int from, int to){
-
+mat GPFixationOperations::fncSmoothPursuitFixation(mat fixAllM, int hz, int secsSegment,int segment, int from, int to)
+{
+    if (fixAllM.n_rows == 0) return fixAllM;
     // Identify the selected fixations and flag them as smooth pursuit
     if (from >= 0) {
         int startIndexSegment = ((segment-1) * secsSegment * hz);
@@ -187,7 +191,9 @@ mat GPFixationOperations::fncSmoothPursuitFixation(mat fixAllM, int hz, int secs
 
 }
 
-mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to, int expWidth, int expHeight, double degPerPixel){
+mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to, int expWidth, int expHeight, double degPerPixel)
+{
+    if (fixAllM.n_rows == 0) return fixAllM;
     if (from >= 0) {
         int startIndexSegment = ((segment-1) * secsSegment * hz);
         int auxIndex = 0;
