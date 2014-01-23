@@ -1248,8 +1248,130 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuProject">
+    <property name="title">
+     <string>Project</string>
+    </property>
+    <addaction name="actionNew_Open"/>
+    <addaction name="actionConfiguration"/>
+    <addaction name="actionClose"/>
+   </widget>
+   <widget class="QMenu" name="menuOperations">
+    <property name="title">
+     <string>Operations</string>
+    </property>
+    <widget class="QMenu" name="menuVisualisations">
+     <property name="title">
+      <string>Visualisations</string>
+     </property>
+     <addaction name="actionCurrent_Fragment"/>
+     <addaction name="actionSegment"/>
+    </widget>
+    <addaction name="menuVisualisations"/>
+    <addaction name="actionSmoothing"/>
+    <addaction name="actionRecalculate_Fixations"/>
+    <addaction name="separator"/>
+    <addaction name="actionAuto_Fixation_Detection"/>
+    <addaction name="actionManual_Fixation_Detection"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Error_Log"/>
+   </widget>
+   <widget class="QMenu" name="menuAnalysis">
+    <property name="title">
+     <string>Analysis</string>
+    </property>
+    <addaction name="actionShow_Statistics"/>
+    <addaction name="actionHeat_Map"/>
+    <addaction name="actionExport_Data"/>
+   </widget>
+   <widget class="QMenu" name="menuConfiguration">
+    <property name="title">
+     <string>Configuration</string>
+    </property>
+    <addaction name="actionAdjust_Parameters"/>
+    <addaction name="actionChange_Configuration"/>
+   </widget>
+   <addaction name="menuProject"/>
+   <addaction name="menuOperations"/>
+   <addaction name="menuAnalysis"/>
+   <addaction name="menuConfiguration"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionAdjust_Parameters">
+   <property name="text">
+    <string>Adjust Parameters</string>
+   </property>
+  </action>
+  <action name="actionChange_Configuration">
+   <property name="text">
+    <string>Change Configuration</string>
+   </property>
+  </action>
+  <action name="actionShow_Statistics">
+   <property name="text">
+    <string>Statistics</string>
+   </property>
+  </action>
+  <action name="actionHeat_Map">
+   <property name="text">
+    <string>Heat Map</string>
+   </property>
+  </action>
+  <action name="actionCurrent_Fragment">
+   <property name="text">
+    <string>Current Fragment</string>
+   </property>
+  </action>
+  <action name="actionSegment">
+   <property name="text">
+    <string>Segment</string>
+   </property>
+  </action>
+  <action name="actionSmoothing">
+   <property name="text">
+    <string>Smoothing</string>
+   </property>
+  </action>
+  <action name="actionRecalculate_Fixations">
+   <property name="text">
+    <string>Recalculate Fixations</string>
+   </property>
+  </action>
+  <action name="actionAuto_Fixation_Detection">
+   <property name="text">
+    <string>Auto Fixation Detection</string>
+   </property>
+  </action>
+  <action name="actionManual_Fixation_Detection">
+   <property name="text">
+    <string>Manual Fixation Detection</string>
+   </property>
+  </action>
+  <action name="actionNew_Open">
+   <property name="text">
+    <string>New / Open</string>
+   </property>
+  </action>
+  <action name="actionExport_Data">
+   <property name="text">
+    <string>Export Data</string>
+   </property>
+  </action>
+  <action name="actionShow_Error_Log">
+   <property name="text">
+    <string>Show Error Log</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="actionConfiguration">
+   <property name="text">
+    <string>Configuration</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
