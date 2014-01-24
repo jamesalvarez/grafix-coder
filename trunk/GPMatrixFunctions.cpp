@@ -126,28 +126,27 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
      return (*_progress_dialog).wasCanceled();
  }
 
- void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, QString settingsPath, GPMatrixProgressBar &gpProgressBar)
+ void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar)
  {
       gpProgressBar.beginProcessing("Estimating Fixations",100);
-      estimateFixations(RoughM,SmoothM,AutoFixAllM,settingsPath);
+      estimateFixations(RoughM,SmoothM,AutoFixAllM,settingsLoader);
       gpProgressBar.endProcessing();
  }
 
- void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, QString settingsPath)
+ void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader)
  {
     if (SmoothM.is_empty())
     {
          return;// If the data is not smoothed we don't allow to estimate fixations.
     }
 
-
     //TODO check if velocity is calculated.
-    GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsPath);
+    GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
     //GPMatrixFunctions::saveFile(SmoothM, _participant->GetPath(GrafixParticipant::SMOOTH));
 
 
     // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM
-    GPMatrixFunctions::fncCalculateFixations(&AutoFixAllM, &RoughM, &SmoothM, settingsPath);
+    GPMatrixFunctions::fncCalculateFixations(&AutoFixAllM, &RoughM, &SmoothM, settingsLoader);
 
     //we cannot work with less than one fixation
     if(AutoFixAllM.n_rows < 1) return;
@@ -166,16 +165,16 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
 
     //TODO Check if fixations found or next part crasheds
 
-    QSettings settings(settingsPath, QSettings::IniFormat);
-    bool cb_displacement = settings.value(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool();
-    bool cb_velocityVariance = settings.value(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG).toBool();
-    bool cb_minFixation = settings.value(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG).toBool();
-    double sliderVelocityVariance = settings.value(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL).toDouble();
-    double sliderMinFixation = settings.value(Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toDouble();
+
+    bool cb_displacement = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool();
+    bool cb_velocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG).toBool();
+    bool cb_minFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG).toBool();
+    double sliderVelocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL).toDouble();
+    double sliderMinFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toDouble();
 
     // Merge all fixations with a displacement lower than the displacement threshold
     if (cb_displacement)
-        GPMatrixFunctions::fncMergeDisplacementThreshold(&RoughM, &SmoothM, &AutoFixAllM,  settingsPath);
+        GPMatrixFunctions::fncMergeDisplacementThreshold(&RoughM, &SmoothM, &AutoFixAllM,  settingsLoader);
 
 
     // Remove all fixations below the minimun variance
@@ -706,26 +705,16 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
  }
 
 
- void GPMatrixFunctions::fncCalculateVelocity(mat *p_smoothM, QString settingsPath)
+ void GPMatrixFunctions::fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader)
  {
-     QSettings settings(settingsPath, QSettings::IniFormat);
 
-     if(!settings.contains(Consts::SETTING_EXP_WIDTH) |
-        !settings.contains(Consts::SETTING_EXP_HEIGHT) |
-        !settings.contains(Consts::SETTING_DEGREE_PER_PIX) |
-        !settings.contains(Consts::SETTING_HZ) |
-        !settings.contains(Consts::SETTING_INTERP_VELOCITY_THRESHOLD))
-     {
-         //TODO: Handle error
-         return;
-     }
 
      int invalidSamples      = Consts::INVALID_SAMPLES;
-     int expWidth            = settings.value(Consts::SETTING_EXP_WIDTH).toInt();
+     int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
      //int expHeight           = settings.value(MyConstants::SETTING_EXP_HEIGHT).toInt();
-     double velocity         = settings.value(Consts::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
-     double degreePerPixel   = settings.value(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-     int hz                  = settings.value(Consts::SETTING_HZ).toInt();
+     double velocity         = settingsLoader.LoadSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
+     double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+     int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 
 
      mat aux;
@@ -764,25 +753,15 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
      }
  }
 
- void GPMatrixFunctions::fncCalculateFixations(mat *p_fixAllM, mat *p_roughM, mat *p_smoothM, QString settingsPath)
+ void GPMatrixFunctions::fncCalculateFixations(mat *p_fixAllM, mat *p_roughM, mat *p_smoothM, GrafixSettingsLoader settingsLoader)
  {
-     QSettings settings(settingsPath, QSettings::IniFormat);
 
-     if(!settings.contains(Consts::SETTING_EXP_WIDTH) |
-        !settings.contains(Consts::SETTING_EXP_HEIGHT) |
-        !settings.contains(Consts::SETTING_DEGREE_PER_PIX) |
-        !settings.contains(Consts::SETTING_HZ) |
-        !settings.contains(Consts::SETTING_INTERP_VELOCITY_THRESHOLD))
-     {
-         //TODO: Handle error
-         return;
-     }
 
      //int invalidSamples      = MyConstants::INVALID_SAMPLES;
-     int expWidth            = settings.value(Consts::SETTING_EXP_WIDTH).toInt();
-     int expHeight           = settings.value(Consts::SETTING_EXP_HEIGHT).toInt();
+     int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
+     int expHeight           = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
      //double velocity         = settings.value(MyConstants::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
-     double degreePerPixel   = settings.value(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+     double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      //int hz                  = settings.value(MyConstants::SETTING_HZ).toInt();
 
      //clear fixall matrix
@@ -877,27 +856,16 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
 
  }
 
- void GPMatrixFunctions::fncMergeDisplacementThreshold(mat *p_roughM, mat *p_smoothM, mat *p_fixAllM, QString settingsPath){
+ void GPMatrixFunctions::fncMergeDisplacementThreshold(mat *p_roughM, mat *p_smoothM, mat *p_fixAllM, GrafixSettingsLoader settingsLoader){
      if (p_fixAllM->n_rows < 3) return;
-     QSettings settings(settingsPath, QSettings::IniFormat);
-
-     if(!settings.contains(Consts::SETTING_EXP_WIDTH) |
-        !settings.contains(Consts::SETTING_EXP_HEIGHT) |
-        !settings.contains(Consts::SETTING_DEGREE_PER_PIX) |
-        !settings.contains(Consts::SETTING_HZ) |
-        !settings.contains(Consts::SETTING_INTERP_VELOCITY_THRESHOLD))
-     {
-         //TODO: Handle error
-         return;
-     }
 
      //int invalidSamples      = MyConstants::INVALID_SAMPLES;
-     int expWidth            = settings.value(Consts::SETTING_EXP_WIDTH).toInt();
-     int expHeight           = settings.value(Consts::SETTING_EXP_HEIGHT).toInt();
+     int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
+     int expHeight           = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
      //double velocity         = settings.value(MyConstants::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
-     double degreePerPixel   = settings.value(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-     int hz                  = settings.value(Consts::SETTING_HZ).toInt();
-     double displacement     = settings.value(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble();
+     double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+     int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
+     double displacement     = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble();
 
      double dur, averageX, averageY, variance, pupilDilation, xDist1, yDist1,xDist2, yDist2;
 

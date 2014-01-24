@@ -48,10 +48,12 @@ void DialogEstimateFixations::fncPress_bAccept(){
 
     GPMatrixProgressBar gpProgress(this);
 
+    GrafixSettingsLoader settingsLoader((*_project)); //uses active configuration by default
+
     GPMatrixFunctions::estimateFixations((*p_roughM),
                                          (*p_smoothM),
                                          (*p_autoFixAllM),
-                                         _project->GetProjectSettingsPath(),
+                                         settingsLoader,
                                          gpProgress);
 
     if (GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)) &

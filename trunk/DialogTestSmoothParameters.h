@@ -29,14 +29,13 @@ public:
 private:
     GrafixProject *p_project;
     const GrafixParticipant *p_participant;
-    GrafixConfiguration _configuration;
     Ui::DialogTestSmoothParameters *ui;
     bool _data_loaded;
     const mat *p_original_roughM;
     mat _roughM;
     mat _smoothM;
     mat _fixAllM;
-    QString _temp_settings;
+    QString _temp_settings_path;
     int _expHeight;
     int _expWidth;
     int _hz;

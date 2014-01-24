@@ -49,7 +49,7 @@ DialogTestSmoothParameters::~DialogTestSmoothParameters()
 
 void DialogTestSmoothParameters::fncSetTempSetting(QString setting, QVariant value)
 {
-    p_project->SetProjectSetting(setting, _configuration, value, _temp_settings);
+    p_project->SetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION(), value, _temp_settings_path);
 }
 
 void DialogTestSmoothParameters::fncChange_sDisplacement()
@@ -183,7 +183,7 @@ void DialogTestSmoothParameters::apply()
     {
         //overwrite;
         QFile(p_participant->GetProject()->GetProjectSettingsPath()).remove();
-        QFile::copy(_temp_settings, p_participant->GetProject()->GetProjectSettingsPath());
+        QFile::copy(_temp_settings_path, p_participant->GetProject()->GetProjectSettingsPath());
     }
 }
 
@@ -197,72 +197,73 @@ void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartI
 {
     this->p_participant = &p;
     this->p_project = p.GetProject();
-    this->_configuration = Consts::ACTIVE_CONFIGURATION();
-    _temp_settings = "tempsettings";
-    QFile(_temp_settings).remove();
-    QFile::copy(p.GetProject()->GetProjectSettingsPath(),_temp_settings);
+    _temp_settings_path = "tempsettings";
+    QFile(_temp_settings_path).remove();
+    QFile::copy(p.GetProject()->GetProjectSettingsPath(),_temp_settings_path);
 
-    this->_expHeight = p.GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, _configuration).toInt();
-    this->_expWidth = p.GetProject()->GetProjectSetting(Consts::SETTING_EXP_WIDTH, _configuration).toInt();
-    this->_hz = p.GetProject()->GetProjectSetting(Consts::SETTING_HZ, _configuration).toInt();
+    GrafixSettingsLoader loader(_temp_settings_path);
 
-    int secsFragment = p.GetProject()->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, _configuration).toInt();
+    this->_expHeight = loader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
+    this->_expWidth = loader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
+    this->_hz = loader.LoadSetting(Consts::SETTING_HZ).toInt();
+
+    int secsFragment = loader.LoadSetting(Consts::SETTING_SECS_FRAGMENT).toInt();
 
     this->_secsFragmentHz = secsFragment * _hz;
     this->_displayIncrement = (double) _secsFragmentHz / ui->lPanelRough->width();
-    this->_degreePerPixel = p.GetProject()->GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, _configuration).toDouble();
+    this->_degreePerPixel = loader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
 
     ui->sliderSigmaS->setMinimum(1);
     ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
     ui->sliderSigmaS->setValue(
-                p.GetProject()->GetProjectSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_S, _configuration).toDouble());
+                loader.LoadSetting(
+                        Consts::SETTING_SMOOTHING_SIGMA_S).toDouble());
 
     ui->sliderSigmaR->setMinimum(1);
     ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
     ui->sliderSigmaR->setValue(
-                p.GetProject()->GetProjectSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_R, _configuration).toDouble());
+                loader.LoadSetting(
+                        Consts::SETTING_SMOOTHING_SIGMA_R).toDouble());
 
     ui->sliderInterpolation->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_LATENCY);
     ui->sliderInterpolation->setMinimum(0);
     ui->sliderInterpolation->setValue(
-                p.GetProject()->GetProjectSetting(
-                        Consts::SETTING_INTERP_LATENCY, _configuration).toInt());
+                loader.LoadSetting(
+                        Consts::SETTING_INTERP_LATENCY).toInt());
 
     ui->sliderMinFixation->setMinimum(0);
     ui->sliderMinFixation->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL);
     ui->sliderMinFixation->setValue(
-                p.GetProject()->GetProjectSetting(
-                        Consts::SETTING_POSTHOC_MIN_DURATION_VAL, _configuration).toInt());
+                loader.LoadSetting(
+                        Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toInt());
 
     ui->sliderVelocity->setMinimum(0);
     ui->sliderVelocity->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD);
     ui->sliderVelocity->setValue(
-                p.GetProject()->GetProjectSetting(
-                        Consts::SETTING_INTERP_VELOCITY_THRESHOLD, _configuration).toInt());
+                loader.LoadSetting(
+                        Consts::SETTING_INTERP_VELOCITY_THRESHOLD).toInt());
 
     ui->sliderVelocityVariance->setMinimum(0);
     ui->sliderVelocityVariance->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL);
     ui->sliderVelocityVariance->setValue(
-                (int)(p.GetProject()->GetProjectSetting(
-                        Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, _configuration).toDouble() * 100));
+                (int)(loader.LoadSetting(
+                        Consts::SETTING_POSTHOC_LIMIT_RMS_VAL).toDouble() * 100));
 
     ui->sliderDisplacement->setMinimum(0);
     ui->sliderDisplacement->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL);
     ui->sliderDisplacement->setValue(
-                (int)(p.GetProject()->GetProjectSetting(
-                          Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, _configuration).toDouble() * 100));
+                (int)(loader.LoadSetting(
+                          Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble() * 100));
 
     ui->sliderDisplacInterpolate->setMinimum(0);
     ui->sliderDisplacInterpolate->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT);
     ui->sliderDisplacInterpolate->setValue(
-                (int)(p.GetProject()->GetProjectSetting(
-                          Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, _configuration).toDouble() * 100));
+                (int)(loader.LoadSetting(
+                          Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble() * 100));
 
-    ui->cb_displacement->setChecked(p.GetProject()->GetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG, _configuration).toBool());
-    ui->cb_minFixation->setChecked(p.GetProject()->GetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG, _configuration).toBool());
-    ui->cb_velocityVariance->setChecked(p.GetProject()->GetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG, _configuration).toBool());
+    ui->cb_displacement->setChecked(loader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool());
+    ui->cb_minFixation->setChecked(loader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG).toBool());
+    ui->cb_velocityVariance->setChecked(loader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG).toBool());
     this->p_participant = &p;
     this->p_original_roughM = &RoughM;
 
@@ -536,8 +537,10 @@ void DialogTestSmoothParameters::fncSmoothData()
 {
     this->_displayIncrement = (double) _secsFragmentHz / ui->lPanelRough->width();
     if (!_data_loaded) return;
-    GPMatrixFunctions::smoothRoughMatrixFBF(_roughM, this->p_project->GetProjectSettingsPath(), _configuration, &_smoothM);
-    GPMatrixFunctions::estimateFixations(_roughM,_smoothM,_fixAllM,_temp_settings);
+
+    GrafixSettingsLoader settingsLoader(_temp_settings_path);
+    GPMatrixFunctions::smoothRoughMatrixFBF(_roughM, this->_temp_settings_path, Consts::ACTIVE_CONFIGURATION(), &_smoothM);
+    GPMatrixFunctions::estimateFixations(_roughM,_smoothM,_fixAllM, settingsLoader );
     paintRoughData();
     paintSmoothData();
     paintFixations();
