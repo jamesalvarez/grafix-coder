@@ -13,7 +13,7 @@ DialogPlot::~DialogPlot()
     delete ui;
 }
 
-void DialogPlot::loadSpikeData(GrafixParticipant *p)
+void DialogPlot::loadSpikeData(const GrafixParticipant *p)
 {
     p_participant = p;
     GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
@@ -75,7 +75,7 @@ void DialogPlot::loadSpikeData(GrafixParticipant *p)
     ui->customPlot->replot();
 }
 
-void DialogPlot::loadRMSData(GrafixParticipant *p)
+void DialogPlot::loadRMSData(const GrafixParticipant *p)
 {
     p_participant = p;
     GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
@@ -106,7 +106,7 @@ void DialogPlot::loadRMSData(GrafixParticipant *p)
     ui->customPlot->replot();
 }
 
-void DialogPlot::loadDurData(GrafixParticipant *p)
+void DialogPlot::loadDurData(const GrafixParticipant *p)
 {
     p_participant = p;
     GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
@@ -150,7 +150,7 @@ void DialogPlot::loadDurData(GrafixParticipant *p)
     ui->customPlot->replot();
 }
 
-void DialogPlot::loadVelData(GrafixParticipant *p)
+void DialogPlot::loadVelData(const GrafixParticipant *p)
 {
     p_participant = p;
     GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));

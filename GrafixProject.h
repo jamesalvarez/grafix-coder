@@ -41,7 +41,7 @@ public:
     GrafixProject* GetProject() const;
 
     //Returns full path and file name for a given type of matrix
-    QString     GetMatrixPath(Consts::MATRIX_TYPE type);
+    QString     GetMatrixPath(Consts::MATRIX_TYPE type) const;
 
     //Returns participant.ini with full path
     QString     GetParticipantSettingsPath();
@@ -71,10 +71,10 @@ public:
     void        DeleteDirectory();
 
     //Gets directory name relative to project path
-    QString     GetRelativeDirectory();
+    QString     GetRelativeDirectory() const;
 
     //Gets full path to directory
-    QString     GetFullDirectory();
+    QString     GetFullDirectory() const;
 
     //Returns a path relative to the participant directory
     QString     GetRelativePath(QString path);
@@ -153,13 +153,19 @@ public:
     bool        LoadProjectSettings(QString d);
 
     //Returns full path to project.ini
-    QString     GetProjectSettingsPath();
-
-    //Sets a project.ini setting
-    QVariant    GetProjectSetting(QString setting, GrafixConfiguration configuration);
+    QString     GetProjectSettingsPath() const;
 
     //Gets a project.ini setting
+    QVariant    GetProjectSetting(QString setting, GrafixConfiguration configuration) const;
+
+    //Gets a project.ini setting froma  custom path
+    QVariant    GetProjectSetting(QString setting, GrafixConfiguration configuration, QString path) const;
+
+    //Sets a project.ini setting
     void        SetProjectSetting(QString setting, GrafixConfiguration configuration, QVariant value);
+
+    //Gets a setting from a custom settings file
+    void        SetProjectSetting(QString setting, GrafixConfiguration configuration, QVariant value, QString path);
 
     //Saves a new configuration
     void        SaveConfiguration(GrafixConfiguration configuration);

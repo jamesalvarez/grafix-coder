@@ -261,37 +261,34 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
     }*/
 }
 
- void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar)
+ void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const GrafixParticipant &participant, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar)
  {
-
-     gpProgressBar.beginProcessing("Smoothing Data...",50);
-     smoothRoughMatrixFBF(RoughM, SmoothM, settingsPath);
-     gpProgressBar.endProcessing();
-
+     gpProgressBar->beginProcessing("Smoothing Data...",50);
+     smoothRoughMatrixFBF(RoughM, participant, configuration, SmoothM);
+     gpProgressBar->endProcessing();
  }
 
- void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, mat &SmoothM, QString settingsPath)
+ void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const GrafixParticipant &participant, const GrafixConfiguration &configuration, mat *SmoothM)
  {
-      QSettings settings(settingsPath, QSettings::IniFormat);
-
-      if(!settings.contains(Consts::SETTING_SMOOTHING_USE_OTHER_EYE) ||
-              RoughM.is_empty())
+      if(RoughM.is_empty())
       {
           //TODO: Handle errors with user
           return;
       }
 
-      bool copy_eyes = settings.value(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
+      GrafixProject* project = participant.GetProject();
+
+      bool copy_eyes = project->GetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE,configuration).toBool();
 
       //can use defaults otherwise
-      int expWidth = settings.value(Consts::SETTING_EXP_WIDTH).toInt();
-      int expHeight = settings.value(Consts::SETTING_EXP_HEIGHT).toInt();
-      double sigma_r = settings.value(Consts::SETTING_SMOOTHING_SIGMA_R).toDouble();
-      double sigma_s = settings.value(Consts::SETTING_SMOOTHING_SIGMA_S).toDouble();
+      int expWidth = project->GetProjectSetting(Consts::SETTING_EXP_WIDTH,configuration).toInt();
+      int expHeight = project->GetProjectSetting(Consts::SETTING_EXP_HEIGHT,configuration).toInt();
+      double sigma_r = project->GetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_R,configuration).toDouble();
+      double sigma_s = project->GetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_S,configuration).toDouble();
 
       double Xsigma_r = sigma_r / expWidth;
       double Ysigma_r = sigma_r / expHeight;
-     SmoothM.zeros(RoughM.n_rows, 4);
+     SmoothM->zeros(RoughM.n_rows, 4);
 
      typedef Array_2D<double> image_type;
 
@@ -325,16 +322,15 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
      Image_filter::fast_LBF(image_X,image_X,sigma_s,Xsigma_r,false,&filtered_X,&filtered_X);
      Image_filter::fast_LBF(image_Y,image_Y,sigma_s,Ysigma_r,false,&filtered_Y,&filtered_Y);
 
-     SmoothM.zeros(RoughM.n_rows,10);
+     SmoothM->zeros(RoughM.n_rows,10);
      for (uword i = 0; i < RoughM.n_rows; ++i)
      {
-         SmoothM.at(i,0) = RoughM.at(i,0);
-         SmoothM.at(i,2) = filtered_X.at(i,0) * expWidth;
-         SmoothM.at(i,3) = filtered_Y.at(i,0) * expHeight;
+         SmoothM->at(i,0) = RoughM.at(i,0);
+         SmoothM->at(i,2) = filtered_X.at(i,0) * expWidth;
+         SmoothM->at(i,3) = filtered_Y.at(i,0) * expHeight;
      }
-
-
  }
+
  void GPMatrixFunctions::interpolateData(mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar)
  { // Here we interpolate the smoothed data and create an extra column
      // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]

@@ -18,14 +18,14 @@ class DialogPlot : public QDialog
 public:
     explicit DialogPlot(QWidget *parent = 0);
     ~DialogPlot();
-    void loadRMSData(GrafixParticipant *p);
-    void loadDurData(GrafixParticipant *p);
-    void loadVelData(GrafixParticipant *p);
-    void loadSpikeData(GrafixParticipant *p);
+    void loadRMSData(const GrafixParticipant *p);
+    void loadDurData(const GrafixParticipant *p);
+    void loadVelData(const GrafixParticipant *p);
+    void loadSpikeData(const GrafixParticipant *p);
     mat _fixAllM;
 private:
     Ui::DialogPlot *ui;
-    GrafixParticipant* p_participant;
+    const GrafixParticipant* p_participant;
 };
 
 #endif // DIALOGPLOT_H

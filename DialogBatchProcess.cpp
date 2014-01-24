@@ -76,9 +76,10 @@ void DialogBatchProcess::accept()
                         if (GPMatrixFunctions::readFile(roughM,p->GetMatrixPath(Consts::MATRIX_ROUGH)))
                         {
                             GPMatrixFunctions::smoothRoughMatrixFBF(roughM,
-                                                                 smoothM,
-                                                                 _project->GetProjectSettingsPath(),
-                                                                 gpProgress);
+                                                                    (*p),
+                                                                    Consts::ACTIVE_CONFIGURATION(),
+                                                                    &smoothM,
+                                                                    &gpProgress);
 
                             if (GPMatrixFunctions::saveFile(smoothM,p->GetMatrixPath(Consts::MATRIX_SMOOTH)))
                                 p->SetParticipantSetting(Consts::PSETTING_SMOOTHED_DATE, QDateTime::currentDateTime());

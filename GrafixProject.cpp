@@ -50,7 +50,7 @@ bool GrafixParticipant::Rename(QString new_name)
     return succeed;
 }
 
-QString GrafixParticipant::GetMatrixPath(Consts::MATRIX_TYPE type)
+QString GrafixParticipant::GetMatrixPath(Consts::MATRIX_TYPE type) const
 {
     switch (type)
     {
@@ -172,12 +172,12 @@ void GrafixParticipant::LoadSettings()
     this->Notes = settings.value(Consts::PSETTING_NOTES).toString();
 }
 
-QString GrafixParticipant::GetRelativeDirectory()
+QString GrafixParticipant::GetRelativeDirectory() const
 {
     return this->_participantdirectory;
 }
 
-QString GrafixParticipant::GetFullDirectory()
+QString GrafixParticipant::GetFullDirectory() const
 {
     return _project->GetFullDirectory() + "/" + this->_participantdirectory;
 }
@@ -369,21 +369,30 @@ QString GrafixProject::GetFullDirectory()
 }
 
 
-QString GrafixProject::GetProjectSettingsPath()
+QString GrafixProject::GetProjectSettingsPath() const
 {
     return _directory + "/project.ini";
 }
-
 void GrafixProject::SetProjectSetting(QString setting, GrafixConfiguration configuration, QVariant value)
 {
-    QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
+    SetProjectSetting(setting, configuration, value, this->GetProjectSettingsPath());
+}
+
+void GrafixProject::SetProjectSetting(QString setting, GrafixConfiguration configuration, QVariant value, QString path)
+{
+    QSettings settings(path, QSettings::IniFormat);
     settings.setValue(setting + "_" + QString::number(configuration.second), value);
     settings.setValue(Consts::SETTINGS_CONFIGURATION_CHANGED_DATE, QDateTime::currentDateTime());
 }
 
-QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration configuration)
+QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration configuration) const
 {
-     QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
+    return GetProjectSetting(setting,configuration,this->GetProjectSettingsPath());
+}
+
+QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration configuration, QString path) const
+{
+     QSettings settings(path, QSettings::IniFormat);
 
      QVariant value = settings.value(setting + "_" + QString::number(configuration.second));
 
