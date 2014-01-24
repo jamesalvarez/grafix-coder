@@ -54,10 +54,11 @@ void DialogSmoothXY::fncPress_bAccept(){
     _project->SetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE, _configuration, ui->cb_eyes->isChecked());
     GPMatrixProgressBar gpProgress(this);
 
-    GPMatrixFunctions::smoothRoughMatrixFBF((*p_roughM),
-                                         (*p_smoothM),
-                                         _project->GetProjectSettingsPath(),
-                                         gpProgress);
+    GPMatrixFunctions::smoothRoughMatrixFBF((*this->p_roughM),
+                                            (*this->_participant),
+                                              this->_configuration,
+                                              this->p_smoothM,
+                                              &gpProgress);
 
     if (GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
         _participant->SetParticipantSetting(Consts::PSETTING_SMOOTHED_DATE, QDateTime::currentDateTime());

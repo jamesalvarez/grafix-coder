@@ -27,6 +27,8 @@ void DialogConfig::loadData(GrafixProject *project)
                                                   _configuration).toInt();
     _degreePerPixel = _project->GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX,
                                                   _configuration).toDouble();
+    ui->cbEyes->setChecked(_project->GetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE,
+                                                  _configuration).toBool());
 
 
     ui->combo_HZ->addItem("50", Consts::HZ_50);
@@ -62,15 +64,9 @@ void DialogConfig::loadData(GrafixProject *project)
        ui->combo_secsSegment->setCurrentIndex(index);
     }
 
-    stringstream number;
-    number << _expWidth;
-    ui->tWidth->setText(number.str().c_str());
-    number.str("");
-    number << _expHeight;
-    ui->tHeight->setText(number.str().c_str());
-    number.str("");
-    number << _degreePerPixel;
-    ui->tDegreePerPixel->setText(number.str().c_str());
+    ui->tWidth->setText(QString::number(_expWidth));
+    ui->tHeight->setText(QString::number(_expHeight));
+    ui->tDegreePerPixel->setText(QString::number(_degreePerPixel));
 
 
     // Events
@@ -105,9 +101,9 @@ void DialogConfig::fncPress_bAccept()
     _project->SetProjectSetting(Consts::SETTING_HZ, _configuration, _hz);
     _project->SetProjectSetting(Consts::SETTING_EXP_WIDTH, _configuration, ui->tWidth->text().toInt());
     _project->SetProjectSetting(Consts::SETTING_EXP_HEIGHT, _configuration, ui->tHeight->text().toInt());
-    _project->SetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, _configuration, ui->tDegreePerPixel->text().toInt());
+    _project->SetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, _configuration, ui->tDegreePerPixel->text().toDouble());
     _project->SetProjectSetting(Consts::SETTING_SECS_FRAGMENT, _configuration, _secsSegment);
-
+    _project->SetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE, _configuration, ui->cbEyes->isChecked());
     this->close();
 }
 

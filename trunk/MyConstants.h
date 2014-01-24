@@ -147,6 +147,11 @@ public:
         MATRIX_SEGMENTS = 4
     };
 
+    static const QString HELP_CREATE_MODE;
+    static const QString HELP_MERGE_MODE;
+    static const QString HELP_PURSUIT_MODE;
+    static const QString HELP_DELETE_MODE;
+    static const QString HELP_STATUS_READY;
 
 };
 

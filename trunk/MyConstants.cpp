@@ -76,6 +76,12 @@ const QList<QString> Consts::LIST_CONFIGURATION_SETTINGS()
     ret.append(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG);
     return ret;
 }
+
+const QString Consts::HELP_CREATE_MODE = "Create mode: Drag across display to create fixations.";
+const QString Consts::HELP_MERGE_MODE = "Merge mode: Drag across existing fixations to merge.";
+const QString Consts::HELP_PURSUIT_MODE = "Smooth pursuit mode: Drag across a fixation to mark as smooth pursuit";
+const QString Consts::HELP_DELETE_MODE = "Delete mode: Drag across a fixation to delete it.";
+const QString Consts::HELP_STATUS_READY = "Status: Ready.";
 Consts::Consts(void)
 {
 }

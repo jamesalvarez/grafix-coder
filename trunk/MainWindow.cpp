@@ -1404,7 +1404,7 @@ void MainWindow::fncPress_subMenuAdjustParameters()
 {
     fncWaitForLoad();
     DialogTestSmoothParameters d;
-    d.loadData(roughM,_displayStartIndex,_displayStopIndex,p_active_participant);
+    d.loadData(roughM,_displayStartIndex,_displayStopIndex,(*p_active_participant),_configuration);
     d.exec();
     fncLoadSettings(Consts::ACTIVE_CONFIGURATION());  //reload parameters after adjustment
 }

@@ -24,10 +24,11 @@ public:
     explicit DialogTestSmoothParameters(QWidget *parent = 0);
     ~DialogTestSmoothParameters();
 
-    void loadData(const mat &RoughM, uword displayStartIndex, uword displayStopIndex, GrafixParticipant *p);
+    void loadData(const mat &RoughM, uword displayStartIndex, uword displayStopIndex, const GrafixParticipant &p, const GrafixConfiguration c);
 
 private:
-    GrafixParticipant *p_participant;
+    GrafixProject *p_project;
+    const GrafixParticipant *p_participant;
     GrafixConfiguration _configuration;
     Ui::DialogTestSmoothParameters *ui;
     bool _data_loaded;

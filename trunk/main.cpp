@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
         a.addLibraryPath(sDir+"../Frameworks/QtGui.framework");
 
         MainWindow2 w;
-        w.show();
+        w.showMaximized();
 
         return a.exec();
     }catch (...) {  // Catches all the exceptions, but it doesn't show a message.
