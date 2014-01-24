@@ -76,7 +76,7 @@ void DialogBatchProcess::accept()
                         if (GPMatrixFunctions::readFile(roughM,p->GetMatrixPath(Consts::MATRIX_ROUGH)))
                         {
                             GPMatrixFunctions::smoothRoughMatrixFBF(roughM,
-                                                                    (*p),
+                                                                    this->_project->GetProjectSettingsPath(),
                                                                     Consts::ACTIVE_CONFIGURATION(),
                                                                     &smoothM,
                                                                     &gpProgress);

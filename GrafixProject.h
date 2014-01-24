@@ -180,6 +180,7 @@ private:
     QList<GrafixConfiguration> _configurations;
     QList<GrafixParticipant> _participants;
     QString _directory;
+    GrafixConfiguration _active_configuration;
 
     //deletes all participant objects and clears list
     void cleanParticipants();
@@ -187,6 +188,7 @@ private:
     //Copies a configuration to a new slot
     void CopyConfiguration(GrafixConfiguration from, GrafixConfiguration to);
 };
+
 
 #endif // GRAFIXPROJECT_H
 

@@ -55,7 +55,7 @@ void DialogSmoothXY::fncPress_bAccept(){
     GPMatrixProgressBar gpProgress(this);
 
     GPMatrixFunctions::smoothRoughMatrixFBF((*this->p_roughM),
-                                            (*this->_participant),
+                                              this->_project->GetProjectSettingsPath(),
                                               this->_configuration,
                                               this->p_smoothM,
                                               &gpProgress);

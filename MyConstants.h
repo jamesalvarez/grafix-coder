@@ -4,6 +4,7 @@
 #include <QPair>
 #include <QString>
 #include <QList>
+#include <QVariant>
 
 typedef struct config { QString first;
                  int second;
@@ -123,8 +124,18 @@ public:
     static const QString SETTING_NUMBER_PARTICIPANTS;
     static const QString SETTING_LAST_SAVED;
 
+    static const int MAXSLIDER_SETTING_INTERP_LATENCY = 180;
+    static const int MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD = 50;
+    static const int MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT = 60;
+    static const int MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL = 60;
+    static const int MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL = 60;
+    static const int MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL = 200;
+    static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_S = 50;
+    static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_R = 100;
+
     static const GrafixConfiguration ACTIVE_CONFIGURATION();
     static const QList<QString> LIST_CONFIGURATION_SETTINGS();
+    static const QVariant DefaultSetting(QString setting);
 
     static const QString PSETTING_NAME;
     static const QString PSETTING_ROUGH_PATH;
