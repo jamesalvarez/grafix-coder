@@ -19,6 +19,7 @@
 using namespace arma;
 class GrafixParticipant;
 class GrafixProject;
+class GrafixSettingsLoader;
 //class GrafixConfiguration;
 
 class GPMatrixProgressBar
@@ -59,8 +60,8 @@ public:
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
 
-    static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
-    static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, QString settingsPath);
+    static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar);
+    static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
 
     //file operations
     static bool saveFile(mat &matrix, QString fileName);
@@ -71,12 +72,12 @@ public:
     //FicDurOperations
     static double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
     static double fncCalculateRMSRough(mat *p_aux, int expWidth, int expHeight, double degree_per_pixel);
-    static void fncCalculateVelocity(mat *p_smoothM, QString settingsPath);
-    static void fncCalculateFixations(mat *p_fixAllM, mat *p_roughM , mat *p_smoothM, QString settingsPath);
+    static void fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader);
+    static void fncCalculateFixations(mat *p_fixAllM, mat *p_roughM , mat *p_smoothM, GrafixSettingsLoader settingsLoader);
     static void fncRemoveUndetectedValuesRough(mat *p_a);
     static void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
     static void fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);
-    static void fncMergeDisplacementThreshold(mat *p_roughM,  mat *p_smoothM, mat *p_fixAllM, QString settingsPath);
+    static void fncMergeDisplacementThreshold(mat *p_roughM,  mat *p_smoothM, mat *p_fixAllM, GrafixSettingsLoader settingsLoader);
     static void fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
 
 private:

@@ -123,12 +123,12 @@ void DialogBatchProcess::accept()
                         if (GPMatrixFunctions::readFileSafe(SmoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH)) &&
                             GPMatrixFunctions::readFileSafe(RoughM, p->GetMatrixPath(Consts::MATRIX_ROUGH)))
                         {
+                            GrafixSettingsLoader settingsLoader((*_project));
 
-                           //TODO: Use partiipant settings
                             GPMatrixFunctions::estimateFixations(RoughM,
                                                                  SmoothM,
                                                                  AutoFixAllM,
-                                                                 _project->GetProjectSettingsPath(),
+                                                                 settingsLoader,
                                                                  gpProgress);
 
                             if (GPMatrixFunctions::saveFileSafe(SmoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH)) &
