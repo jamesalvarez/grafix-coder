@@ -37,7 +37,8 @@ SOURCES += main.cpp \
     DialogVisualizationSegments.cpp \
     MainWindow.cpp \
     DialogSaveNewConfiguration.cpp \
-    MainWindow2.cpp
+    MainWindow2.cpp \
+    GrafixSettingsLoader.cpp
 
 HEADERS  += \
     MyConstants.h \
@@ -65,7 +66,8 @@ HEADERS  += \
     DialogVisualizationSegments.h \
     MainWindow.h \
     DialogSaveNewConfiguration.h \
-    MainWindow2.h
+    MainWindow2.h \
+    GrafixSettingsLoader.h
 
 FORMS    += \
     DialogTestSmoothParameters.ui \

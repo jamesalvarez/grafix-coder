@@ -24,7 +24,7 @@ public:
     explicit DialogTestSmoothParameters(QWidget *parent = 0);
     ~DialogTestSmoothParameters();
 
-    void loadData(const mat &RoughM, uword displayStartIndex, uword displayStopIndex, const GrafixParticipant &p, const GrafixConfiguration c);
+    void loadData(const mat &RoughM, uword displayStartIndex, uword displayStopIndex, const GrafixParticipant &p);
 
 private:
     GrafixProject *p_project;
@@ -49,10 +49,14 @@ private:
     //Sets a project.ini setting
     void fncSetTempSetting(QString setting, QVariant value);
 
+    //Gets submatrix based on stop and start index
     void fncGetSubmat(uword displayStartIndex, uword displayStopIndex);
 
     //smooths and computes fixations on screen
     void fncSmoothData();
+
+    //repaints on resize
+    void resizeEvent(QResizeEvent *e);
 
     void paintRoughData();
     void paintSmoothData();

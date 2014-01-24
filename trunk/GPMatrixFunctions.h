@@ -4,6 +4,7 @@
 #include "MyConstants.h"
 #include "GrafixProject.h"
 #include "GPGeneralStaticLibrary.h"
+#include "GrafixSettingsLoader.h"
 
 #include <QtGui>
 #include <QtWidgets/QWidget>
@@ -55,8 +56,8 @@ public:
     //Replaces SmoothM with a smoothed version of RoughM
     static void interpolateData(mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
     static void smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
-    static void smoothRoughMatrixFBF(const mat &RoughM, const GrafixParticipant &participant, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
-    static void smoothRoughMatrixFBF(const mat &RoughM, const GrafixParticipant &participant, const GrafixConfiguration &configuration, mat *SmoothM);
+    static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
+    static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
 
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, QString settingsPath);

@@ -261,14 +261,14 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
     }*/
 }
 
- void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const GrafixParticipant &participant, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar)
+ void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar)
  {
      gpProgressBar->beginProcessing("Smoothing Data...",50);
-     smoothRoughMatrixFBF(RoughM, participant, configuration, SmoothM);
+     smoothRoughMatrixFBF(RoughM, path, configuration, SmoothM);
      gpProgressBar->endProcessing();
  }
 
- void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const GrafixParticipant &participant, const GrafixConfiguration &configuration, mat *SmoothM)
+ void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM)
  {
       if(RoughM.is_empty())
       {
@@ -276,15 +276,16 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
           return;
       }
 
-      GrafixProject* project = participant.GetProject();
+      GrafixSettingsLoader loader(path, configuration);
 
-      bool copy_eyes = project->GetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE,configuration).toBool();
 
-      //can use defaults otherwise
-      int expWidth = project->GetProjectSetting(Consts::SETTING_EXP_WIDTH,configuration).toInt();
-      int expHeight = project->GetProjectSetting(Consts::SETTING_EXP_HEIGHT,configuration).toInt();
-      double sigma_r = project->GetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_R,configuration).toDouble();
-      double sigma_s = project->GetProjectSetting(Consts::SETTING_SMOOTHING_SIGMA_S,configuration).toDouble();
+      bool copy_eyes = loader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
+
+
+      int expWidth = loader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
+      int expHeight = loader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
+      double sigma_r = loader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_R).toDouble();
+      double sigma_s = loader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_S).toDouble();
 
       double Xsigma_r = sigma_r / expWidth;
       double Ysigma_r = sigma_r / expHeight;

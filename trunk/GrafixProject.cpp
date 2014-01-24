@@ -259,7 +259,7 @@ QString GrafixParticipant::OpenAndCopyCSVFile(Consts::MATRIX_TYPE type, QWidget*
 
 GrafixProject::GrafixProject()
 {
-
+    _active_configuration = Consts::ACTIVE_CONFIGURATION();
 }
 
 GrafixProject::~GrafixProject()
@@ -385,6 +385,7 @@ void GrafixProject::SetProjectSetting(QString setting, GrafixConfiguration confi
     settings.setValue(Consts::SETTINGS_CONFIGURATION_CHANGED_DATE, QDateTime::currentDateTime());
 }
 
+
 QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration configuration) const
 {
     return GetProjectSetting(setting,configuration,this->GetProjectSettingsPath());
@@ -398,38 +399,7 @@ QVariant GrafixProject::GetProjectSetting(QString setting, GrafixConfiguration c
 
      if (value.isNull())
      {
-         if (setting == Consts::SETTING_HZ)
-             return QVariant(Consts::DEFAULT_SETTING_HZ);
-         else if (setting == Consts::SETTING_EXP_WIDTH)
-             return QVariant(Consts::DEFAULT_SETTING_EXP_WIDTH);
-         else if (setting == Consts::SETTING_EXP_HEIGHT)
-             return QVariant(Consts::DEFAULT_SETTING_EXP_HEIGHT);
-         else if (setting == Consts::SETTING_SECS_FRAGMENT)
-             return QVariant(Consts::DEFAULT_SETTING_SECS_FRAGMENT);
-         else if (setting == Consts::SETTING_DEGREE_PER_PIX)
-             return QVariant(Consts::DEFAULT_SETTING_DEGREE_PER_PIXEL);
-         else if (setting == Consts::SETTING_INTERP_LATENCY)
-             return QVariant(Consts::DEFAULT_SETTING_INTERP_LATENCY);
-         else if (setting == Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL)
-             return QVariant(Consts::DEFAULT_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL);
-         else if (setting == Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT)
-             return QVariant(Consts::DEFAULT_SETTING_INTERP_MAXIMUM_DISPLACEMENT);
-         else if (setting == Consts::SETTING_POSTHOC_MIN_DURATION_VAL)
-             return QVariant(Consts::DEFAULT_SETTING_POSTHOC_MIN_DURATION_VAL);
-         else if (setting == Consts::SETTING_INTERP_VELOCITY_THRESHOLD)
-             return QVariant(Consts::DEFAULT_SETTING_INTERP_VELOCITY_THRESHOLD);
-         else if (setting == Consts::SETTING_POSTHOC_LIMIT_RMS_VAL)
-             return QVariant(Consts::DEFAULT_SETTING_POSTHOC_LIMIT_RMS_VAL);
-         else if (setting == Consts::SETTING_SMOOTHING_USE_OTHER_EYE)
-             return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_USE_OTHER_EYE);
-         else if (setting == Consts::SETTING_SMOOTHING_SIGMA_R)
-             return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_R);
-         else if (setting == Consts::SETTING_SMOOTHING_SIGMA_S)
-             return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_S);
-         else if (setting == Consts::SETTING_CONFIGURATION)
-             return QVariant(false);
-         else
-             return value;
+         return Consts::DefaultSetting(setting);
      }
      return value;
 }

@@ -98,17 +98,21 @@ MainWindow2::MainWindow2(QWidget *parent) :
 
     //set slider maxes etc
     ui->sliderDisplacInterpolate->setMinimum(0);
-    ui->sliderDisplacInterpolate->setMaximum(60);
+    ui->sliderDisplacInterpolate->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT);
     ui->sliderDisplacement->setMinimum(0);
-    ui->sliderDisplacement->setMaximum(60);
+    ui->sliderDisplacement->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL);
     ui->sliderVelocityVariance->setMinimum(0);
-    ui->sliderVelocityVariance->setMaximum(60);
+    ui->sliderVelocityVariance->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL);
     ui->sliderVelocity->setMinimum(0);
-    ui->sliderVelocity->setMaximum(50);
-    ui->sliderInterpolation->setMaximum(180);
+    ui->sliderVelocity->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD);
+    ui->sliderInterpolation->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_LATENCY);
     ui->sliderInterpolation->setMinimum(0);
     ui->sliderMinFixation->setMinimum(0);
-    ui->sliderMinFixation->setMaximum(200);
+    ui->sliderMinFixation->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL);
+    ui->sliderSigmaR->setMinimum(1);
+    ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
+    ui->sliderSigmaS->setMinimum(1);
+    ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
 
     //start new label
     this->p_over_display_label = new QLabel(this);
@@ -1427,7 +1431,8 @@ void MainWindow2::fncPress_subMenuAdjustParameters()
 {
     fncWaitForLoad();
     DialogTestSmoothParameters d;
-    d.loadData(roughM,_displayStartIndex,_displayStopIndex,p_active_participant);
+    d.loadData(roughM,_displayStartIndex,_displayStopIndex,(*p_active_participant));
+
     d.exec();
     fncLoadSettings(Consts::ACTIVE_CONFIGURATION());  //reload parameters after adjustment
 }
