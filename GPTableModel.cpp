@@ -260,7 +260,6 @@ void GPTabelModel::NewProjectFromExistingDirectory(QString dir)
     }
     else
     {
-        //TODO: check for exisiting ini
         this->beginResetModel();
         _project->NewProjectFromExistingDirectory(dir,_parent);
         this->endResetModel();

@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
         MainWindow2 w;
         w.showMaximized();
-
+        if (!w.LoadProject()) return 1;
         return a.exec();
     }catch (...) {  // Catches all the exceptions, but it doesn't show a message.
         // If there is an error we delete settings.ini file to allow the app to start again.

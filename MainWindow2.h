@@ -56,7 +56,7 @@ class MainWindow2 : public QMainWindow
 public:
     explicit MainWindow2(QWidget *parent = 0);
     ~MainWindow2();
-
+    bool LoadProject();
 private:
 
     //actual matrices
@@ -112,7 +112,6 @@ private:
     double _velocity_view_zoom;
     //changing participant / display / editing
     void fncLoadSettings(GrafixConfiguration configuration);
-    void fncInitializeProject();
     void fncSetActiveParticipant(int position);
     void fncSetActiveParticipantThread(int position);
     void fncWaitForLoad();
@@ -203,7 +202,6 @@ public slots:
     void fncPress_bResetFixations();
     void fncPress_bResizeFixation();
     void fncPress_bNotes();
-    void fncPress_bAcceptEstimation();
     void fncPress_bInterpolate();
     void fncPress_bSmooth();
     void fncPress_bEstimateFixations();
