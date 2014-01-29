@@ -2,6 +2,142 @@
 
 #include "GPFixationOperations.h"
 
+void GPFixationOperations::DeleteRow(mat *matrix, uword index)
+{
+    if(matrix->n_rows > 1)
+    {
+        matrix->shed_row(index);
+    }
+    else
+    {
+        matrix->zeros(0,0);
+    }
+}
+
+void GPFixationOperations::fncEditFixation(const mat &roughM, mat *fix_row, int from, int to, int expWidth, int expHeight, double degPerPixel)
+{
+    fix_row->at(0,0) = from;
+    fix_row->at(0,1) = to;
+    fncRecalculateFixationValues(roughM, fix_row, expWidth, expHeight, degPerPixel);
+}
+
+mat GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel)
+{
+    //first find all fixations in fixAllM which fall into the reset range and remove them
+    //remember if cuts - so we dont accidentally join things.
+    bool cut_at_from = false;
+    bool cut_at_to = false;
+
+    uword n_fix_rows = fixAllM->n_rows;
+    uword n_auto_rows = autoAllM.n_rows;
+
+    //get indexes of fixations before and after period (if any)
+    int before_from_index = -1;
+    int after_to_index = n_fix_rows;
+
+
+    for (uword fix_row = 0; fix_row<n_fix_rows; ++fix_row)
+    {
+        //is this fixation over the range?
+        int current_from = fixAllM->at(fix_row,0);
+        int current_to   = fixAllM->at(fix_row,1);
+
+        if (from > current_from && from > current_to)
+        {
+            before_from_index = fix_row;
+        }
+
+        if (to < current_from && to < current_to && fix_row < after_to_index)
+        {
+            after_to_index = fix_row;
+        }
+
+        if (cut_at_from == false && from > current_from && from < current_to)
+        {
+            //start of period intersects fixation
+            cut_at_from = true;
+            before_from_index = fix_row;
+            fixAllM->at(fix_row,1) = from; //replace end
+
+        }
+
+        if (cut_at_to == false && to > current_from && to < current_to)
+        {
+            //end of period intersects a fixation
+            cut_at_to = true;
+            after_to_index = fix_row;
+            fixAllM->at(fix_row,0) = to;
+        }
+    }
+
+    //delete rows and update index.
+    if (after_to_index - before_from_index > 1)
+    {
+        fixAllM->shed_rows(before_from_index+1, after_to_index-1);
+    }
+
+    for (uword auto_row = 0; auto_row<n_auto_rows; ++auto_row)
+    {
+        //is this fixation over the range?
+        int current_from = autoAllM.at(auto_row,0);
+        int current_to   = autoAllM.at(auto_row,1);
+        bool created_fix_at_from = false;
+
+        if (from > current_from && from < current_to)
+        {
+            //start of period intersects fixation
+            if (cut_at_from)
+            {
+                //we cut here so join up.
+                fixAllM->at(before_from_index, 1) = current_to;
+            }
+            else
+            {
+                //no cut so start fixation here
+                before_from_index++;
+                fixAllM->insert_rows(before_from_index,1,true);
+                fixAllM->at(before_from_index,0) = from;
+                fixAllM->at(before_from_index,1) = current_to;
+                created_fix_at_from = true;
+            }
+        }
+
+        if (to > current_from && to < current_to && to )
+        {
+            //end of period intersects fixation
+            if (cut_at_to)
+            {
+                //we cut here so join up.
+                fixAllM->at(before_from_index+1, 0) = current_from;
+            }
+            else if (created_fix_at_from)
+            {
+                //period is within a fixation
+                fixAllM->at(before_from_index,1) = to;
+            }
+            else
+            {
+                //no cut so start fixation here
+                before_from_index++;
+                fixAllM->insert_rows(before_from_index,1,true);
+                fixAllM->at(before_from_index,0) = current_from;
+                fixAllM->at(before_from_index,1) = to;
+            }
+        }
+
+        if (current_from > from && current_to < to)
+        {
+            //in area
+            before_from_index++;
+            fixAllM->insert_rows(before_from_index,1,true);
+            fixAllM->at(before_from_index,0) = current_from;
+            fixAllM->at(before_from_index,1) = current_to;
+        }
+    }
+
+    fncRecalculateFixations(roughM, fixAllM, expWidth, expHeight, degPerPixel);
+}
+
 mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to,int  expWidth, int expHeight, double degPerPixel){
 
     if ((uword)to < roughM.n_rows && (uword)from < roughM.n_rows){ // Only if we are creating the fixation in the right place
@@ -283,39 +419,48 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
     return fixAllM;
 }
 
-// This method recalculates all the values for the fixations that are already detected.
-// It is useful if we want to import fixations that were not created with GraFIX
-mat GPFixationOperations::fncRecalculateFixations(mat roughM, mat fixAllM, int expWidth, int expHeight, double degPerPixel){
-    for (uword i = 0; i < fixAllM.n_rows; ++i){
+void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *fixAllRow, int expWidth, int expHeight, double degPerPixel)
+{
+    fncRecalculateFixationValues(roughM, fixAllRow, 0, expWidth, expHeight, degPerPixel);
+}
+void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *fixAllM, uword row, int expWidth, int expHeight, double degPerPixel)
+{
+    // For each fixation, recalculate all the values
+    // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smoothPursuit, PupilDilation];
+    double dur = ((roughM((*fixAllM)(row,1),0) - roughM(0,0))/ 1000 ) - ((roughM((*fixAllM)(row,0),0) - roughM(0,0))/ 1000 );
 
-        // For each fixation, recalculate all the values
-        // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smoothPursuit, PupilDilation];
-        double dur = ((roughM(fixAllM(i,1),0) - roughM(0,0))/ 1000 ) - ((roughM(fixAllM(i,0),0) - roughM(0,0))/ 1000 );
-
-        // Only use the points where eyes were detected:
-        mat roughCutM;
-        if (roughM.n_cols == 8){
-            roughCutM = roughM.submat(fixAllM(i,0),2,fixAllM(i,1),7);
-            GPMatrixFunctions::fncRemoveUndetectedValuesRough(&roughCutM);
-        }else{
-             roughCutM= roughM.submat(fixAllM(i,0),2,fixAllM(i,1),5);
-             GPMatrixFunctions::fncRemoveUndetectedValuesRough(&roughCutM);
-        }
-        double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
-        double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-        double variance = GPMatrixFunctions::fncCalculateRMSRough(&roughCutM, expWidth, expHeight, degPerPixel);
-        double pupilDilation = 0;
-        if (roughCutM.n_cols == 6){
-            pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
-        }
-
-        fixAllM(i,2) = dur;
-        fixAllM(i,3) = averageX;
-        fixAllM(i,4) = averageY;
-        fixAllM(i,5) = variance;
-        fixAllM(i,7) = pupilDilation;
+    // Only use the points where eyes were detected:
+    mat roughCutM;
+    if (roughM.n_cols == 8){
+        roughCutM = roughM.submat((*fixAllM)(row,0),2,(*fixAllM)(row,1),7);
+        GPMatrixFunctions::fncRemoveUndetectedValuesRough(&roughCutM);
+    }else{
+         roughCutM= roughM.submat((*fixAllM)(row,0),2,(*fixAllM)(row,1),5);
+         GPMatrixFunctions::fncRemoveUndetectedValuesRough(&roughCutM);
+    }
+    double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
+    double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
+    double variance = GPMatrixFunctions::fncCalculateRMSRough(&roughCutM, expWidth, expHeight, degPerPixel);
+    double pupilDilation = 0;
+    if (roughCutM.n_cols == 6){
+        pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
     }
 
-    return fixAllM;
+    (*fixAllM)(row,2) = dur;
+    (*fixAllM)(row,3) = averageX;
+    (*fixAllM)(row,4) = averageY;
+    (*fixAllM)(row,5) = variance;
+    (*fixAllM)(row,7) = pupilDilation;
+}
+// This method recalculates all the values for the fixations that are already detected.
+// It is useful if we want to import fixations that were not created with GraFIX
+void GPFixationOperations::fncRecalculateFixations(const mat &roughM, mat *fixAllM, int expWidth, int expHeight, double degPerPixel)
+{
+    for (uword i = 0; i < fixAllM->n_rows; ++i)
+    {
+        mat fix_row = fixAllM->row(i);
+        fncRecalculateFixationValues(roughM, &fix_row, expWidth, expHeight, degPerPixel);
+        fixAllM->row(i) = fix_row;
+    }
 }
 

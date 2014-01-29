@@ -43,7 +43,6 @@ public slots:
     void fncPress_bAccept();
     void fncPress_bClose();
     void fncPress_bBatch();
-    void fncPress_cbUseBothEyes();
 };
 
 #endif // DialogSmoothXY_H

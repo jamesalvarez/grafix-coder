@@ -41,6 +41,7 @@
 #include <string>
 #include <stdlib.h>
 #include <iostream>
+#include <cstdlib>
 
 #include "armadillo"
 
@@ -93,16 +94,22 @@ private:
     int _currentAction; // Create/ delete/ merge
     int _fixInAction;  // If there is a fixation creation/ merge/ delete happenning it's on.
     int _fixStartPos;
+    uword _selectedFixationRow;
+    bool _selectedFixationEnd;
     GrafixProject _project;
     GrafixParticipant* p_active_participant;
-    GrafixConfiguration _configuration;
+    GrafixConfiguration _last_selected_configuration;
     int _index_active_participant;
     QSize _maximised_size; //stores window size
     QLabel* p_over_display_label;
+    QLabel* p_lMagnification;
+    QPushButton* p_bZoomin;
+    QPushButton* p_bZoomout;
     int _previous_mouse_posX;
     QRgb _previous_colour;
     bool _configuration_changed;
-
+    bool _hold_changes;
+    double _velocity_view_zoom;
     //changing participant / display / editing
     void fncLoadSettings(GrafixConfiguration configuration);
     void fncInitializeProject();
@@ -114,6 +121,10 @@ private:
     void fncManipulateFix(int from, int to);
     void fncSettingsChanged();
     void fncSetToolTips();
+    void fncChangeSlider(QString setting, QSlider* sl, QLineEdit* le);
+    void fncChangeLineEdit(QString setting, QLineEdit* le, QSlider* sl);
+    void fncPressActionButton(int action, QPushButton* button, QString message);
+
 
     //saving loading files
     bool fncReadAllFiles(GrafixParticipant* participant);
@@ -156,6 +167,7 @@ public slots:
     void fncChange_tSigmaS();
     void fncChange_tSigmaR();
     void fncChange_tParticipantNumber();
+    void fncChange_tSegmentNumber();
 
     void fncPress_cbDisplacement();
     void fncPress_cbMinFixation() ;
@@ -176,6 +188,7 @@ public slots:
     void fncPress_subMenuAdjustParameters();
     void fncPress_subMenuChangeConfiguration();
     void fncPress_subMenuClose();
+    void fncPress_subMenuReloadConfiguration();
 
     void fncPress_bNext();
     void fncPress_bPrevious();
@@ -187,11 +200,15 @@ public slots:
     void fncPress_bMerge();
     void fncPress_bExecuteManual(int from, int to);
     void fncPress_bSmoothPursuit();
+    void fncPress_bResetFixations();
+    void fncPress_bResizeFixation();
     void fncPress_bNotes();
     void fncPress_bAcceptEstimation();
     void fncPress_bInterpolate();
     void fncPress_bSmooth();
     void fncPress_bEstimateFixations();
+    void fncPress_bZoomin();
+    void fncPress_bZoomout();
 
 
 };

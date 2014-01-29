@@ -16,14 +16,18 @@ DialogSaveNewConfiguration::~DialogSaveNewConfiguration()
     delete ui;
 }
 
-void DialogSaveNewConfiguration::loadData(GrafixConfiguration *configuration, GrafixProject *project)
+void DialogSaveNewConfiguration::loadData(GrafixConfiguration &configuration, GrafixProject &project)
 {
-    this->p_configuration = configuration;
-    this->p_original_configuration = configuration;
-    this->p_project = project;
+    this->_selected_configuration = configuration;
+    this->_original_configuration = configuration;
+    this->p_project = &project;
     this->p_configurations = this->p_project->GetConfigurations();
-
     fncPopulateList();
+}
+
+GrafixConfiguration DialogSaveNewConfiguration::Selected()
+{
+    return this->_selected_configuration;
 }
 
 void DialogSaveNewConfiguration::fncPopulateList()
@@ -39,7 +43,7 @@ void DialogSaveNewConfiguration::fncPopulateList()
     bool selected_item = false;
     for (int i = 0; i < (*p_configurations).size(); ++i)
     {
-        if ((*p_configurations)[i].first == (*p_configuration).first)
+        if ((*p_configurations)[i].first == _selected_configuration.first)
         {
             ui->lwConfigurations->item(i)->setSelected(true);
             selected_item = true;
@@ -50,7 +54,7 @@ void DialogSaveNewConfiguration::fncPopulateList()
    if (!selected_item)
        ui->lwConfigurations->item(0)->setSelected(true);
 
-    ui->lActiveConfiguration->setText("Active Configuration: " + (*p_configuration).first);
+    ui->lActiveConfiguration->setText("Selected configuration: " + _selected_configuration.first);
 }
 
 void DialogSaveNewConfiguration::on_bAdd_clicked()
@@ -95,7 +99,7 @@ void DialogSaveNewConfiguration::on_bAdd_clicked()
     this->p_project->SaveConfiguration((*p_configurations)[new_item_index]);
 
     //set active
-    (*p_configuration) = (*p_configurations)[new_item_index];
+    _selected_configuration = (*p_configurations)[new_item_index];
 
     fncPopulateList();
 }
@@ -108,7 +112,7 @@ void DialogSaveNewConfiguration::on_buttonBox_accepted()
     {
         if ((*p_configurations)[i].first == selected_item)
         {
-            (*p_configuration) = (*p_configurations)[i];
+            _selected_configuration = (*p_configurations)[i];
             break;
         }
     }
@@ -116,7 +120,7 @@ void DialogSaveNewConfiguration::on_buttonBox_accepted()
 
 void DialogSaveNewConfiguration::on_buttonBox_rejected()
 {
-    (*p_configuration) = (*p_original_configuration);
+    _selected_configuration = _original_configuration;
 }
 
 void DialogSaveNewConfiguration::on_lwConfigurations_itemClicked(QListWidgetItem *item)
@@ -126,16 +130,16 @@ void DialogSaveNewConfiguration::on_lwConfigurations_itemClicked(QListWidgetItem
     {
         if ((*p_configurations)[i].first == selected_item)
         {
-            (*p_configuration) = (*p_configurations)[i];
+            _selected_configuration = (*p_configurations)[i];
             break;
         }
     }
-    ui->lActiveConfiguration->setText("Active Configuration: " + (*p_configuration).first);
+    ui->lActiveConfiguration->setText("Selected configuration: " + _selected_configuration.first);
 }
 
 void DialogSaveNewConfiguration::on_lwConfigurations_clicked(const QModelIndex &index)
 {
-
+    Q_UNUSED(index);
 }
 
 void DialogSaveNewConfiguration::on_lwConfigurations_customContextMenuRequested(const QPoint &pos)
@@ -173,10 +177,10 @@ void DialogSaveNewConfiguration::on_lwConfigurations_customContextMenuRequested(
                     if ((*p_configurations)[i].first == item->text())
                     {
                         //found item
-                        if ((*p_configuration) == (*p_configurations)[i])
+                        if (_selected_configuration == (*p_configurations)[i])
                         {
                             //unselect it
-                            (*p_configuration) = (*p_configurations)[0];
+                            _selected_configuration = (*p_configurations)[0];
                         }
                         (*p_configurations).removeAt(i);
                         break;

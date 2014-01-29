@@ -19,10 +19,12 @@ public:
     GrafixSettingsLoader(const GrafixProject &project, const GrafixConfiguration configuration);
     GrafixSettingsLoader(const QString path);
     GrafixSettingsLoader(const QString path, const GrafixConfiguration configuration);
+
     QVariant LoadSetting(QString setting);
     void SetSetting(const QString setting, const QVariant value);
 
 private:
+    void Init(const QString path, const GrafixConfiguration configuration);
     GrafixConfiguration _configuration;
     QString _path;
 };
