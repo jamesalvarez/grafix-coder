@@ -7,38 +7,7 @@ DialogTestSmoothParameters::DialogTestSmoothParameters(QWidget *parent) :
 {
     _data_loaded = false;
     ui->setupUi(this);
-    //value changed
-    connect( ui->sliderSigmaR, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_R()) );
-    connect( ui->sliderSigmaS, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_S()) );
-    connect( ui->sliderInterpolation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sInterpolation() ) );
-    connect( ui->sliderDisplacInterpolate, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacInterpolate() ) );
-    connect( ui->sliderDisplacement, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacement() ) );
-    connect( ui->sliderMinFixation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sMinFixation() ) );
-    connect( ui->sliderVelocity, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocity() ) );
-    connect( ui->sliderVelocityVariance, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocityVariance() ) );
 
-    //moved
-    connect( ui->sliderSigmaR, SIGNAL(sliderMoved(int)), this, SLOT( fncUpdateLabels()) );
-    connect( ui->sliderSigmaS, SIGNAL(sliderMoved(int)), this, SLOT( fncUpdateLabels()) );
-    connect( ui->sliderInterpolation, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
-    connect( ui->sliderDisplacInterpolate, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
-    connect( ui->sliderDisplacement, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
-    connect( ui->sliderMinFixation, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
-    connect( ui->sliderVelocity, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
-    connect( ui->sliderVelocityVariance, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
-
-
-    connect( ui->cb_displacement, SIGNAL( clicked()), this, SLOT( fncPress_cbDisplacement() ) );
-    connect( ui->cb_minFixation, SIGNAL( clicked()), this, SLOT( fncPress_cbMinFixation() ) );
-    connect( ui->cb_velocityVariance, SIGNAL( clicked()), this, SLOT( fncPress_cbVelocityVariance() ) );
-    connect( ui->bApply, SIGNAL( clicked()), this, SLOT(apply()) );
-    connect( ui->bClose, SIGNAL( clicked()), this, SLOT(close()) );
-    connect( ui->bPlotRMS, SIGNAL( clicked()), this, SLOT( fncPress_bPlotRMS()));
-    connect( ui->bPlotDurations, SIGNAL( clicked()), this, SLOT(fncPress_bPlotDur()));
-    connect( ui->bPlotVelocities, SIGNAL( clicked()), this, SLOT(fncPress_bPlotVelocities()));
-
-    connect( ui->bLeft, SIGNAL( clicked()), this, SLOT(fncPress_bLeft()));
-    connect( ui->bRight, SIGNAL( clicked()), this, SLOT(fncPress_bRight()));
 
 }
 
@@ -189,6 +158,7 @@ void DialogTestSmoothParameters::apply()
 
 void DialogTestSmoothParameters::resizeEvent(QResizeEvent *e)
 {
+    Q_UNUSED(e);
     fncSmoothData();
 }
 
@@ -217,13 +187,13 @@ void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartI
     ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
     ui->sliderSigmaS->setValue(
                 loader.LoadSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_S).toDouble());
+                        Consts::SETTING_SMOOTHING_SIGMA_S).toInt());
 
     ui->sliderSigmaR->setMinimum(1);
     ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
     ui->sliderSigmaR->setValue(
                 loader.LoadSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_R).toDouble());
+                        Consts::SETTING_SMOOTHING_SIGMA_R).toInt());
 
     ui->sliderInterpolation->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_LATENCY);
     ui->sliderInterpolation->setMinimum(0);
@@ -267,9 +237,45 @@ void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartI
     this->p_participant = &p;
     this->p_original_roughM = &RoughM;
 
+    fncUpdateLabels();
+
     fncGetSubmat(displayStartIndex, displayStopIndex);
 
     _data_loaded = true;
+
+    //value changed
+    connect( ui->sliderSigmaR, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_R()) );
+    connect( ui->sliderSigmaS, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_S()) );
+    connect( ui->sliderInterpolation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sInterpolation() ) );
+    connect( ui->sliderDisplacInterpolate, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacInterpolate() ) );
+    connect( ui->sliderDisplacement, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacement() ) );
+    connect( ui->sliderMinFixation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sMinFixation() ) );
+    connect( ui->sliderVelocity, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocity() ) );
+    connect( ui->sliderVelocityVariance, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocityVariance() ) );
+
+    //moved
+    connect( ui->sliderSigmaR, SIGNAL(sliderMoved(int)), this, SLOT( fncUpdateLabels()) );
+    connect( ui->sliderSigmaS, SIGNAL(sliderMoved(int)), this, SLOT( fncUpdateLabels()) );
+    connect( ui->sliderInterpolation, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
+    connect( ui->sliderDisplacInterpolate, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
+    connect( ui->sliderDisplacement, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
+    connect( ui->sliderMinFixation, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
+    connect( ui->sliderVelocity, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
+    connect( ui->sliderVelocityVariance, SIGNAL( sliderMoved(int)), this, SLOT( fncUpdateLabels() ) );
+
+
+    connect( ui->cb_displacement, SIGNAL( clicked()), this, SLOT( fncPress_cbDisplacement() ) );
+    connect( ui->cb_minFixation, SIGNAL( clicked()), this, SLOT( fncPress_cbMinFixation() ) );
+    connect( ui->cb_velocityVariance, SIGNAL( clicked()), this, SLOT( fncPress_cbVelocityVariance() ) );
+    connect( ui->bApply, SIGNAL( clicked()), this, SLOT(apply()) );
+    connect( ui->bClose, SIGNAL( clicked()), this, SLOT(close()) );
+    connect( ui->bPlotRMS, SIGNAL( clicked()), this, SLOT( fncPress_bPlotRMS()));
+    connect( ui->bPlotDurations, SIGNAL( clicked()), this, SLOT(fncPress_bPlotDur()));
+    connect( ui->bPlotVelocities, SIGNAL( clicked()), this, SLOT(fncPress_bPlotVelocities()));
+
+    connect( ui->bLeft, SIGNAL( clicked()), this, SLOT(fncPress_bLeft()));
+    connect( ui->bRight, SIGNAL( clicked()), this, SLOT(fncPress_bRight()));
+
     this->showMaximized();
     paintRoughData();
     fncSmoothData();
@@ -443,6 +449,7 @@ void DialogTestSmoothParameters::paintVelocity()
     pixmap.fill(Qt::white);
 
     QPainter painter(&pixmap);
+    painter.drawText(QPoint(10,10),"Velocity:");
     QPen myPen(Qt::red, 1, Qt::SolidLine);
 
     double prevVel, curVel, prevAmp, curAmp = 0;

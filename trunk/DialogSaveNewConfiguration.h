@@ -17,15 +17,16 @@ class DialogSaveNewConfiguration : public QDialog
     Q_OBJECT
 private:
     QList<GrafixConfiguration>* p_configurations;
-    GrafixConfiguration* p_configuration;
-    GrafixConfiguration* p_original_configuration;
+    GrafixConfiguration _selected_configuration;
+    GrafixConfiguration _original_configuration;
     GrafixProject* p_project;
 
 public:
     explicit DialogSaveNewConfiguration(QWidget *parent = 0);
     ~DialogSaveNewConfiguration();
 
-    void loadData(GrafixConfiguration *configuration, GrafixProject *project);
+    void loadData(GrafixConfiguration &configuration, GrafixProject &project);
+    GrafixConfiguration Selected();
 
 private slots:
     void on_bAdd_clicked();

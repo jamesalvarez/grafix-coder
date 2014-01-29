@@ -2,25 +2,30 @@
 
 GrafixSettingsLoader::GrafixSettingsLoader(const GrafixProject &project)
 {
-    GrafixSettingsLoader(project, Consts::ACTIVE_CONFIGURATION());
+    Init(project.GetProjectSettingsPath(), Consts::ACTIVE_CONFIGURATION());
 }
 
 
 GrafixSettingsLoader::GrafixSettingsLoader(const GrafixProject &project, const GrafixConfiguration configuration)
 {
-    GrafixSettingsLoader(project.GetProjectSettingsPath(), configuration);
+    Init(project.GetProjectSettingsPath(), configuration);
 }
 
 GrafixSettingsLoader::GrafixSettingsLoader(QString path, const GrafixConfiguration configuration)
 {
-    this->_path = path;
-    this->_configuration = configuration;
-
+    Init(path,configuration);
 }
 
 GrafixSettingsLoader::GrafixSettingsLoader(const QString path)
 {
-    GrafixSettingsLoader(path, Consts::ACTIVE_CONFIGURATION());
+    Init(path, Consts::ACTIVE_CONFIGURATION());
+}
+
+
+void GrafixSettingsLoader::Init(const QString path, const GrafixConfiguration configuration)
+{
+    this->_path = path;
+    this->_configuration = configuration;
 }
 
 QVariant GrafixSettingsLoader::LoadSetting(QString setting)

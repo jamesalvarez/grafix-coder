@@ -142,7 +142,6 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
 
     //TODO check if velocity is calculated.
     GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
-    //GPMatrixFunctions::saveFile(SmoothM, _participant->GetPath(GrafixParticipant::SMOOTH));
 
 
     // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM

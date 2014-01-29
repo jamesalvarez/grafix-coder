@@ -431,7 +431,7 @@ void GrafixProject::CopyConfiguration(GrafixConfiguration from, GrafixConfigurat
         _configurations.insert(_configurations.size(),to);
 
     //1st save configuration header
-    this->SetProjectSetting(Consts::SETTING_CONFIGURATION,to, QVariant(true));
+    this->SetProjectSetting(Consts::SETTING_CONFIGURATION, to, QVariant(true));
 
     QList<QString> sets = Consts::LIST_CONFIGURATION_SETTINGS();
 

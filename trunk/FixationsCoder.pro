@@ -35,10 +35,10 @@ SOURCES += main.cpp \
     DialogStatistics.cpp \
     DialogVisualization.cpp \
     DialogVisualizationSegments.cpp \
-    MainWindow.cpp \
     DialogSaveNewConfiguration.cpp \
     MainWindow2.cpp \
-    GrafixSettingsLoader.cpp
+    GrafixSettingsLoader.cpp \
+    Trilateral/Trilateral2003.cpp
 
 HEADERS  += \
     MyConstants.h \
@@ -64,10 +64,10 @@ HEADERS  += \
     DialogStatistics.h \
     DialogVisualization.h \
     DialogVisualizationSegments.h \
-    MainWindow.h \
     DialogSaveNewConfiguration.h \
     MainWindow2.h \
-    GrafixSettingsLoader.h
+    GrafixSettingsLoader.h \
+    Trilateral/Trilateral2003.h
 
 FORMS    += \
     DialogTestSmoothParameters.ui \
@@ -86,7 +86,6 @@ FORMS    += \
     DialogStatistics.ui \
     DialogVisualization.ui \
     DialogVisualizationSegments.ui \
-    MainWindow.ui \
     DialogSaveNewConfiguration.ui \
     MainWindow2.ui
 

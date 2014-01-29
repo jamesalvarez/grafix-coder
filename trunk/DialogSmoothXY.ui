@@ -7,21 +7,26 @@
     <x>0</x>
     <y>0</y>
     <width>570</width>
-    <height>252</height>
+    <height>240</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="3">
-    <widget class="QPushButton" name="b_Batch">
-     <property name="text">
-      <string>Batch...</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="4">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
     <widget class="QLabel" name="lMsg">
      <property name="font">
       <font>
@@ -47,7 +52,33 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0" rowspan="2">
+   <item>
+    <widget class="QPushButton" name="b_accept">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>31</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>31</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Accept</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="b_cancel">
      <property name="font">
       <font>
@@ -61,8 +92,20 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="1" rowspan="2" colspan="2">
-    <widget class="QPushButton" name="b_accept">
+   <item>
+    <widget class="QPushButton" name="b_Batch">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>31</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>31</height>
+      </size>
+     </property>
      <property name="font">
       <font>
        <pointsize>14</pointsize>
@@ -71,21 +114,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Accept</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="2" colspan="2">
-    <widget class="QCheckBox" name="cb_eyes">
-     <property name="text">
-      <string>If one eye is not present, use the data from the other eye</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="2" colspan="2">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>* The process may take few minutes</string>
+      <string>Batch Process</string>
      </property>
     </widget>
    </item>

@@ -65,6 +65,8 @@ public:
     static const int AC_DELETE = 2;
     static const int AC_MERGE = 3;
     static const int AC_SMOOTH_PURSUIT = 4;
+    static const int AC_RESET_TO_AUTO = 5;
+    static const int AC_DRAG_ENDS = 6;
 
     static const int SMOOTHP_NO = 0;
     static const int SMOOTHP_YES = 1;
@@ -124,14 +126,14 @@ public:
     static const QString SETTING_NUMBER_PARTICIPANTS;
     static const QString SETTING_LAST_SAVED;
 
-    static const int MAXSLIDER_SETTING_INTERP_LATENCY = 180;
-    static const int MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD = 50;
-    static const int MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT = 60;
-    static const int MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL = 60;
-    static const int MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL = 60;
-    static const int MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL = 200;
-    static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_S = 50;
-    static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_R = 100;
+    static const int MAXSLIDER_SETTING_INTERP_LATENCY = 18000;
+    static const int MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD = 5000;
+    static const int MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT = 6000;
+    static const int MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL = 6000;
+    static const int MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL = 6000;
+    static const int MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL = 20000;
+    static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_S = 5000;
+    static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_R = 10000;
 
     static const GrafixConfiguration ACTIVE_CONFIGURATION();
     static const QList<QString> LIST_CONFIGURATION_SETTINGS();
@@ -163,6 +165,9 @@ public:
     static const QString HELP_PURSUIT_MODE;
     static const QString HELP_DELETE_MODE;
     static const QString HELP_STATUS_READY;
+
+    static int GetSliderValue(QString setting, double value);
+    static double GetValueFromSlider(QString setting, int slider_value);
 
 };
 

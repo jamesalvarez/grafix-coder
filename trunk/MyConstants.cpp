@@ -118,6 +118,39 @@ const QVariant Consts::DefaultSetting(QString setting)
     else
         return NULL;
 }
+
+int Consts::GetSliderValue(QString setting, double value)
+{
+    if (setting == Consts::SETTING_SMOOTHING_SIGMA_S ||
+        setting == Consts::SETTING_SMOOTHING_SIGMA_R ||
+        setting == Consts::SETTING_INTERP_LATENCY ||
+        setting == Consts::SETTING_POSTHOC_MIN_DURATION_VAL ||
+        setting == Consts::SETTING_INTERP_VELOCITY_THRESHOLD)
+        return (int)(value * 100);
+
+    if (setting == Consts::SETTING_POSTHOC_LIMIT_RMS_VAL ||
+        setting == Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL ||
+        setting == Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT)
+        return (int)(value * 100 * 100);
+    return 0;
+}
+
+double Consts::GetValueFromSlider(QString setting, int slider_value)
+{
+    if (setting == Consts::SETTING_SMOOTHING_SIGMA_S ||
+        setting == Consts::SETTING_SMOOTHING_SIGMA_R ||
+        setting == Consts::SETTING_INTERP_LATENCY ||
+        setting == Consts::SETTING_POSTHOC_MIN_DURATION_VAL ||
+        setting == Consts::SETTING_INTERP_VELOCITY_THRESHOLD)
+        return (double) slider_value / 100;
+
+    if (setting == Consts::SETTING_POSTHOC_LIMIT_RMS_VAL ||
+        setting == Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL ||
+        setting == Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT)
+        return (double)(slider_value) / 100 / 100;
+    return 0;
+}
+
 Consts::Consts(void)
 {
 }
