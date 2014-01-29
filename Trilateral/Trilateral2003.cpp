@@ -1,9 +1,24 @@
 //FUNCTION CALL THAT IMPLEMENTS TRILATERAL FILTER
+#include "Trilateral2003.h"
+#include <tgmath.h>
+#include <math.h>
+#include <cstddef>
+#include <ostream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <stdlib.h>
+
+Raw2D::Raw2D(){}
+Raw2D::~Raw2D(){}
+Raw3D::Raw3D(){}
+Raw3D::~Raw3D(){}
+
 //=====================================================================================================
-void Raw2D::TrilateralFilter(Raw2D* pSrcImg, PIXTYPE sigmaC)
+void Raw2D::TrilateralFilter(Raw2D* pSrcImg, Raw2D* pDestImg, PIXTYPE sigmaC, double sigmaR_custom)
 //=====================================================================================================
 {
-Raw2D destImg; 			//Output Image
+Raw2D destImg = (*pDestImg); 			//Output Image
 Raw2D fTheta; 			//stores Adaptive neighborhood size for each pixel
 Raw3D minGradientStack, maxGradientStack; 	//stores the min and max stack of image gradients
 Raw2D xGradient, yGradient; 	//X and Y gradients of the input image
@@ -26,6 +41,17 @@ PIXTYPE sigmaR, sigmaCTheta, sigmaRTheta, R, beta; //domain variance for the two
 	else
 		levelMax = levY+1;
 
+    //save1
+    std::ofstream stream("trilat.log",std::ios::binary);
+    stream << "srcImg,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << pSrcImg->getXY(i);
+        stream << ',';
+    }
+    stream << std::endl;
+
+    levelMax = 10;
 	//Allocate memory for the Min-Max Image Stack
 	minGradientStack.sizer(pSrcImg->getXsize(),pSrcImg->getYsize(),levelMax);
 	maxGradientStack.sizer(pSrcImg->getXsize(),pSrcImg->getYsize(),levelMax);
@@ -45,6 +71,21 @@ PIXTYPE sigmaR, sigmaCTheta, sigmaRTheta, R, beta; //domain variance for the two
 	**/
 	pSrcImg->ComputeGradients(&xGradient,&yGradient);
 
+    stream << "xGrad,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << xGradient.getXY(i);
+        stream << ',';
+    }
+    stream << std::endl;
+
+    stream << "yGrad,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << yGradient.getXY(i);
+        stream << ',';
+    }
+    stream << endl;
 	/**
 		Builds the Min-Max Image Stack consisting of Image Gradients (Step 2).
 		Also computes sigmaR, the range variance, (see equation 11 in the paper for further details).
@@ -53,13 +94,46 @@ PIXTYPE sigmaR, sigmaCTheta, sigmaRTheta, R, beta; //domain variance for the two
 	**/
 	sigmaR = pSrcImg->buildMinMaxImageStack(&xGradient,&yGradient,&minGradientStack,&maxGradientStack,levelMax,beta);
 
+    stream << "minGradStack,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << minGradientStack.get(i,0,0);
+        stream << ',';
+    }
+    stream << std::endl;
+
+    stream << "maxGradStacj,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << maxGradientStack.get(i,0,0);
+        stream << ',';
+    }
+    stream << endl;
+
 	//Set the remaining internal parameters required for trilateral filter
-	sigmaRTheta = R = sigmaR;
+    //sigmaRTheta = R = sigmaR;
+    sigmaRTheta = R = sigmaR = sigmaR_custom;
 	/**
 		Bilaterally filter the X and Y gradients of the input image (Step 3, equation 4 and 5)
 		to produce xSmoothGradient and ySmoothGradient.
 	**/
 	pSrcImg->BilateralGradientFilter(&xGradient, &yGradient, &xSmoothGradient, &ySmoothGradient, sigmaC, sigmaR, filterSize);
+
+    stream << "xSmoothGrad,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << xSmoothGradient.getXY(i);
+        stream << ',';
+    }
+    stream << endl;
+
+    stream << "ySmoothGrad,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << ySmoothGradient.getXY(i);
+        stream << ',';
+    }
+    stream << endl;
 
 	/**
 		Find the adaptive neighborhood fTheta for each pixel location (Step 4). fTheta size is
@@ -68,6 +142,13 @@ PIXTYPE sigmaR, sigmaCTheta, sigmaRTheta, R, beta; //domain variance for the two
 	**/
 	fTheta.findAdaptiveRegion(&minGradientStack, &maxGradientStack, R, levelMax);
 
+    stream << "ftheta,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << fTheta.getXY(i);
+        stream << ',';
+    }
+    stream << endl;
 	/**
 		Performs bilateral filter on the detail signal (Step 5).
 		See Equation 6, 7, 8 and 9.
@@ -75,9 +156,17 @@ PIXTYPE sigmaR, sigmaCTheta, sigmaRTheta, R, beta; //domain variance for the two
 	**/
 	destImg.DetailBilateralFilter(pSrcImg, &xSmoothGradient, &ySmoothGradient, &fTheta, sigmaCTheta, sigmaRTheta);
 	
+    stream << "destImg,";
+    for (int i = 0; i< 100; ++i)
+    {
+        stream << destImg.getXY(i);
+        stream << ',';
+    }
+    stream << endl;
+    stream.close();
 	//Copying the result to the output image
-	wipecopy(&destImg);
-
+    //wipecopy(&destImg);
+    (*pDestImg) = destImg;
 
 }
 
@@ -385,18 +474,23 @@ void Raw2D::sizer(Raw2D* src) {
 	If a 'wipe' was necessary, return 'FALSE', else return 'TRUE'.
 **/
 
-BOOL Raw2D::wipecopy(Raw2D* src) {
-	BOOL out=TRUE;
+bool Raw2D::wipecopy(Raw2D* src)
+{
+    bool out=true;
 	int i,imax;	
     
-	if(getYsize() != src->getYsize() || getXsize()!=src->getXsize()) { // resize to fit 'src'.
+    if(getYsize() != src->getYsize() || getXsize()!=src->getXsize())
+    { // resize to fit 'src'.
 		sizer(src);
-		out=FALSE;
-    	}
-    	imax = getXsize()*getYsize();
-    	for(i=0; i<imax; i++) {
-		putXY(i,src->getXY(i));
-    	}
+        out=false;
+    }
+
+    imax = getXsize()*getYsize();
+
+    for(i=0; i<imax; i++)
+    {
+        putXY(i,src->getXY(i));
+    }
 
     	return(out);
 }
@@ -420,10 +514,19 @@ void Raw3D::sizer(int ixsize, int iysize, int izsize) {
 	Copy all the pixels from 'src', resizing as needed. Do not change
 	name of this object.
 **/ 
+void Raw3D::sizer(Raw3D* src) {
+        int ix, iy, iz;
+
+        ix = src->getXsize();
+        iy = src->getYsize();
+        iz = src->getZsize();
+        sizer(ix,iy, iz);
+}
+
 void Raw3D::wipecopy(Raw3D& src) {
 int k,kmax;
 
-	if(&src==NULL)return;
+    if(&src==NULL)return;
 	if(src.zsize==0) return;		// ignore empty inputs.
     	if(src.getZsize() != zsize || src.getYsize() != z[0].getYsize() ||
 		src.getXsize() != getXsize()) {

@@ -8,6 +8,34 @@ DialogTestSmoothParameters::DialogTestSmoothParameters(QWidget *parent) :
     _data_loaded = false;
     ui->setupUi(this);
 
+    //set slider maxes etc
+    ui->sliderDisplacInterpolate->setMinimum(0);
+    ui->sliderDisplacInterpolate->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT);
+    ui->sliderDisplacement->setMinimum(0);
+    ui->sliderDisplacement->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL);
+    ui->sliderVelocityVariance->setMinimum(0);
+    ui->sliderVelocityVariance->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL);
+    ui->sliderVelocity->setMinimum(0);
+    ui->sliderVelocity->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD);
+    ui->sliderInterpolation->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_LATENCY);
+    ui->sliderInterpolation->setMinimum(0);
+    ui->sliderMinFixation->setMinimum(0);
+    ui->sliderMinFixation->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL);
+    ui->sliderSigmaR->setMinimum(1);
+    ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
+    ui->sliderSigmaS->setMinimum(1);
+    ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
+    //value changed
+    connect( ui->sliderSigmaR, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_R()) );
+    connect( ui->sliderSigmaS, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_S()) );
+    connect( ui->sliderInterpolation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sInterpolation() ) );
+    connect( ui->sliderDisplacInterpolate, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacInterpolate() ) );
+    connect( ui->sliderDisplacement, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacement() ) );
+    connect( ui->sliderMinFixation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sMinFixation() ) );
+    connect( ui->sliderVelocity, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocity() ) );
+    connect( ui->sliderVelocityVariance, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocityVariance() ) );
+
+
 
 }
 
@@ -19,91 +47,90 @@ DialogTestSmoothParameters::~DialogTestSmoothParameters()
 void DialogTestSmoothParameters::fncSetTempSetting(QString setting, QVariant value)
 {
     p_project->SetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION(), value, _temp_settings_path);
+    fncUpdateLabels();
+    fncSmoothData();
+}
+
+void DialogTestSmoothParameters::fncSetTempSettingFromSlider(QString setting, int slider_value, QLabel *label)
+{
+    double value = Consts::GetValueFromSlider(setting,slider_value);
+    label->setText(QString::number(value,'f',3));
+    fncSetTempSetting(setting,value);
 }
 
 void DialogTestSmoothParameters::fncChange_sDisplacement()
 {
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL,
-                                 ((double)ui->sliderDisplacement->value()/100));
-    fncSmoothData();
+    fncSetTempSettingFromSlider(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL,
+                                ui->sliderDisplacement->value(),
+                                ui->lDisplacement);
 }
 
-void DialogTestSmoothParameters::fncChange_sDisplacInterpolate(){
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT,
-                                 ((double)ui->sliderDisplacInterpolate->value()/100));
-    fncSmoothData();
+void DialogTestSmoothParameters::fncChange_sDisplacInterpolate()
+{
+    fncSetTempSettingFromSlider(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT,
+                                ui->sliderDisplacInterpolate->value(),
+                                ui->lDisplacInterpolate);
 }
 
 void DialogTestSmoothParameters::fncChange_sInterpolation()
 {
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_INTERP_LATENCY,
-                                 ui->sliderInterpolation->value());
-    fncSmoothData();
+    fncSetTempSettingFromSlider(Consts::SETTING_INTERP_LATENCY,
+                                ui->sliderInterpolation->value(),
+                                ui->lInterpolation);
 }
 
-void DialogTestSmoothParameters::fncChange_sMinFixation(){
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL,
-                                 ui->sliderMinFixation->value());
-    fncSmoothData();
+void DialogTestSmoothParameters::fncChange_sMinFixation()
+{
+    fncSetTempSettingFromSlider(Consts::SETTING_POSTHOC_MIN_DURATION_VAL,
+                                ui->sliderMinFixation->value(),
+                                ui->lMinFixation);
 }
 
 
 void DialogTestSmoothParameters::fncChange_sVelocity()
 {
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD,
-                                 ui->sliderVelocity->value());
-    fncSmoothData();
-
+    fncSetTempSettingFromSlider(Consts::SETTING_INTERP_VELOCITY_THRESHOLD,
+                                ui->sliderVelocity->value(),
+                                ui->lVelocity);
 }
 
 void DialogTestSmoothParameters::fncChange_sVelocityVariance()
 {
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL,
-                                 ((double)ui->sliderVelocityVariance->value()/100));
-    fncSmoothData();
+    fncSetTempSettingFromSlider(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL,
+                                ui->sliderVelocityVariance->value(),
+                                ui->lVelocityVariance);
 }
 
 void DialogTestSmoothParameters::fncChange_sSmooth_R()
 {
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_SMOOTHING_SIGMA_R,
-                                (ui->sliderSigmaR->value()));
-    fncSmoothData();
+    fncSetTempSettingFromSlider(Consts::SETTING_SMOOTHING_SIGMA_R,
+                                ui->sliderSigmaR->value(),
+                                ui->lSigmaR);
 }
 
 void DialogTestSmoothParameters::fncChange_sSmooth_S()
 {
-    fncUpdateLabels();
-    fncSetTempSetting(Consts::SETTING_SMOOTHING_SIGMA_S,
-                                (ui->sliderSigmaS->value()));
-    fncSmoothData();
+    fncSetTempSettingFromSlider(Consts::SETTING_SMOOTHING_SIGMA_S,
+                                ui->sliderSigmaS->value(),
+                                ui->lSigmaS);
 }
 
 void DialogTestSmoothParameters::fncPress_cbDisplacement()
 {
     fncSetTempSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG,
                                  ui->cb_displacement->checkState());
-    fncSmoothData();
 }
 
 void DialogTestSmoothParameters::fncPress_cbMinFixation()
 {
     fncSetTempSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG,
                                  ui->cb_minFixation->checkState());
-    fncSmoothData();
 }
 
 void DialogTestSmoothParameters::fncPress_cbVelocityVariance()
 {
     fncSetTempSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG,
                                  ui->cb_velocityVariance->checkState());
-    fncSmoothData();
 }
 
 void DialogTestSmoothParameters::fncPress_bPlotRMS()
@@ -159,8 +186,12 @@ void DialogTestSmoothParameters::apply()
 void DialogTestSmoothParameters::resizeEvent(QResizeEvent *e)
 {
     Q_UNUSED(e);
-    fncSmoothData();
+    paintRoughData();
+    paintSmoothData();
+    paintFixations();
+    paintVelocity();
 }
+
 
 
 void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartIndex, uword displayStopIndex, const GrafixParticipant &p)
@@ -183,53 +214,37 @@ void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartI
     this->_displayIncrement = (double) _secsFragmentHz / ui->lPanelRough->width();
     this->_degreePerPixel = loader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
 
-    ui->sliderSigmaS->setMinimum(1);
-    ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
     ui->sliderSigmaS->setValue(
-                loader.LoadSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_S).toInt());
+                loader.LoadSliderSetting(
+                        Consts::SETTING_SMOOTHING_SIGMA_S));
 
-    ui->sliderSigmaR->setMinimum(1);
-    ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
     ui->sliderSigmaR->setValue(
-                loader.LoadSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_R).toInt());
+                loader.LoadSliderSetting(
+                        Consts::SETTING_SMOOTHING_SIGMA_R));
 
-    ui->sliderInterpolation->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_LATENCY);
-    ui->sliderInterpolation->setMinimum(0);
     ui->sliderInterpolation->setValue(
-                loader.LoadSetting(
-                        Consts::SETTING_INTERP_LATENCY).toInt());
+                loader.LoadSliderSetting(
+                        Consts::SETTING_INTERP_LATENCY));
 
-    ui->sliderMinFixation->setMinimum(0);
-    ui->sliderMinFixation->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL);
     ui->sliderMinFixation->setValue(
-                loader.LoadSetting(
-                        Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toInt());
+                loader.LoadSliderSetting(
+                        Consts::SETTING_POSTHOC_MIN_DURATION_VAL));
 
-    ui->sliderVelocity->setMinimum(0);
-    ui->sliderVelocity->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD);
     ui->sliderVelocity->setValue(
-                loader.LoadSetting(
-                        Consts::SETTING_INTERP_VELOCITY_THRESHOLD).toInt());
+                loader.LoadSliderSetting(
+                        Consts::SETTING_INTERP_VELOCITY_THRESHOLD));
 
-    ui->sliderVelocityVariance->setMinimum(0);
-    ui->sliderVelocityVariance->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_LIMIT_RMS_VAL);
     ui->sliderVelocityVariance->setValue(
-                (int)(loader.LoadSetting(
-                        Consts::SETTING_POSTHOC_LIMIT_RMS_VAL).toDouble() * 100));
+                loader.LoadSliderSetting(
+                        Consts::SETTING_POSTHOC_LIMIT_RMS_VAL));
 
-    ui->sliderDisplacement->setMinimum(0);
-    ui->sliderDisplacement->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL);
     ui->sliderDisplacement->setValue(
-                (int)(loader.LoadSetting(
-                          Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble() * 100));
+                loader.LoadSliderSetting(
+                          Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL));
 
-    ui->sliderDisplacInterpolate->setMinimum(0);
-    ui->sliderDisplacInterpolate->setMaximum(Consts::MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT);
     ui->sliderDisplacInterpolate->setValue(
-                (int)(loader.LoadSetting(
-                          Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble() * 100));
+                loader.LoadSliderSetting(
+                          Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT));
 
     ui->cb_displacement->setChecked(loader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool());
     ui->cb_minFixation->setChecked(loader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG).toBool());
@@ -243,15 +258,7 @@ void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartI
 
     _data_loaded = true;
 
-    //value changed
-    connect( ui->sliderSigmaR, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_R()) );
-    connect( ui->sliderSigmaS, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_S()) );
-    connect( ui->sliderInterpolation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sInterpolation() ) );
-    connect( ui->sliderDisplacInterpolate, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacInterpolate() ) );
-    connect( ui->sliderDisplacement, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sDisplacement() ) );
-    connect( ui->sliderMinFixation, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sMinFixation() ) );
-    connect( ui->sliderVelocity, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocity() ) );
-    connect( ui->sliderVelocityVariance, SIGNAL( valueChanged(int)), this, SLOT( fncChange_sVelocityVariance() ) );
+
 
     //moved
     connect( ui->sliderSigmaR, SIGNAL(sliderMoved(int)), this, SLOT( fncUpdateLabels()) );
@@ -515,38 +522,17 @@ void DialogTestSmoothParameters::paintSmoothData()
 
 void DialogTestSmoothParameters::fncUpdateLabels()
 {
-    double vald = ((double)ui->sliderDisplacement->value()/100);
-    ui->lDisplacement->setText(QString::number(vald));
 
-    vald = ((double)ui->sliderDisplacInterpolate->value()/100);
-    ui->lDisplacInterpolate->setText(QString::number(vald));
-
-    int vali = ui->sliderInterpolation->value();
-    ui->lInterpolation->setText(QString::number(vali));
-
-    vali = ui->sliderMinFixation->value();
-    ui->lMinFixation->setText(QString::number(vali));
-
-    vali = ui->sliderVelocity->value();
-    ui->lVelocity->setText(QString::number(vali));
-
-    vald =  ((double)ui->sliderVelocityVariance->value()/100);
-    ui->lVelocityVariance->setText(QString::number(vald));
-
-    vald = (double)ui->sliderSigmaR->value();
-    ui->lSigmaR->setText(QString::number(vald));
-
-    vald = (double)ui->sliderSigmaS->value();
-    ui->lSigmaS->setText(QString::number(vald));
 }
 
 void DialogTestSmoothParameters::fncSmoothData()
 {
-    this->_displayIncrement = (double) _secsFragmentHz / ui->lPanelRough->width();
     if (!_data_loaded) return;
+    this->_displayIncrement = (double) _secsFragmentHz / ui->lPanelRough->width();
 
     GrafixSettingsLoader settingsLoader(_temp_settings_path);
     GPMatrixFunctions::smoothRoughMatrixFBF(_roughM, this->_temp_settings_path, Consts::ACTIVE_CONFIGURATION(), &_smoothM);
+    //GPMatrixFunctions::smoothRoughMatrixTrilateral(_roughM,settingsLoader,&_smoothM);
     GPMatrixFunctions::estimateFixations(_roughM,_smoothM,_fixAllM, settingsLoader );
     paintRoughData();
     paintSmoothData();

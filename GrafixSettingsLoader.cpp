@@ -40,6 +40,11 @@ QVariant GrafixSettingsLoader::LoadSetting(QString setting)
     return value;
 }
 
+int GrafixSettingsLoader::LoadSliderSetting(QString setting)
+{
+    return Consts::GetSliderValue(setting, LoadSetting(setting).toDouble());
+}
+
 void GrafixSettingsLoader::SetSetting(const QString setting, const QVariant value)
 {
     QSettings settings(_path, QSettings::IniFormat);

@@ -21,6 +21,7 @@ public:
     GrafixSettingsLoader(const QString path, const GrafixConfiguration configuration);
 
     QVariant LoadSetting(QString setting);
+    int LoadSliderSetting(QString setting);
     void SetSetting(const QString setting, const QVariant value);
 
 private:
