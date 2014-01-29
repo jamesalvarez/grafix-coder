@@ -150,12 +150,47 @@ MainWindow2::MainWindow2(QWidget *parent) :
 
     qApp->installEventFilter(this);
     fncSetToolTips();
-    fncInitializeProject();
+}
 
-    //show maximised and remember size, for some reason it sometimes expands a little TODO: fix this
-    //QDesktopWidget *desktop = QApplication::desktop();
-    //int h = desktop->availableGeometry().height() - 100;
-    //int w = desktop->availableGeometry().width();
+bool MainWindow2::LoadProject()
+{
+    //loads settings (info of previous project
+    QSettings settings("options.ini", QSettings::IniFormat);
+
+    // If there is not a project opened (in the settings file), we open the openProject dialog.
+    while (settings.value(Consts::SETTING_PROJECT).isNull() ||
+            !(_project.LoadProjectSettings(settings.value(Consts::SETTING_PROJECT).toString())))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("No project loaded.");
+        msgBox.setInformativeText("It was not possible to load a valid project - please load or create a new one.");
+        msgBox.setStandardButtons(QMessageBox::Ok| QMessageBox::Close);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        msgBox.setButtonText(QMessageBox::Close,"Quit GraFIX");
+        int ret = msgBox.exec();
+        if (ret == QMessageBox::Close)
+        {
+            return false;
+        }
+
+        DialogOpenProject w(&_project);
+        w.setWindowTitle(tr("Select project or create new one"));
+        w.exec();
+
+        //saves directory of this project
+        settings.setValue(Consts::SETTING_PROJECT,_project.GetFullDirectory());
+
+    }
+
+    //set current participant
+    if (_project.numParticipants()>0)
+    {
+        qDebug() << "Participants out:" << _project.numParticipants() << "\n";
+        fncSetActiveParticipant(0);//TODO: Settings remember last participant
+    }
+
+    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());
+    return true;
 }
 
 bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
@@ -395,33 +430,6 @@ MainWindow2::~MainWindow2()
 }
 
 
-void MainWindow2::fncInitializeProject()
-{
-    //loads settings (info of previous project
-    QSettings settings("options.ini", QSettings::IniFormat);
-
-    // If there is not a project opened (in the settings file), we open the openProject dialog.
-    while (settings.value(Consts::SETTING_PROJECT).isNull() ||
-            !(_project.LoadProjectSettings(settings.value(Consts::SETTING_PROJECT).toString())))
-    {
-        DialogOpenProject w(&_project);
-        w.setWindowTitle(tr("Select project or create new one"));
-        w.exec();
-
-        //saves directory of this project
-        settings.setValue(Consts::SETTING_PROJECT,_project.GetFullDirectory());
-    }
-
-    //set current participant
-    if (_project.numParticipants()>0)
-    {
-        qDebug() << "Participants out:" << _project.numParticipants() << "\n";
-        fncSetActiveParticipant(0);//TODO: Settings remember last participant
-    }
-
-    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());
-}
-
 void MainWindow2::fncWaitForLoad()
 {
     QMessageBox msgBox;
@@ -521,9 +529,9 @@ void MainWindow2::fncLoadSettings(GrafixConfiguration configuration)
                         Consts::SETTING_POSTHOC_MIN_DURATION_VAL, configuration).toDouble()));
 
     ui->sliderVelocity->setValue(
-                Consts::GetSliderValue(Consts::SETTING_INTERP_VELOCITY_THRESHOLD,
+                Consts::GetSliderValue(Consts::SETTING_VELOCITY_THRESHOLD,
                 _project.GetProjectSetting(
-                        Consts::SETTING_INTERP_VELOCITY_THRESHOLD, configuration).toDouble()));
+                        Consts::SETTING_VELOCITY_THRESHOLD, configuration).toDouble()));
 
     ui->sliderVelocityVariance->setValue(
                 Consts::GetSliderValue(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL,
@@ -674,7 +682,8 @@ void MainWindow2::paintAll()
 }
 
 
-void MainWindow2::paintExperimentalSegments(){
+void MainWindow2::paintExperimentalSegments()
+{
     // The method paints grey boxes in the areas that don't need to be coded
     //TODO: Expand to all other boxes too
 
@@ -1072,7 +1081,7 @@ void MainWindow2::paintVelocity()
     painter.drawText(QPoint(10,halfway_pixels),QString::number(halfway_pixels / (_degPerPixel * _hz * this->_velocity_view_zoom)));
 
     //and draw velocity threshold line
-    double vel_thresh_line = _project.GetProjectSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD,Consts::ACTIVE_CONFIGURATION()).toDouble() *
+    double vel_thresh_line = _project.GetProjectSetting(Consts::SETTING_VELOCITY_THRESHOLD,Consts::ACTIVE_CONFIGURATION()).toDouble() *
                              _hz * _degPerPixel * this->_velocity_view_zoom;
     painter.setPen(QColor(0,0,255,127));
     painter.drawLine(QPoint(0,vel_thresh_line),
@@ -1255,29 +1264,6 @@ void MainWindow2::paintClear()
 /**
  *          PUBLIC SLOTS METHODS
  */
-void MainWindow2::fncPress_bAcceptEstimation(){
-
-    //TODO Streamline this into process
-    if (p_autoFixAllM->is_empty()){ //TODO: Check dates too
-        QMessageBox msgBox;
-        msgBox.setText("You have not done any estimation yet.");
-        msgBox.setInformativeText("Please follow the steps above to detect fixations.");
-        msgBox.exec();
-    }else{
-        fixAllM = autoFixAllM;
-        GPMatrixFunctions::fncReturnFixationinSegments( p_fixAllM, p_experimentalSegmentsM);
-    }
-
-    if (!p_autoFixAllM->is_empty()) GPMatrixFunctions::saveFile((*p_autoFixAllM),p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
-    if (!p_smoothM->is_empty()) GPMatrixFunctions::saveFile((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
-    if (!p_fixAllM->is_empty()) GPMatrixFunctions::saveFile((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
-
-    ui->stackedWidget->setCurrentWidget(ui->page_manual);
-
-    paintSmoothData();
-    paintFixations();
-
-}
 
 void MainWindow2::fncPress_bInterpolate()
 {
@@ -1319,9 +1305,15 @@ void MainWindow2::fncPress_bEstimateFixations()
     GPMatrixFunctions::readFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     GPMatrixFunctions::readFileSafe((*p_autoFixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
 
-    // Paint fixations
-    paintSmoothData();
-    paintFixations();
+    if (!p_autoFixAllM->is_empty())
+    {
+        fixAllM = autoFixAllM;
+        GPMatrixFunctions::fncReturnFixationinSegments( p_fixAllM, p_experimentalSegmentsM);
+        if (!p_autoFixAllM->is_empty()) GPMatrixFunctions::saveFileSafe((*p_autoFixAllM),p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+        if (!p_fixAllM->is_empty()) GPMatrixFunctions::saveFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    }
+
+    paintAll();
 }
 
 void MainWindow2::fncPress_bNext()
@@ -1409,12 +1401,12 @@ void MainWindow2::fncPress_bSmoothPursuit()
 
 void MainWindow2::fncPress_bResetFixations()
 {
-    fncPressActionButton(Consts::AC_RESET_TO_AUTO,ui->bResetToAuto,"");
+    fncPressActionButton(Consts::AC_RESET_TO_AUTO,ui->bResetToAuto,Consts::HELP_RESET_MODE);
 }
 
 void MainWindow2::fncPress_bResizeFixation()
 {
-    fncPressActionButton(Consts::AC_DRAG_ENDS, ui->bResizeFixation, "");
+    fncPressActionButton(Consts::AC_DRAG_ENDS, ui->bResizeFixation, Consts::HELP_DRAG_MODE);
 }
 
 void MainWindow2::fncPressActionButton(int action, QPushButton* button, QString message)
@@ -1521,7 +1513,6 @@ void MainWindow2::fncPress_subMenuProjectOpen()
     // Open a new project
     fncWaitForLoad();
 
-    //TODO change to open config
     DialogOpenProject w(&_project);
     w.setWindowTitle(tr("Select project or create new one"));
     w.exec();
@@ -1530,7 +1521,6 @@ void MainWindow2::fncPress_subMenuProjectOpen()
     QSettings settings("options.ini", QSettings::IniFormat);
     settings.setValue(Consts::SETTING_PROJECT,_project.GetFullDirectory());
 
-    //_active_participant may no longer be ok (TODO: check if project changed)
     p_active_participant = NULL;
     if (_project.numParticipants()>0)
     {
@@ -1688,10 +1678,43 @@ void MainWindow2::fncSetToolTips()
                                       "Consecutive fixations merged - post-hoc merging has occurred.\n"
                                       "High variance removed - post-hoc removal of high variance fixation.\n"
                                       "Short fixations removed - post-hoc removal of short fixation.\n");
+
+    //manual page
     this->ui->bCreate->setToolTip(Consts::HELP_CREATE_MODE);
     this->ui->bDelete->setToolTip(Consts::HELP_DELETE_MODE);
     this->ui->bSmoothPursuit->setToolTip(Consts::HELP_PURSUIT_MODE);
     this->ui->bMerge->setToolTip(Consts::HELP_MERGE_MODE);
+    this->ui->bResetToAuto->setToolTip(Consts::HELP_RESET_MODE);
+    this->ui->bResizeFixation->setToolTip(Consts::HELP_DRAG_MODE);
+    this->ui->txTo->setToolTip(Consts::HELP_MANUAL_EXEC);
+    this->ui->txFrom->setToolTip(Consts::HELP_MANUAL_EXEC);
+    this->ui->bExecManual->setToolTip(Consts::HELP_MANUAL_EXEC);
+    this->ui->lFrom->setToolTip(Consts::HELP_POSITION);
+    this->ui->lTo->setToolTip(Consts::HELP_POSITION);
+
+    //auto page
+    this->ui->sliderSigmaR->setToolTip(Consts::HELP_SETTING_SIGMA_R);
+    this->ui->sliderSigmaS->setToolTip(Consts::HELP_SETTING_SIGMA_S);
+    this->ui->sliderVelocity->setToolTip(Consts::HELP_SETTING_VEL);
+    this->ui->sliderInterpolation->setToolTip(Consts::HELP_SETTING_INTERP_TIME);
+    this->ui->sliderDisplacInterpolate->setToolTip(Consts::HELP_SETTING_INTERP_DISP);
+    this->ui->sliderMinFixation->setToolTip(Consts::HELP_SETTING_MIN_DUR);
+    this->ui->sliderVelocityVariance->setToolTip(Consts::HELP_SETTING_VARIANCE);
+    this->ui->sliderDisplacement->setToolTip(Consts::HELP_SETTING_MERGE);
+
+    this->ui->b_interpolate->setToolTip(Consts::HELP_BUTTON_INTERP);
+    this->ui->b_smooth->setToolTip(Consts::HELP_BUTTON_FILTER);
+    this->ui->b_estimateFixations->setToolTip(Consts::HELP_BUTTON_EST);
+
+    this->ui->leSigmaR->setToolTip(Consts::HELP_SETTING_SIGMA_R);
+    this->ui->leSigmaS->setToolTip(Consts::HELP_SETTING_SIGMA_S);
+    this->ui->leVelocity->setToolTip(Consts::HELP_SETTING_VEL);
+    this->ui->leInterpolation->setToolTip(Consts::HELP_SETTING_INTERP_TIME);
+    this->ui->leDisplacInterpolate->setToolTip(Consts::HELP_SETTING_INTERP_DISP);
+    this->ui->leMinFixation->setToolTip(Consts::HELP_SETTING_MIN_DUR);
+    this->ui->leVelocityVariance->setToolTip(Consts::HELP_SETTING_VARIANCE);
+    this->ui->leDisplacement->setToolTip(Consts::HELP_SETTING_MERGE);
+
 }
 
 void MainWindow2::fncChange_tInterpolation()
@@ -1712,7 +1735,7 @@ void MainWindow2::fncChange_tMinFixation()
 }
 void MainWindow2::fncChange_tVelocity()
 {
-    fncChangeLineEdit(Consts::SETTING_INTERP_VELOCITY_THRESHOLD, ui->leVelocity, ui->sliderVelocity);
+    fncChangeLineEdit(Consts::SETTING_VELOCITY_THRESHOLD, ui->leVelocity, ui->sliderVelocity);
     paintVelocity();//to paint line
 }
 void MainWindow2::fncChange_tVelocityVariance()
@@ -1781,7 +1804,7 @@ void MainWindow2::fncChange_sMinFixation()
 
 void MainWindow2::fncChange_sVelocity()
 {
-    fncChangeSlider(Consts::SETTING_INTERP_VELOCITY_THRESHOLD, ui->sliderVelocity, ui->leVelocity);
+    fncChangeSlider(Consts::SETTING_VELOCITY_THRESHOLD, ui->sliderVelocity, ui->leVelocity);
     paintVelocity(); //to paint line
 }
 

@@ -507,9 +507,6 @@ bool GrafixProject::LoadProjectSettings(QString d)
     else
     {
         _directory = "";
-        QMessageBox msgBox;
-        msgBox.setText("Cannot load project or no project.ini file found - please create new project.");
-        msgBox.exec();
         return false;
     }
 

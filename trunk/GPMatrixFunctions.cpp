@@ -391,36 +391,21 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      }
  }
 
- void GPMatrixFunctions::interpolateData(mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar)
+ void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar)
  { // Here we interpolate the smoothed data and create an extra column
      // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
 
      if (SmoothM.is_empty())
-         return; //TODO Error
+         return;
 
      gpProgressBar.beginProcessing("Interpolating Data", 100);
-     //can use different settingsPaths so long as they have the required settings!
-     QSettings settings(settingsPath, QSettings::IniFormat);
 
-     if(!settings.contains(Consts::SETTING_INTERP_LATENCY) |
-        !settings.contains(Consts::SETTING_HZ) |
-        !settings.contains(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT) |
-        !settings.contains(Consts::SETTING_INTERP_VELOCITY_THRESHOLD) |
-        !settings.contains(Consts::SETTING_DEGREE_PER_PIX) |
-        !settings.contains(Consts::SETTING_EXP_WIDTH))
-     {
-         //TODO: Handle errors with user
-         return;
-     }
 
-     //double degreePerPixel       = settings.value(MyConstants::SETTING_DEGREE_PER_PIX).toDouble();
-     double hz                   = settings.value(Consts::SETTING_HZ).toDouble();
-     double interpolationLatency = settings.value(Consts::SETTING_INTERP_LATENCY).toDouble();
-     double displacInterpolation = settings.value(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
-     //double velocity             = settings.value(MyConstants::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
-     //int    invalidSamples       = MyConstants::INVALID_SAMPLES; // 3 maximun invalid samples
+     double hz                   = settingsLoader.LoadSetting(Consts::SETTING_HZ).toDouble();
+     double interpolationLatency = settingsLoader.LoadSetting(Consts::SETTING_INTERP_LATENCY).toDouble();
+     double displacInterpolation = settingsLoader.LoadSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
      int    gapLenght            = interpolationLatency * hz / 1000;
-     //int    expWidth             = settings.value(MyConstants::SETTING_EXP_WIDTH).toInt();
+
 
      int indexPrevSacc, indexNextSacc, indexDataBack;
      double euclideanDisPrev, euclideanDisNext = -1, xAvg, yAvg;
@@ -428,19 +413,14 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      mat aux2, aux3;
      uvec fixIndex;
 
-     if (SmoothM.n_rows < 1)
-     {
-         //TODO Error
-         return;
-     }
      // Remove previous interpolation and create the new coulmns
      mat aux = zeros(SmoothM.n_rows, 11);
      aux.cols(0,3) = SmoothM.cols(0,3);
      SmoothM = aux;
 
-      // 1- Calculate provisional velocity for each point and flag the points avobe threshold
-     //GPMatrixFunctions::fncCalculateVelocity(&SmoothM,invalidSamples,expWidth,velocity, degreePerPixel, hz);
-    GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsPath);
+     // 1- Calculate provisional velocity for each point and flag the points avobe threshold
+     GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
+
      // 2- Run the whole smooth file.
      for(uword i = 0; i < SmoothM.n_rows; ++i)
      {
@@ -504,7 +484,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
                          SmoothM.rows(i,indexDataBack).col(3).fill(yAvg);
                          SmoothM.rows(i,indexDataBack).col(6).fill(1);  //Interpolation index!
 
-                         GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsPath); // Update.
+                         GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsLoader); // Update.
 
                      }
 
@@ -772,7 +752,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      int invalidSamples      = Consts::INVALID_SAMPLES;
      int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
      //int expHeight           = settings.value(MyConstants::SETTING_EXP_HEIGHT).toInt();
-     double velocity         = settingsLoader.LoadSetting(Consts::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
+     double velocity         = settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
      double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 

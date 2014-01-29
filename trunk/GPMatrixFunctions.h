@@ -57,7 +57,7 @@ public:
 
     //Take address of rough matrix and smooth matrix.
     //Replaces SmoothM with a smoothed version of RoughM
-    static void interpolateData(mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
+    static void interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar);
     static void smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);

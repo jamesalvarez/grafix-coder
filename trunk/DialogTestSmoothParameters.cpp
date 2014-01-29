@@ -89,7 +89,7 @@ void DialogTestSmoothParameters::fncChange_sMinFixation()
 
 void DialogTestSmoothParameters::fncChange_sVelocity()
 {
-    fncSetTempSettingFromSlider(Consts::SETTING_INTERP_VELOCITY_THRESHOLD,
+    fncSetTempSettingFromSlider(Consts::SETTING_VELOCITY_THRESHOLD,
                                 ui->sliderVelocity->value(),
                                 ui->lVelocity);
 }
@@ -232,7 +232,7 @@ void DialogTestSmoothParameters::loadData(const mat &RoughM, uword displayStartI
 
     ui->sliderVelocity->setValue(
                 loader.LoadSliderSetting(
-                        Consts::SETTING_INTERP_VELOCITY_THRESHOLD));
+                        Consts::SETTING_VELOCITY_THRESHOLD));
 
     ui->sliderVelocityVariance->setValue(
                 loader.LoadSliderSetting(

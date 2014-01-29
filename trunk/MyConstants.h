@@ -106,7 +106,7 @@ public:
     static const QString SETTING_DEGREE_PER_PIX;
     static const QString SETTING_SECS_FRAGMENT;
     static const QString SETTING_INTERP_LATENCY;
-    static const QString SETTING_INTERP_VELOCITY_THRESHOLD;
+    static const QString SETTING_VELOCITY_THRESHOLD;
     static const QString SETTING_INTERP_MAXIMUM_DISPLACEMENT;
     static const QString SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL;
     static const QString SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG;
@@ -165,6 +165,33 @@ public:
     static const QString HELP_PURSUIT_MODE;
     static const QString HELP_DELETE_MODE;
     static const QString HELP_STATUS_READY;
+    static const QString HELP_RESET_MODE;
+    static const QString HELP_DRAG_MODE;
+    static const QString HELP_MANUAL_EXEC;
+
+     static const QString HELP_POSITION;
+
+    static const QString HELP_SETTING_SIGMA_S;
+
+    static const QString HELP_SETTING_SIGMA_R;
+
+    static const QString HELP_SETTING_INTERP_TIME;
+    static const QString HELP_SETTING_INTERP_DISP;
+
+    static const QString HELP_SETTING_VEL;
+
+    static const QString HELP_SETTING_MERGE;
+
+    static const QString HELP_SETTING_VARIANCE;
+
+    static const QString HELP_SETTING_MIN_DUR;
+
+
+    static const QString HELP_BUTTON_FILTER;
+
+    static const QString HELP_BUTTON_INTERP;
+
+    static const QString HELP_BUTTON_EST;
 
     static int GetSliderValue(QString setting, double value);
     static double GetValueFromSlider(QString setting, int slider_value);

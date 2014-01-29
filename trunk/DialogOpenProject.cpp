@@ -108,12 +108,8 @@ void DialogOpenProject::fncNewProjectClicked()
 
 void DialogOpenProject::fncLoadProjectClicked()
 {
-    //TODO: Check if there is a project, ask if need to save
-
-    //use:
     QString dir = QFileDialog::getExistingDirectory(this,"Choose existing project directory");
-
-    _model->LoadData(dir);
+    if (!dir.isEmpty()) _model->LoadData(dir);
 }
 
 
