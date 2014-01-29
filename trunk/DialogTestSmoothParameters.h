@@ -45,7 +45,11 @@ private:
     uword _displayStartIndex;
     uword _displayStopIndex;
 
+    //loads a slider value from settings
+    int loadSliderValue(QString setting, GrafixSettingsLoader &gsl);
+
     //Sets a project.ini setting
+    void fncSetTempSettingFromSlider(QString setting, int slider_value, QLabel *label);
     void fncSetTempSetting(QString setting, QVariant value);
 
     //Gets submatrix based on stop and start index

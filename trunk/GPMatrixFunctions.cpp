@@ -259,6 +259,67 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
     }*/
 }
 
+ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM, GPMatrixProgressBar *gpProgressBar)
+ {
+     gpProgressBar->beginProcessing("Smoothing Data with Trilateral Filter...",50);
+     smoothRoughMatrixTrilateral(RoughM, settingsLoader, SmoothM);
+     gpProgressBar->endProcessing();
+ }
+void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM)
+{
+    //load settings
+    bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
+    int expWidth = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
+    int expHeight = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
+    //first put data into Raw2D object
+    Raw2D image_X;
+    Raw2D image_Y;
+    image_X.sizer(RoughM.n_rows,1);
+    image_Y.sizer(RoughM.n_rows,1);
+
+    Raw2D image_Xs;
+    Raw2D image_Ys;
+    image_Xs.sizer(RoughM.n_rows,1);
+    image_Ys.sizer(RoughM.n_rows,1);
+
+    //copy eyes if necessary
+    for (uword i = 0; i < RoughM.n_rows; ++i)
+    {
+      if (RoughM(i,2) == -1 && RoughM(i,4) == -1){
+          image_X.put(i, 0, 0);
+          image_Y.put(i, 0, 0);
+      }else if (copy_eyes && RoughM(i,2)!= -1 && RoughM(i,4) == -1 ) { // Left eyes were detected but not right
+          image_X.put(i, 0, RoughM(i,2) * expWidth  );
+          image_Y.put(i, 0, RoughM(i,3) * expHeight );
+      }else if(copy_eyes && RoughM(i,2) == -1 && RoughM(i,4) != -1){  // Right eyes were detected, not left
+          image_X.put(i, 0, RoughM(i,4) * expWidth );
+          image_Y.put(i, 0, RoughM(i,5) * expHeight );
+      }else if(!copy_eyes && ((RoughM(i,2)!= -1 && RoughM(i,4) == -1) || (RoughM(i,4)!= -1 && RoughM(i,2) == -1) )){
+          image_X.put(i, 0, 0);
+          image_Y.put(i, 0, 0);
+      }else{   // Both eyes were detected
+          image_X.put(i, 0, (RoughM(i,2) + RoughM(i,4)) * expWidth /2);  // x
+          image_Y.put(i, 0, (RoughM(i,3) + RoughM(i,5)) * expHeight /2);  // y
+      }
+    }
+
+    double x_param = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_R).toDouble() ;
+    double y_param = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_R).toDouble() ;
+
+    double sigmas = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_S).toDouble();
+    Raw2D::TrilateralFilter(&image_X,&image_Xs, sigmas,x_param);
+    Raw2D::TrilateralFilter(&image_Y, &image_Ys, sigmas,y_param);
+
+    SmoothM->zeros(RoughM.n_rows,10);
+    for (uword i = 0; i < RoughM.n_rows; ++i)
+    {
+        SmoothM->at(i,0) = RoughM.at(i,0);
+        SmoothM->at(i,2) = image_Xs.get(i,0);
+        SmoothM->at(i,3) = image_Ys.get(i,0);
+    }
+
+}
+
  void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar)
  {
      gpProgressBar->beginProcessing("Smoothing Data...",50);

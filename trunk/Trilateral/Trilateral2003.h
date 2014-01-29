@@ -1,6 +1,31 @@
-//3456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_
+#ifndef TRILATERAL2003
+#define TRILATERAL2003
+
+#include <tgmath.h>
+#include <math.h>
+#include <cstddef>
+#include <ostream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <stdlib.h>
+#include <fstream>
+#include "MyConstants.h"
+#include "GrafixProject.h"
+#include "GPGeneralStaticLibrary.h"
+#include "GrafixSettingsLoader.h"
+
+
+#include <QtGui>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QDialog>
+#include <QProgressDialog>
+
+#include "armadillo"
 
 /*
+ *
+Slightly edited by J.Alvarez from original.
 
 This C++ source code fragment will trilateral filter a 2D scalar image,
 as described in:
@@ -103,7 +128,7 @@ public:				//---------------init fcns-------------
 
 	//Trilateral filter consisting of gradient filter, adaptive neighborhood
 	//computation and detail filter
-	void TrilateralFilter(Raw2D* srcImg, PIXTYPE sigmaC); 
+    static void TrilateralFilter(Raw2D* srcImg, Raw2D* pDestImg, PIXTYPE sigmaC, double sigmaR_custom);
 
 	//Computes X and Y gradients of the input image
    	void ComputeGradients(Raw2D* pX, Raw2D* pY); 
@@ -162,3 +187,5 @@ public:
     	};
 	void wipecopy(Raw3D& src);			// copy, resize as needed.
 };
+
+#endif

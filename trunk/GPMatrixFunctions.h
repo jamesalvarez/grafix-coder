@@ -6,6 +6,7 @@
 #include "GPGeneralStaticLibrary.h"
 #include "GrafixSettingsLoader.h"
 
+
 #include <QtGui>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QDialog>
@@ -15,6 +16,7 @@
 
 #define NO_XML
 #include "TRUNCATED_KERNEL_BF/include/fast_lbf.h"
+#include "Trilateral/Trilateral2003.h"
 
 using namespace arma;
 class GrafixParticipant;
@@ -59,6 +61,10 @@ public:
     static void smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
+
+    //These are a bit too slow at the moment but could be rewritten
+    static void smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
+    static void smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM);
 
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar);
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
