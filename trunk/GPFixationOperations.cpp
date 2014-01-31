@@ -21,7 +21,7 @@ void GPFixationOperations::fncEditFixation(const mat &roughM, mat *fix_row, int 
     fncRecalculateFixationValues(roughM, fix_row, expWidth, expHeight, degPerPixel);
 }
 
-mat GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel)
+void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel)
 {
     //first find all fixations in fixAllM which fall into the reset range and remove them
     //remember if cuts - so we dont accidentally join things.
@@ -47,7 +47,7 @@ mat GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, co
             before_from_index = fix_row;
         }
 
-        if (to < current_from && to < current_to && fix_row < after_to_index)
+        if (to < current_from && to < current_to && (int)fix_row < after_to_index)
         {
             after_to_index = fix_row;
         }

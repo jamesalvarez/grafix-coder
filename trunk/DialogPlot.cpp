@@ -26,7 +26,7 @@ void DialogPlot::loadSpikeData(const GrafixParticipant *p)
     for (uword i = 0; i<_fixAllM.n_rows; ++i)
     {
         mat velocities = zeros(_fixAllM.at(i,1)-_fixAllM.at(i,0)-1,1);
-        double average_vel;
+        double average_vel = 0;
         int counter = 0;
         for (uword i2 = 1+_fixAllM.at(i,0); i2 < _fixAllM.at(i,1); ++i2)
         {
@@ -115,7 +115,7 @@ void DialogPlot::loadDurData(const GrafixParticipant *p)
 
     mat durations = sort(_fixAllM.col(2),1);
 
-    int sub200index;
+    int sub200index = 0;
     for (int i=0; i<n_fixations; ++i)
     {
         //search for sub 200ms

@@ -166,7 +166,7 @@ const QVariant Consts::DefaultSetting(QString setting)
     else if (setting == Consts::SETTING_CONFIGURATION)
         return QVariant(false);
     else
-        return NULL;
+        return 0;
 }
 
 int Consts::GetSliderValue(QString setting, double value)

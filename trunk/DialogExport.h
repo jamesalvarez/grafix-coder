@@ -30,7 +30,9 @@ public:
     ~DialogExport();
 
     void loadData(GrafixParticipant *particpant, mat roughM,mat smoothM, mat fixAllM, mat experimentalSegmentsM);
-    
+    bool Saved();
+    QString Filename();
+
 private:
     Ui::DialogExport *ui;
 
@@ -39,6 +41,8 @@ private:
     mat smoothM;
     mat fixAllM;
     mat experimentalSegmentsM;
+    bool _saved;
+    QString _filename;
 
 public slots:
      void fncPress_bExport();

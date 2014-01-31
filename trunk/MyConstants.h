@@ -135,6 +135,9 @@ public:
     static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_S = 5000;
     static const int MAXSLIDER_SETTING_SMOOTHING_SIGMA_R = 10000;
 
+    static const int MINSLIDER_SETTING_SMOOTHING_SIGMA_R = 100;
+    static const int MINSLIDER_SETTING_SMOOTHING_SIGMA_S = 50;
+
     static const GrafixConfiguration ACTIVE_CONFIGURATION();
     static const QList<QString> LIST_CONFIGURATION_SETTINGS();
     static const QVariant DefaultSetting(QString setting);

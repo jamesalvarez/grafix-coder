@@ -33,7 +33,7 @@ public:
 
      static void fncRecalculateFixationValues(const mat &roughM, mat *fixAllRow, int expWidth, int expHeight, double degPerPixel);
      static void fncRecalculateFixations(const mat &roughM, mat *fixAllM, int expWidth, int expHeight, double degPerPixel);
-     static mat fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel);
+     static void fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel);
      static void DeleteRow(mat *matrix, uword index);
 };
 

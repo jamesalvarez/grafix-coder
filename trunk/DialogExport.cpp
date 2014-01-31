@@ -26,6 +26,8 @@ void DialogExport::loadData(GrafixParticipant *participant, mat roughM,mat smoot
     this->smoothM = smoothM;
     this->fixAllM = fixAllM;
     this->experimentalSegmentsM = experimentalSegmentsM;
+    _saved = false;
+    _filename = "";
 
 }
 
@@ -153,7 +155,12 @@ void DialogExport::fncPress_bExport(){
     }
 
     // **** Save the file
-    std::string fileName = _participant->GetFullDirectory().toStdString() + "/fix_export_" + _participant->GetName().toStdString() + ".csv";
+    QString fn = QFileDialog::getSaveFileName(this,"Save exported data","","*.csv");
+
+    GPMatrixFunctions::saveFileSafe(exportM,fn);
+
+
+    /*std::string fileName = _participant->GetFullDirectory().toStdString() + "/fix_export_" + _participant->GetName().toStdString() + ".csv";
 
     ofstream fout(fileName.c_str());
 
@@ -171,9 +178,19 @@ void DialogExport::fncPress_bExport(){
 
     }
 
-    fout.close();
+    fout.close();*/
 
-    DialogGrafixError::LogNewError(_participant,"Export file saved.");
-    DialogGrafixError::ShowDialog();
+    _saved = true;
+    _filename = fn;
     this->close();
+}
+
+bool DialogExport::Saved()
+{
+    return _saved;
+}
+
+QString DialogExport::Filename()
+{
+    return _filename;
 }
