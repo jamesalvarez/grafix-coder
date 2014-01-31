@@ -379,8 +379,15 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
          }
      }
 
+     try
+     {
      Image_filter::fast_LBF(image_X,image_X,sigma_s,Xsigma_r,false,&filtered_X,&filtered_X);
      Image_filter::fast_LBF(image_Y,image_Y,sigma_s,Ysigma_r,false,&filtered_Y,&filtered_Y);
+     }
+     catch(...)
+     {
+         DialogGrafixError::LogNewError(0,"Invadid filter parameters - too small?");
+     }
 
      SmoothM->zeros(RoughM.n_rows,10);
      for (uword i = 0; i < RoughM.n_rows; ++i)

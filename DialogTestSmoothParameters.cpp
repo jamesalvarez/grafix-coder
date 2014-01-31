@@ -21,10 +21,11 @@ DialogTestSmoothParameters::DialogTestSmoothParameters(QWidget *parent) :
     ui->sliderInterpolation->setMinimum(0);
     ui->sliderMinFixation->setMinimum(0);
     ui->sliderMinFixation->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL);
-    ui->sliderSigmaR->setMinimum(1);
+    ui->sliderSigmaR->setMinimum(Consts::MINSLIDER_SETTING_SMOOTHING_SIGMA_R);
     ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
-    ui->sliderSigmaS->setMinimum(1);
+    ui->sliderSigmaS->setMinimum(Consts::MINSLIDER_SETTING_SMOOTHING_SIGMA_S);
     ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
+
     //value changed
     connect( ui->sliderSigmaR, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_R()) );
     connect( ui->sliderSigmaS, SIGNAL(valueChanged(int)), this, SLOT( fncChange_sSmooth_S()) );

@@ -114,9 +114,9 @@ MainWindow2::MainWindow2(QWidget *parent) :
     ui->sliderInterpolation->setMinimum(0);
     ui->sliderMinFixation->setMinimum(0);
     ui->sliderMinFixation->setMaximum(Consts::MAXSLIDER_SETTING_POSTHOC_MIN_DURATION_VAL);
-    ui->sliderSigmaR->setMinimum(1);
+    ui->sliderSigmaR->setMinimum(Consts::MINSLIDER_SETTING_SMOOTHING_SIGMA_R);
     ui->sliderSigmaR->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_R);
-    ui->sliderSigmaS->setMinimum(1);
+    ui->sliderSigmaS->setMinimum(Consts::MINSLIDER_SETTING_SMOOTHING_SIGMA_S);
     ui->sliderSigmaS->setMaximum(Consts::MAXSLIDER_SETTING_SMOOTHING_SIGMA_S);
 
     //start new label
@@ -1557,6 +1557,11 @@ void MainWindow2::fncPress_subMenuExport()
         w.setWindowTitle(tr("Export data"));
         w.loadData(p_active_participant, roughM, smoothM, fixAllM, experimentalSegmentsM);
         w.exec();
+
+        if (w.Saved())
+        {
+            ui->statusbar->showMessage("Exported data to: " + w.Filename());
+        }
     }
 }
 
