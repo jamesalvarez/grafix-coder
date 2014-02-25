@@ -9,6 +9,7 @@ DialogSaveNewConfiguration::DialogSaveNewConfiguration(QWidget *parent) :
 
 
     ui->lwConfigurations->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->lActiveConfiguration->setText("No currently selected configuration.");
 }
 
 DialogSaveNewConfiguration::~DialogSaveNewConfiguration()
@@ -36,14 +37,18 @@ void DialogSaveNewConfiguration::fncPopulateList()
     ui->lwConfigurations->clear();
     for (int i = 0; i < (*p_configurations).size(); ++i)
     {
-        ui->lwConfigurations->addItem((*p_configurations)[i].first);
+        //Don't add the default configuration, users can click cancel to go back to that
+        if (!((*p_configurations)[i] == Consts::ACTIVE_CONFIGURATION()))
+        {
+            ui->lwConfigurations->addItem((*p_configurations)[i].first);
+        }
     }
 
     //select current configuration;
     bool selected_item = false;
-    for (int i = 0; i < (*p_configurations).size(); ++i)
+    for (int i = 0; i < ui->lwConfigurations->count(); ++i)
     {
-        if ((*p_configurations)[i].first == _selected_configuration.first)
+        if (ui->lwConfigurations->item(i)->text() == _selected_configuration.first)
         {
             ui->lwConfigurations->item(i)->setSelected(true);
             selected_item = true;
@@ -51,10 +56,14 @@ void DialogSaveNewConfiguration::fncPopulateList()
         }
     }
 
-   if (!selected_item)
-       ui->lwConfigurations->item(0)->setSelected(true);
+   //Don't select something if not already selected.
+   //if (!selected_item)
+   //    ui->lwConfigurations->item(0)->setSelected(true);
 
-    ui->lActiveConfiguration->setText("Selected configuration: " + _selected_configuration.first);
+   if (selected_item)
+   {
+        ui->lActiveConfiguration->setText("Selected configuration: " + _selected_configuration.first);
+   }
 }
 
 void DialogSaveNewConfiguration::on_bAdd_clicked()
@@ -72,7 +81,9 @@ void DialogSaveNewConfiguration::on_bAdd_clicked()
 
     if (!unique_name)
     {
+        //name not unique
         ui->leNewConfig->setText("");
+        DialogGrafixError::AlertNewError("The configuration's name needs to be unique");
         return;
     }
 
@@ -95,10 +106,11 @@ void DialogSaveNewConfiguration::on_bAdd_clicked()
     int new_item_index = (*p_configurations).size();
     (*p_configurations).insert(new_item_index,gc);
 
+
     //now copy active configuration
     this->p_project->SaveConfiguration((*p_configurations)[new_item_index]);
 
-    //set active
+    //set selected
     _selected_configuration = (*p_configurations)[new_item_index];
 
     fncPopulateList();
@@ -106,7 +118,13 @@ void DialogSaveNewConfiguration::on_bAdd_clicked()
 
 void DialogSaveNewConfiguration::on_buttonBox_accepted()
 {
-    //activate selected configuration
+    //if no item is selected do nothing
+    if (ui->lwConfigurations->selectedItems().size() == 0)
+    {
+        _selected_configuration = Consts::ACTIVE_CONFIGURATION();
+    }
+
+    //otherwise activate selected configuration
     QString selected_item = ui->lwConfigurations->selectedItems().first()->text();
     for (int i = 0; i < (*p_configurations).size(); ++i)
     {
@@ -120,7 +138,7 @@ void DialogSaveNewConfiguration::on_buttonBox_accepted()
 
 void DialogSaveNewConfiguration::on_buttonBox_rejected()
 {
-    _selected_configuration = _original_configuration;
+    _selected_configuration = Consts::ACTIVE_CONFIGURATION();
 }
 
 void DialogSaveNewConfiguration::on_lwConfigurations_itemClicked(QListWidgetItem *item)

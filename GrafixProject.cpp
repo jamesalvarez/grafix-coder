@@ -416,22 +416,40 @@ void GrafixProject::ActivateConfiguration(GrafixConfiguration configuration)
 
 void GrafixProject::SaveConfiguration(GrafixConfiguration configuration)
 {
+    //todo: loc this process to make sure transfer is atomic
+    QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
+
+    //first update number of configurations
+    int numberconfigs = settings.value(Consts::SETTING_NUMBER_CONFIGURATIONS).toInt();
+    if (configuration.second >= numberconfigs) numberconfigs = configuration.second + 1;
+    settings.setValue(Consts::SETTING_NUMBER_CONFIGURATIONS,numberconfigs);
+
+    //then save new configuration names
+    QString code = Consts::SETTING_CONFIGURATION_ID + "_" + QString::number(configuration.second);
+    settings.setValue(code, configuration.second);
+    code = Consts::SETTING_CONFIGURATION_NAME + "_" + QString::number(configuration.second);
+    settings.setValue(code, configuration.first);
+
+     //Save participants
     this->CopyConfiguration(Consts::ACTIVE_CONFIGURATION(), configuration);
 }
 
 void GrafixProject::CopyConfiguration(GrafixConfiguration from, GrafixConfiguration to)
 {
     //check source configuration header and that it is in list of configurations
-    if (!this->GetProjectSetting(Consts::SETTING_CONFIGURATION, from).toBool()  ||
+
+    if (this->GetProjectSetting(Consts::SETTING_CONFIGURATION_ID, from) != from.second  ||
         !this->_configurations.contains(from))
+        return;
+
+    //check destination configuration header and that it is in list of configurations
+    if (this->GetProjectSetting(Consts::SETTING_CONFIGURATION_ID, to) != to.second  ||
+        !this->_configurations.contains(to))
         return;
 
     //if to configuration does not exist in list, create it
     if (!this->_configurations.contains(to))
         _configurations.insert(_configurations.size(),to);
-
-    //1st save configuration header
-    this->SetProjectSetting(Consts::SETTING_CONFIGURATION, to, QVariant(true));
 
     QList<QString> sets = Consts::LIST_CONFIGURATION_SETTINGS();
 
@@ -452,21 +470,19 @@ void GrafixProject::SaveSettings()
     QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
     settings.setValue(Consts::SETTING_LAST_SAVED, QDateTime::currentDateTime());
     settings.setValue(Consts::SETTING_NUMBER_PARTICIPANTS, QString::number(_participants.size()));
-    settings.setValue(Consts::SETTING_NUMBER_CONFIGURATIONS, QString::number(_configurations.size()));
-    //Save participants
+
+    //save default configuration code
+    GrafixConfiguration configuration = Consts::ACTIVE_CONFIGURATION();
+    QString code = Consts::SETTING_CONFIGURATION_ID + "_" + QString::number(configuration.second);
+    settings.setValue(code, configuration.second);
+    code = Consts::SETTING_CONFIGURATION_NAME + "_" + QString::number(configuration.second);
+    settings.setValue(code, configuration.first);
+
     for (int i=0;i<_participants.size();i++)
     {
         QString pcode = Consts::SETTING_PARTICIPANT_DIRECTORY + QString::number(i);
         settings.setValue(pcode,_participants[i].GetRelativeDirectory());
         _participants[i].SaveSettings();
-    }
-    //Save configuration names
-    for (int i = 0; i < _configurations.size(); ++i)
-    {
-        QString code = Consts::SETTING_CONFIGURATION_ID + QString::number(i);
-        settings.setValue(code, _configurations[i].second);
-        code = Consts::SETTING_CONFIGURATION_NAME + QString::number(i);
-        settings.setValue(code, _configurations[i].first);
     }
 }
 
@@ -492,10 +508,10 @@ bool GrafixProject::LoadProjectSettings(QString d)
         int numberconfigs = settings.value(Consts::SETTING_NUMBER_CONFIGURATIONS).toInt();
         for (int i = 0; i < numberconfigs; ++i)
         {
-            QString code = Consts::SETTING_CONFIGURATION_ID + QString::number(i);
+            QString code = Consts::SETTING_CONFIGURATION_ID + "_" + QString::number(i);
             GrafixConfiguration gc;
             gc.second = settings.value(code).toInt();
-            code = Consts::SETTING_CONFIGURATION_NAME + QString::number(i);
+            code = Consts::SETTING_CONFIGURATION_NAME + "_" + QString::number(i);
             gc.first = settings.value(code).toString();
 
             //stop from loading active configuration, which is always there
@@ -518,8 +534,6 @@ void GrafixProject::NewBlankProject(QString dir)
     QString PATH_ROUGH = "";
     QString EXPE_SEGMETS_PATH = "";
     QString Name = "";
-    //1st save configuration header (active is always on)
-    this->SetProjectSetting(Consts::SETTING_CONFIGURATION,Consts::ACTIVE_CONFIGURATION(),QVariant(true));
     cleanParticipants();
 }
 
