@@ -38,7 +38,6 @@ const QString Consts::SETTING_SMOOTHING_SIGMA_S =              "SETTING_SMOOTHIN
 const QString Consts::SETTING_SMOOTHING_SIGMA_R =              "SETTING_SMOOTHING_SIGMA_R";
 const QString Consts::SETTING_SMOOTHING_USE_OTHER_EYE=         "SETTING_SMOOTH_USE_OTHER_EYE";
 
-const QString Consts::SETTING_CONFIGURATION =                   "SETTING_CONFIGURATION";
 const QString Consts::SETTING_CONFIGURATION_ID=                 "SETTING_CONFIGURATION_ID";
 const QString Consts::SETTING_CONFIGURATION_NAME=               "SETTING_CONFIGURATION_NAME";
 const QString Consts::SETTING_PARTICIPANT_DIRECTORY=            "SETTING_PARTICIPANT_DIRECTORY";
@@ -163,8 +162,6 @@ const QVariant Consts::DefaultSetting(QString setting)
         return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_R);
     else if (setting == Consts::SETTING_SMOOTHING_SIGMA_S)
         return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_S);
-    else if (setting == Consts::SETTING_CONFIGURATION)
-        return QVariant(false);
     else
         return 0;
 }

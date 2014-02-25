@@ -118,7 +118,6 @@ public:
     static const QString SETTING_SMOOTHING_SIGMA_R;
     static const QString SETTING_SMOOTHING_USE_OTHER_EYE;
     static const QString SETTINGS_CONFIGURATION_CHANGED_DATE;
-    static const QString SETTING_CONFIGURATION;
     static const QString SETTING_CONFIGURATION_ID;
     static const QString SETTING_CONFIGURATION_NAME;
     static const QString SETTING_PARTICIPANT_DIRECTORY;

@@ -1617,6 +1617,7 @@ void MainWindow2::fncPress_subMenuChangeConfiguration()
     GrafixConfiguration selected_config = d.Selected();
     if (!(selected_config == Consts::ACTIVE_CONFIGURATION()))
     {
+        //not active configuration, so load the settings.
         _project.ActivateConfiguration(selected_config);
         fncLoadSettings(selected_config);
         this->_configuration_changed = false;
