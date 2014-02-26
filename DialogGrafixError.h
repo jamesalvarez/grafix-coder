@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include "GrafixProject.h"
+#include <QDateTime>
 
 namespace Ui {
 class DialogGrafixError;
@@ -20,6 +21,7 @@ public:
     static void LogNewError(GrafixParticipant* participant, QString Error);
     static void AlertNewError(QString Error);
     static void ShowDialog();
+
 public:
     struct BatchError
     {
@@ -35,7 +37,7 @@ private:
     static QString                 GetErrorList();
     static QList<BatchError>       _error_list;
     static DialogGrafixError*          _mainobject;
-
+    static bool new_log_file_created;
 public slots:
     void fnc_bClearPress();
 

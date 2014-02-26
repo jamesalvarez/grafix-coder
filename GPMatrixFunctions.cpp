@@ -358,43 +358,131 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      image_type filtered_X(RoughM.n_rows,1);
      image_type filtered_Y(RoughM.n_rows,1);
 
-     //copy eyes if necessary
-     for (uword i = 0; i < RoughM.n_rows; ++i)
+     //make a copy to correct errors
+     mat RoughM2 = RoughM;
+
+     //prepare data
+     for (uword i = 0; i < RoughM2.n_rows; ++i)
      {
-         if (RoughM(i,2) == -1 && RoughM(i,4) == -1){
+         if (RoughM2(i,2) < 0 || RoughM2(i,2) > 1) RoughM2(i,2) = -1;
+         if (RoughM2(i,3) < 0 || RoughM2(i,3) > 1) RoughM2(i,3) = -1;
+         if (RoughM2(i,4) < 0 || RoughM2(i,4) > 1) RoughM2(i,4) = -1;
+         if (RoughM2(i,5) < 0 || RoughM2(i,5) > 1) RoughM2(i,5) = -1;
+     }
+
+     //copy eyes if necessary
+     for (uword i = 0; i < RoughM2.n_rows; ++i)
+     {        
+         if (RoughM2(i,2) <= -1 && RoughM2(i,4) <= -1){
              image_X(i,0) = 0;
              image_Y(i,0) = 0;
-         }else if (copy_eyes && RoughM(i,2)!= -1 && RoughM(i,4) == -1 ) { // Left eyes were detected but not right
-             image_X(i,0) = RoughM(i,2);
-             image_Y(i,0) = RoughM(i,3);
-         }else if(copy_eyes && RoughM(i,2) == -1 && RoughM(i,4) != -1){  // Right eyes were detected, not left
-             image_X(i,0) = RoughM(i,4);
-             image_Y(i,0) = RoughM(i,5);
-         }else if(!copy_eyes && ((RoughM(i,2)!= -1 && RoughM(i,4) == -1) || (RoughM(i,4)!= -1 && RoughM(i,2) == -1) )){
+         }else if (copy_eyes && RoughM2(i,2)!= -1 && RoughM2(i,4) <= -1 ) { // Left eyes were detected but not right
+             image_X(i,0) = RoughM2(i,2);
+             image_Y(i,0) = RoughM2(i,3);
+         }else if(copy_eyes && RoughM2(i,2) <= -1 && RoughM2(i,4) != -1){  // Right eyes were detected, not left
+             image_X(i,0) = RoughM2(i,4);
+             image_Y(i,0) = RoughM2(i,5);
+         }else if(!copy_eyes && ((RoughM2(i,2)!= -1 && RoughM2(i,4) <= -1) || (RoughM2(i,4)!= -1 && RoughM2(i,2) <= -1) )){
              image_X(i,0) = 0;
              image_Y(i,0) = 0;
          }else{   // Both eyes were detected
-             image_X(i,0) = (RoughM(i,2) + RoughM(i,4))/2;  // x
-             image_Y(i,0) = (RoughM(i,3) + RoughM(i,5))/2;  // y
+             image_X(i,0) = (RoughM2(i,2) + RoughM2(i,4))/2;  // x
+             image_Y(i,0) = (RoughM2(i,3) + RoughM2(i,5))/2;  // y
          }
      }
 
+     //*** a loop which cuts the image if bad_allocs are thrown
+     GPMatrixFunctions::fast_LBF(image_X,sigma_s,Xsigma_r,false,&filtered_X);
+     GPMatrixFunctions::fast_LBF(image_Y,sigma_s,Ysigma_r,false,&filtered_Y);
+
+     SmoothM->zeros(RoughM2.n_rows,10);
+     for (uword i = 0; i < RoughM2.n_rows; ++i)
+     {
+         SmoothM->at(i,0) = RoughM2.at(i,0);
+         if (image_X(i,0) == 0)
+             SmoothM->at(i,2) = 0;
+         else
+             SmoothM->at(i,2) = filtered_X.at(i,0) * expWidth;
+
+         if (image_Y(i,0) == 0)
+             SmoothM->at(i,3) = 0;
+         else
+             SmoothM->at(i,3) = filtered_Y.at(i,0) * expHeight;
+     }
+ }
+
+ void GPMatrixFunctions::fast_LBF(Array_2D<double>& image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double>* filtered_X)
+ {
+     typedef Array_2D<double> image_type;
+
      try
      {
-     Image_filter::fast_LBF(image_X,image_X,sigma_s,Xsigma_r,false,&filtered_X,&filtered_X);
-     Image_filter::fast_LBF(image_Y,image_Y,sigma_s,Ysigma_r,false,&filtered_Y,&filtered_Y);
+     Image_filter::fast_LBF(image_X,image_X,sigma_s,Xsigma_r,b,filtered_X,filtered_X);
+
+     }
+     catch(const std::runtime_error& re)
+     {
+         // speciffic handling for runtime_error
+         DialogGrafixError::LogNewError(0,"Runtime error: " + QString(re.what()));;
+     }
+     catch(const std::exception& ex)
+     {
+         // speciffic handling for all exceptions extending std::exception, except
+         // std::runtime_error which is handled explicitly
+         DialogGrafixError::LogNewError(0,"Error occurred: " + QString(ex.what()) +
+                                        " with array size: " + QString::number(image_X.x_size()) +
+                                        " splitting file and retrying...");
+        //split file, process and patch with seam (that is double sigma s length)
+        int mid_point = image_X.x_size() / 2;
+
+        int x1_size = mid_point;
+        int x2_size = image_X.x_size() - mid_point;
+        int seam_size = sigma_s * 2;
+
+        image_type image_X_1(x1_size,1);
+        image_type image_X_2(x2_size,1);
+        image_type image_X_seam(seam_size,1);
+
+        image_type filt_X_1(x1_size,1);
+        image_type filt_X_2(x2_size,1);
+        image_type filt_X_seam(seam_size,1);
+
+        for (int i=0; i<x1_size; ++i)
+        {
+            image_X_1(i,0) = image_X(i,0);
+        }
+        for (int i=0; i<x2_size; ++i)
+        {
+            image_X_2(i,0) = image_X(mid_point + i, 0);
+        }
+        for (int i=0; i<seam_size; ++i)
+        {
+            image_X_seam(i,0) = image_X(mid_point - (seam_size / 2), 0);
+        }
+
+        fast_LBF(image_X_1,sigma_s,Xsigma_r,false,&filt_X_1);
+        fast_LBF(image_X_2,sigma_s,Xsigma_r,false,&filt_X_2);
+        fast_LBF(image_X_seam,sigma_s,Xsigma_r,false,&filt_X_seam);
+
+        //now to put back together again
+        for (int i=0; i<x1_size; ++i)
+        {
+            (*filtered_X)(i,0) = filt_X_1(i,0);
+        }
+        for (int i=0; i<x2_size; ++i)
+        {
+            (*filtered_X)(mid_point+i, 0) = filt_X_2(i,0);
+        }
+        for (int i=0; i<seam_size; ++i)
+        {
+            (*filtered_X)(mid_point - (seam_size / 2), 0) = filt_X_seam(i,0);
+        }
+
+
      }
      catch(...)
      {
-         DialogGrafixError::LogNewError(0,"Invadid filter parameters - too small?");
-     }
-
-     SmoothM->zeros(RoughM.n_rows,10);
-     for (uword i = 0; i < RoughM.n_rows; ++i)
-     {
-         SmoothM->at(i,0) = RoughM.at(i,0);
-         SmoothM->at(i,2) = filtered_X.at(i,0) * expWidth;
-         SmoothM->at(i,3) = filtered_Y.at(i,0) * expHeight;
+         DialogGrafixError::LogNewError(0,"Unknown Error: Parameters - too small?");
      }
  }
 

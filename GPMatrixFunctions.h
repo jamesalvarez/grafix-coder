@@ -62,6 +62,8 @@ public:
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
 
+    static void fast_LBF(Array_2D<double> &image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double> *filtered_X);
+
     //These are a bit too slow at the moment but could be rewritten
     static void smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM);
