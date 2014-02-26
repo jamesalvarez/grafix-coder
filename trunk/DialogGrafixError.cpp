@@ -15,6 +15,8 @@ DialogGrafixError::DialogGrafixError(QWidget *parent) :
     DialogGrafixError::_mainobject = this;
 }
 
+bool DialogGrafixError::new_log_file_created = false;
+
 DialogGrafixError::~DialogGrafixError()
 {
     if (DialogGrafixError::_mainobject != NULL)
@@ -35,14 +37,35 @@ void DialogGrafixError::ShowDialog()
 
 void DialogGrafixError::LogNewError(GrafixParticipant* participant, QString Error)
 {
+    if (!new_log_file_created)
+    {
+        std::ofstream outfile ("grafix.err");
+        outfile << "Log: " << QDateTime::currentDateTime().toString().toStdString() << "\n";
+        outfile.close();
+        new_log_file_created = true;
+    }
+
+    std::ofstream log("grafix.err", std::ios_base::app | std::ios_base::out);
+
+    log << QDateTime::currentDateTime().time().toString().toStdString() << ": ";
     DialogGrafixError::BatchError err;
 
     if (participant != NULL)
+    {
         err.ParticipantName = participant->GetName();
+        log << "Participant: " << err.ParticipantName.toStdString() << " ";
+    }
     else
+    {
         err.ParticipantName = "";
 
+    }
+
+
     err.Error = Error;
+    log << "- " << Error.toStdString() << "\n";
+
+    log.close();
 
     DialogGrafixError::_error_list.append(err);
 
