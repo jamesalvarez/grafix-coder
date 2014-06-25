@@ -909,7 +909,8 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
                  indexStartFix = i;
              }else if (indexStartFix != -1 ){ // End of the fixation. Create fixation!
 
-                 double dur = ((p_roughM->at(i,0) - p_roughM->at(0,0))/ 1000 ) - ((p_roughM->at(indexStartFix,0) - p_roughM->at(0,0))/ 1000 );
+                 //duration is in ms
+                 double dur = ((p_roughM->at(i,0) - p_roughM->at(indexStartFix,0)));
 
                  // Only use the points where eyes were detected:
                  mat roughCutM;
@@ -974,11 +975,14 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
          (*p_fixAllM) = fixations;//POSSIBLE ERROR?
  }
 
- void GPMatrixFunctions::fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur){
+ void GPMatrixFunctions::fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur)
+ {
+
+     if (p_fixAllM->is_empty()) return; //cannot remove no fixations lol
      p_smoothM->col(9).fill(0); // Restart
 
      // Find all fixations we will delete
-     uvec fixIndex =  arma::find(p_fixAllM->col(2) < (minDur)/1000);
+     uvec fixIndex =  arma::find(p_fixAllM->col(2) < minDur);
      mat minFix = p_fixAllM->rows(fixIndex);
 
      for (uword i = 0; i < minFix.n_rows; ++i){  // Modify the flag for the fixations we delete
@@ -986,8 +990,16 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      }
 
      // Delete min fixations
-     fixIndex =  arma::find(p_fixAllM->col(2) > (minDur)/1000);
-     (*p_fixAllM) = p_fixAllM->rows(fixIndex);
+     fixIndex =  arma::find(p_fixAllM->col(2) > minDur);
+
+     if (!fixIndex.empty())
+     {
+         (*p_fixAllM) = p_fixAllM->rows(fixIndex);
+     }
+     else
+     {
+         (*p_fixAllM).reset();
+     }
 
  }
 
@@ -1043,7 +1055,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
              p_smoothM->operator()(span(p_fixAllM->at(i,0),p_fixAllM->at(i+1,1)),span(7, 7) ).fill(1);
 
              // MERGE!
-             dur = ((p_roughM->at(p_fixAllM->at(i+1,1),0) - p_roughM->at(0,0))/ 1000 ) - ((p_roughM->at(p_fixAllM->at(i,0),0) - p_roughM->at(0,0))/ 1000 );
+             dur = p_roughM->at(p_fixAllM->at(i+1,1),0)  - p_roughM->at(p_fixAllM->at(i,0),0);
 
              // Only use the points where eyes were detected:
              if (p_roughM->n_cols == 8){  // Depens on if we have pupil dilation data or not!
@@ -1088,15 +1100,23 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      if (p_fixAllM->n_rows<1) return;
      p_smoothM->col(8).fill(0); // Restart
 
-     for (uword i = 0; i < p_fixAllM->n_rows-1; ++i){
-         if (p_fixAllM->at(i,5) > variance ){ // Remove fixation
+     for (uword i = 0; i < p_fixAllM->n_rows-1; ++i)
+     {
+         if (p_fixAllM->at(i,5) > variance)
+         {
+             // Remove fixation
              p_smoothM->operator()(span(p_fixAllM->at(i,0),p_fixAllM->at(i,1)),span(8,8) ).fill(1); // Indicate it
          }
      }
 
      uvec fixIndex =  arma::find(p_fixAllM->col(5) < variance);
-     if (!fixIndex.empty()){
+     if (!fixIndex.empty())
+     {
          (*p_fixAllM) = p_fixAllM->rows(fixIndex);
+     }
+     else
+     {
+         (*p_fixAllM).reset();
      }
 
  }
