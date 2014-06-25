@@ -308,7 +308,6 @@ void DialogTestSmoothParameters::paintFixations()
     col1 = 30;
     col2 = 90;
     col3 = 150;
-    if (_fixAllM.is_empty()) return;
 
     int fixTPos = 13;
     int fixPos = 15;
@@ -370,7 +369,7 @@ void DialogTestSmoothParameters::paintFixations()
             painterFixList.drawText( QPoint(col1,((counter +1) * 17)+ 20), QString::number(variance,'f', 2) );
 
             //DURATION
-            double dur = _fixAllM.at(i,2) * 1000;
+            double dur = _fixAllM.at(i,2);
             painterFixList.drawText( QPoint(col2,((counter +1) * 17)+ 20), QString::number(dur,'f', 0));
 
             if (i>0)
@@ -451,8 +450,6 @@ void DialogTestSmoothParameters::paintRoughData()
 
 void DialogTestSmoothParameters::paintVelocity()
 {
-    if (_smoothM.is_empty()) return;
-
     QPixmap pixmap(ui->lPanelVelocity->width()-2,ui->lPanelVelocity->height()-2);
     pixmap.fill(Qt::white);
 
@@ -464,28 +461,31 @@ void DialogTestSmoothParameters::paintVelocity()
     int x1,x2 = 0;
     int x_2back, x_1back, x_cur, y_2back, y_1back, y_cur;
 
-    for (uword i = 2; i < _smoothM.n_rows-1; ++i) {
-        x1 = (i-1)*(1/_displayIncrement );
-        x2 = (i)*(1/_displayIncrement );
+    if(!_smoothM.is_empty())
+    {
+        for (uword i = 2; i < _smoothM.n_rows-1; ++i) {
+            x1 = (i-1)*(1/_displayIncrement );
+            x2 = (i)*(1/_displayIncrement );
 
-        x_2back = _smoothM(i-2,2);
-        x_1back = _smoothM(i-1,2);
-        x_cur   = _smoothM(i,2);
-        y_2back = _smoothM(i-2,3);
-        y_1back = _smoothM(i-1,3);
-        y_cur   = _smoothM(i,3);
+            x_2back = _smoothM(i-2,2);
+            x_1back = _smoothM(i-1,2);
+            x_cur   = _smoothM(i,2);
+            y_2back = _smoothM(i-2,3);
+            y_1back = _smoothM(i-1,3);
+            y_cur   = _smoothM(i,3);
 
-        // oldAmp=sqrt(((XTwoBack-XOneBack)^2+(YTwoBack-YOneBack)^2)/2);
-        prevAmp = sqrt((double)( ((x_2back - x_1back)* (x_2back - x_1back)) + ((y_2back - y_1back)* (y_2back - y_1back)))/2);
-        curAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
+            // oldAmp=sqrt(((XTwoBack-XOneBack)^2+(YTwoBack-YOneBack)^2)/2);
+            prevAmp = sqrt((double)( ((x_2back - x_1back)* (x_2back - x_1back)) + ((y_2back - y_1back)* (y_2back - y_1back)))/2);
+            curAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
 
-        prevVel = (double)prevAmp*_hz * _degreePerPixel; // We calculate it x2 to see it better
-        curVel = (double)curAmp*_hz * _degreePerPixel;
+            prevVel = (double)prevAmp*_hz * _degreePerPixel; // We calculate it x2 to see it better
+            curVel = (double)curAmp*_hz * _degreePerPixel;
 
-        // Paint Smooth velocity
-        myPen.setColor(QColor(255, 0, 0, 127));
-        painter.setPen(myPen);
-        painter.drawLine(QPoint(x1, prevVel), QPoint(x2,curVel)); // XL
+            // Paint Smooth velocity
+            myPen.setColor(QColor(255, 0, 0, 127));
+            painter.setPen(myPen);
+            painter.drawLine(QPoint(x1, prevVel), QPoint(x2,curVel)); // XL
+        }
     }
 
     ui->lPanelVelocity->setPixmap(pixmap);
@@ -494,8 +494,6 @@ void DialogTestSmoothParameters::paintVelocity()
 
 void DialogTestSmoothParameters::paintSmoothData()
 {
-    if (_smoothM.is_empty()) return;
-
 
     QPixmap pixmap(ui->lPanelSmooth->width()-2,ui->lPanelSmooth->height()-2);
     pixmap.fill(Qt::white);
