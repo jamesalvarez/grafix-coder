@@ -219,6 +219,23 @@ void DialogVisualizationSegments::playRough(){
         if (playOnOff == 0)
             break;
 
+        //switch to next fragment if playing through
+        if ((i - startIndex) >= (secsFragment * hz))
+        {
+            if (currentFragment != nFragments)
+            {
+                currentFragment = currentFragment + 1;
+
+                startIndex = (segmentsM(currentSegment-1,1) ) + ((currentFragment-1) * secsFragment * hz );
+
+                paintXYAxes();
+                paintFixations();
+
+                fncUpdateFragment();
+            }
+        }
+
+
         pixmapProcessLine.fill(Qt::transparent);
         QPainter painterProcessLine(&pixmapProcessLine);
 
