@@ -20,19 +20,42 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
             this, SLOT(setPosition(int)));
 
 
-    mediaPlayer.setVideoOutput(ui->videoWidget);
+    ui->graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    mediaPlayer.setNotifyInterval(1000); //updates slider every 1000 ms
+    mediaPlayer = new QMediaPlayer(this);
+    mediaPlayer->setNotifyInterval(1000); //updates slider every 1000 ms
+    scene = new QGraphicsScene(this);
+    item = new QGraphicsVideoItem();
+    item->setAspectRatioMode(Qt::KeepAspectRatio);
+    ui->graphicsView->setScene(scene);
+    mediaPlayer->setVideoOutput(item);
+    scene->addItem(item);
 
-    connect(&mediaPlayer, SIGNAL(stateChanged(QMediaPlayer::State)),
+    rect_overlay = new QGraphicsRectItem();
+    //rect_overlay->setPen
+    scene->addItem(rect_overlay);
+
+    pixmap_overlay = new QGraphicsPixmapItem();
+    scene->addItem(pixmap_overlay);
+
+
+    //ui->graphicsView->setViewport(new QGLWidget);
+
+    connect(mediaPlayer, SIGNAL(stateChanged(QMediaPlayer::State)),
             this, SLOT(mediaStateChanged(QMediaPlayer::State)));
-    connect(&mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
-    connect(&mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
-    connect(&mediaPlayer, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(handleError()));
+    connect(mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
+    connect(mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
+    connect(mediaPlayer, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(handleError()));
 }
 
 DialogVideoPlayer::~DialogVideoPlayer()
 {
+    mediaPlayer->stop();
+    delete pixmap_overlay;
+    delete item;
+    delete scene;
+    delete mediaPlayer;
     delete ui;
 }
 
@@ -47,6 +70,61 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
     this->expWidth = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt();
     this->expHeight = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt();
 
+    if (this->p_smoothM->is_empty())
+    {
+        ui->checkBoxSmooth->setChecked(false);
+        ui->checkBoxSmooth->setEnabled(false);
+    }
+    else
+    {
+        ui->checkBoxSmooth->setChecked(true);
+    }
+}
+
+void DialogVideoPlayer::resizeEvent (QResizeEvent *event)
+{
+    fncCalculateAspectRatios();
+}
+
+void DialogVideoPlayer::fncCalculateAspectRatios()
+{
+    // Calculate resize ratios for resizing
+    vid_width = item->size().width();
+    vid_height = item->size().height();
+    double ratioW = expWidth / vid_width;
+    double ratioH = expHeight / vid_height;
+
+    // smaller ratio will ensure that the image fits in the view
+    if (ratioW > ratioH)
+    {
+        //data is wider than video
+
+        //make heights the same,
+        display_height = vid_height;
+        display_width =  expWidth * vid_height / expHeight;
+        vid_offset_y = 0;
+        vid_offset_x = (display_width - vid_width ) / 2;
+
+    }
+    else
+    {
+        //data is taller than data (or the same)
+
+        //make widths the same
+        display_width = vid_width;
+        display_height = expHeight * vid_width / expWidth;
+        vid_offset_x = 0;
+        vid_offset_y = (display_height - vid_height) / 2;
+    }
+
+    rect_overlay->setRect(0,0,display_width,display_height);
+    item->setPos(vid_offset_x, vid_offset_y);
+    ui->graphicsView->fitInView(this->rect_overlay, Qt::KeepAspectRatio);
+}
+
+void DialogVideoPlayer::closeEvent(QCloseEvent *event)
+{
+    mediaPlayer->stop();
 }
 
 void DialogVideoPlayer::openFile()
@@ -55,19 +133,42 @@ void DialogVideoPlayer::openFile()
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Movie"),QDir::homePath());
 
     if (!fileName.isEmpty()) {
-        mediaPlayer.setMedia(QUrl::fromLocalFile(fileName));
+        mediaPlayer->setMedia(QUrl::fromLocalFile(fileName));
+
+        fncCalculateAspectRatios();
+
+
+        double video_aspect = (double)vid_width / (double)vid_height;
+        double data_aspect = (double)expWidth / (double)expHeight;
+
+        if (video_aspect == data_aspect)
+        {
+            ui->statusLabel->setText("Video loaded.");
+        }
+        else
+        {
+            if (video_aspect > data_aspect)
+            {
+                ui->statusLabel->setText("Video loaded: Video aspect is wider than data.");
+            }
+            else
+            {
+                ui->statusLabel->setText("Video loaded: Video aspect is taller than data.");
+            }
+        }
+
         ui->buttonPlay->setEnabled(true);
     }
 }
 
 void DialogVideoPlayer::play()
 {
-    switch(mediaPlayer.state()) {
+    switch(mediaPlayer->state())
+    {
     case QMediaPlayer::PlayingState:
-        mediaPlayer.pause();
+        mediaPlayer->pause();
         break;
     default:
-
         playRough();
         break;
     }
@@ -75,46 +176,33 @@ void DialogVideoPlayer::play()
 
 void DialogVideoPlayer::playRough()
 {
-    QGraphicsScene *scene = new QGraphicsScene(this);
-    QGraphicsVideoItem *item = new QGraphicsVideoItem;
-    ui->graphicsView->setScene(scene);
-    mediaPlayer.setVideoOutput(item);
-    scene->addItem(item);
-    //QGraphicsTextItem *label = new QGraphicsTextItem("Text Over Video!");
-
-    //scene->addItem(label);
 
 
+    //wait to start (buggy otherwise)
+    while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
+    {
+        qApp->processEvents();
+    }
 
-    int display_width = ui->graphicsView->width();
-    int display_height = ui->graphicsView->height();
-    QPixmap pixmap(display_width, display_height);
-
-    pixmap.fill(Qt::transparent);
-
-    //QGraphicsPixmapItem *overlay = new QGraphicsPixmapItem(pixmap);
-    //scene->addItem(overlay);
-
-
-    //ui->graphicsView->setViewport(new QGLWidget);
-    //graphicsView->show();
-
-    mediaPlayer.play();
+    mediaPlayer->play();
 
     double timer_offset = (*p_roughM).at(0,0); //this is the ms of when the player first started
     uword current_index = 0;
     uword last_index = (*p_roughM).n_rows - 1;
 
+    bool show_fixation_numbers = !this->p_fixAllM->is_empty();
 
-    while(mediaPlayer.state() == QMediaPlayer::PlayingState)
-    {
-        qApp->processEvents();
-    }
+    double width_multi = (double)display_width / (double)expWidth;
+    double height_multi = (double)display_height / (double)expHeight;
+    double pen_size_multi = display_width / 100;
 
-    while(mediaPlayer.state() == QMediaPlayer::PlayingState)
+    while(mediaPlayer->state() == QMediaPlayer::PlayingState)
     {
         //get position in ms with offset since start of movie and map to our data
-        double current_movie_time = mediaPlayer.position() + timer_offset;
+        double current_movie_time = (double)(mediaPlayer->position()) + timer_offset;
+
+        QPixmap pixmap(display_width, display_height);
+        pixmap.fill(Qt::transparent);
 
         for(uword search_index = current_index; search_index <= last_index; search_index++)
         {
@@ -127,36 +215,86 @@ void DialogVideoPlayer::playRough()
                 //use previous frame
                 if (current_index > 0) current_index--;
 
-                pixmap.fill(Qt::transparent);
+
                 QPainter painter(&pixmap);
-                QPen myPen(Qt::red, 2, Qt::SolidLine);
-                myPen.setCapStyle(Qt::RoundCap);
-                //set pupil dilation
-                if ((*p_roughM)(current_index ,6) > 0) myPen.setWidth((*p_roughM)(current_index ,6) * 2);
 
-                myPen.setColor(QColor(255, 0, 0, 255));
-                painter.setPen(myPen);
-                painter.drawPoint( (*p_roughM)(current_index ,2 )  * display_width, (*p_roughM)(current_index ,3 )  * display_height);
 
-                // Option 2 checked : Paint pupil dilation
-                if ((*p_roughM)(current_index ,7) > 0) myPen.setWidth((*p_roughM)(current_index ,7) * 2);
 
-                myPen.setColor(QColor(0, 50, 128, 255));
-                painter.setPen(myPen);
-                painter.drawPoint( (*p_roughM)(current_index ,4 )  * display_width, (*p_roughM)(current_index ,5 )  * display_height);
+                if (ui->checkBoxSmooth->isChecked())
+                {
+                    QPen myPen(Qt::green, pen_size_multi * 4, Qt::SolidLine);
+                    myPen.setColor(QColor(0, 250, 0, 255));
+                    myPen.setCapStyle(Qt::RoundCap);
+
+                    if ((*p_roughM)(current_index ,6) > 0 && (*p_roughM)(current_index ,7) > 0)
+                    {
+                        myPen.setWidth(((*p_roughM)(current_index ,6) + (*p_roughM)(current_index ,7)) * pen_size_multi);
+                    }
+
+                    painter.setPen(myPen);
+                    painter.drawPoint((*p_smoothM)(current_index ,2 ) * width_multi, (*p_smoothM)(current_index ,3 ) * height_multi); // XL
+
+                    // Option 1 checked: Paint fixation numbers
+                    if (show_fixation_numbers)
+                    {
+
+                        QFont font=painter.font() ;
+                        font.setPointSize ( 65 );
+                        painter.setFont(font);
+
+
+                        uvec fixIndex =  arma::find((*p_fixAllM).col(0) <= current_index);
+                        mat aux = (*p_fixAllM).rows(fixIndex);
+                        fixIndex =  arma::find(aux.col(1) >= current_index);
+                        if (fixIndex.n_rows != 0)
+                        {
+                            // If there is a fixation between the values, paint it!
+
+                            myPen.setColor(QColor(0, 50, 128, 255));
+                            painter.setPen(myPen);
+
+                            painter.drawText( QPoint( display_width/2,display_height/2 ),QString::number(fixIndex(0)) );
+
+                        }
+                    }
+
+
+                }
+                else
+                {
+                    QPen myPen(Qt::red, pen_size_multi * 4, Qt::SolidLine);
+                    myPen.setCapStyle(Qt::RoundCap);
+                    //set pupil dilation
+                    if ((*p_roughM)(current_index ,6) > 0) myPen.setWidth((*p_roughM)(current_index ,6) * pen_size_multi);
+
+                    myPen.setColor(QColor(255, 0, 0, 255));
+                    painter.setPen(myPen);
+                    painter.drawPoint( (*p_roughM)(current_index ,2 )  * display_width, (*p_roughM)(current_index ,3 )  * display_height);
+
+                    // Option 2 checked : Paint pupil dilation
+                    if ((*p_roughM)(current_index ,7) > 0) myPen.setWidth((*p_roughM)(current_index ,7) * pen_size_multi);
+
+                    myPen.setColor(QColor(0, 50, 128, 255));
+                    painter.setPen(myPen);
+                    painter.drawPoint( (*p_roughM)(current_index ,4 )  * display_width, (*p_roughM)(current_index ,5 )  * display_height);
+                }
+
+
                 painter.end();
 
                 break;
             }
         }
 
-        //overlay->setPixmap(pixmap);
+        pixmap_overlay->setPixmap(pixmap);
 
         //ui->gazePanel->setPixmap(pixmap);
         //ui->gazePanel->repaint();
 
         qApp->processEvents();
     }
+
+    mediaPlayer->stop();
 
 
 }
@@ -275,7 +413,7 @@ void DialogVideoPlayer::durationChanged(qint64 duration)
 
 void DialogVideoPlayer::setPosition(int position)
 {
-    mediaPlayer.setPosition(position);
+    mediaPlayer->setPosition(position);
 }
 
 void DialogVideoPlayer::handleError()

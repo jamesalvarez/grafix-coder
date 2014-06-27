@@ -25,7 +25,8 @@ public:
     ~DialogVideoPlayer();
 
     void loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in);
-
+    void resizeEvent (QResizeEvent *event);
+    void closeEvent(QCloseEvent *event);
 private:
 
     GrafixParticipant* _participant;
@@ -53,9 +54,23 @@ private slots:
     void durationChanged(qint64 duration);
     void setPosition(int position);
     void handleError();
+    void fncCalculateAspectRatios();
 
 private:
-    QMediaPlayer mediaPlayer;
+    int display_width;
+    int display_height;
+
+    int vid_offset_x;
+    int vid_offset_y;
+
+    int vid_width;
+    int vid_height;
+
+    QMediaPlayer *mediaPlayer;
+    QGraphicsScene *scene;
+    QGraphicsVideoItem *item;
+    QGraphicsRectItem *rect_overlay;
+    QGraphicsPixmapItem *pixmap_overlay;
     Ui::DialogVideoPlayer *ui;
 };
 
