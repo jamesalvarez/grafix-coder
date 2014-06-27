@@ -1526,6 +1526,7 @@
      </property>
      <addaction name="actionCurrent_Fragment"/>
      <addaction name="actionSegment"/>
+     <addaction name="actionMovie"/>
     </widget>
     <addaction name="menuVisualisations"/>
     <addaction name="actionSmoothing"/>
@@ -1636,6 +1637,11 @@
   <action name="actionReload_Last_Configuration">
    <property name="text">
     <string>Reload Last Configuration</string>
+   </property>
+  </action>
+  <action name="actionMovie">
+   <property name="text">
+    <string>Movie...</string>
    </property>
   </action>
  </widget>

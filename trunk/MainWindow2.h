@@ -19,6 +19,7 @@
 #include "DialogInterpolation.h"
 #include "DialogEstimateFixations.h"
 #include "DialogSaveNewConfiguration.h"
+#include "DialogVideoPlayer.h"
 
 #include <QProgressDialog>
 #include <QMainWindow>
@@ -188,6 +189,7 @@ public slots:
     void fncPress_subMenuChangeConfiguration();
     void fncPress_subMenuClose();
     void fncPress_subMenuReloadConfiguration();
+    void fncPress_subMenuMovie();
 
     void fncPress_bNext();
     void fncPress_bPrevious();

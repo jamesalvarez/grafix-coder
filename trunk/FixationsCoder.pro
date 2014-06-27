@@ -7,7 +7,7 @@
 TARGET = FixationsCoder
 TEMPLATE = app
 
-QT += core gui widgets printsupport
+QT += core gui widgets printsupport multimediawidgets opengl
 
 QMAKE_CXXFLAGS += -Wno-unused-local-typedefs
 
@@ -38,7 +38,8 @@ SOURCES += main.cpp \
     DialogSaveNewConfiguration.cpp \
     MainWindow2.cpp \
     GrafixSettingsLoader.cpp \
-    Trilateral/Trilateral2003.cpp
+    Trilateral/Trilateral2003.cpp \
+    DialogVideoPlayer.cpp
 
 HEADERS  += \
     MyConstants.h \
@@ -67,7 +68,8 @@ HEADERS  += \
     DialogSaveNewConfiguration.h \
     MainWindow2.h \
     GrafixSettingsLoader.h \
-    Trilateral/Trilateral2003.h
+    Trilateral/Trilateral2003.h \
+    DialogVideoPlayer.h
 
 FORMS    += \
     DialogTestSmoothParameters.ui \
@@ -87,7 +89,8 @@ FORMS    += \
     DialogVisualization.ui \
     DialogVisualizationSegments.ui \
     DialogSaveNewConfiguration.ui \
-    MainWindow2.ui
+    MainWindow2.ui \
+    DialogVideoPlayer.ui
 
 
 INCLUDEPATH += $$PWD/TRUNCATED_KERNEL_BF
