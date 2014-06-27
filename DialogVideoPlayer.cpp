@@ -12,7 +12,7 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     ui->buttonPlay->setEnabled(false);
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 
-    connect(ui->buttonPlay, SIGNAL(clicked()), this, SLOT(play()));
+    connect(ui->buttonPlay, SIGNAL(clicked()), this, SLOT(playButton()));
 
     ui->sliderPosition->setRange(0, 0);
 
@@ -161,7 +161,7 @@ void DialogVideoPlayer::openFile()
     }
 }
 
-void DialogVideoPlayer::play()
+void DialogVideoPlayer::playButton()
 {
     switch(mediaPlayer->state())
     {
@@ -169,15 +169,13 @@ void DialogVideoPlayer::play()
         mediaPlayer->pause();
         break;
     default:
-        playRough();
+        playMovie();
         break;
     }
 }
 
-void DialogVideoPlayer::playRough()
+void DialogVideoPlayer::playMovie()
 {
-
-
     //wait to start (buggy otherwise)
     while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
     {
@@ -190,11 +188,14 @@ void DialogVideoPlayer::playRough()
     uword current_index = 0;
     uword last_index = (*p_roughM).n_rows - 1;
 
-    bool show_fixation_numbers = !this->p_fixAllM->is_empty();
+    //bool show_fixation_numbers = !this->p_fixAllM->is_empty();
+    show_fixation_numbers = false;
 
     double width_multi = (double)display_width / (double)expWidth;
     double height_multi = (double)display_height / (double)expHeight;
     double pen_size_multi = display_width / 100;
+
+    QFont serifFont("Times", 64, QFont::Bold);
 
     while(mediaPlayer->state() == QMediaPlayer::PlayingState)
     {
@@ -237,10 +238,7 @@ void DialogVideoPlayer::playRough()
                     // Option 1 checked: Paint fixation numbers
                     if (show_fixation_numbers)
                     {
-
-                        QFont font=painter.font() ;
-                        font.setPointSize ( 65 );
-                        painter.setFont(font);
+                        painter.setFont(serifFont);
 
 
                         uvec fixIndex =  arma::find((*p_fixAllM).col(0) <= current_index);
@@ -287,10 +285,6 @@ void DialogVideoPlayer::playRough()
         }
 
         pixmap_overlay->setPixmap(pixmap);
-
-        //ui->gazePanel->setPixmap(pixmap);
-        //ui->gazePanel->repaint();
-
         qApp->processEvents();
     }
 
@@ -298,95 +292,6 @@ void DialogVideoPlayer::playRough()
 
 
 }
-
-    /*
-    int firstIndexSeg = 0; // Just to figure out which is the fixation id
-    if ((*p_fixAllM).n_rows > 0){
-        uvec fixIndex =  arma::find((*p_fixAllM).col(1) >= startIndex);
-        if (!fixIndex.is_empty()){
-            firstIndexSeg = fixIndex(0);
-        }
-
-    }
-
-    QFont font=painter.font() ;
-    font.setPointSize ( 65 );
-    painter.setFont(font);
-
-    myPen.setColor(QColor(255, 0, 0, 255));
-    myPen.setCapStyle(Qt::RoundCap);
-    painter.setPen(myPen);
-
-    double velocity =  ((double)1/hz) * 1000;   // velocity in miliseconds
-
-    std::stringstream number;
-    int startTime;
-    mat aux;
-    for (uword i = startIndex; i < stopIndex; ++i) {
-        if (playOnOff == 0)
-            break;
-
-
-        pixmapProcessLine.fill(Qt::transparent);
-        QPainter painterProcessLine(&pixmapProcessLine);
-
-        painterProcessLine.drawLine((i- startIndex )*(1/increment ),0,(i- startIndex )*(1/increment ),ui->lPanelXY_2->height());
-
-        pixmap.fill(Qt::white);
-
-        // Option 1 checked: Paint fixation numbers
-        if ( ui->cbFixations->isChecked()){
-            uvec fixIndex =  arma::find((*p_fixAllM).col(0) <= i);
-            aux = (*p_fixAllM).rows(fixIndex);
-            fixIndex =  arma::find(aux.col(1) >= i);
-            if (fixIndex.n_rows != 0){   // If there is a fixation between the values, paint it!
-                number.str("");
-                number << fixIndex(0) - firstIndexSeg;
-                myPen.setColor(QColor(0, 50, 128, 255));
-                painter.setPen(myPen);
-                painter.drawText( QPoint( ui->lPanelVisualization->width()/2, ui->lPanelVisualization->height()/2 ), number.str().c_str() );
-
-            }
-        }
-
-        // Option 2 checked : Paint pupil dilation
-        if (ui->cbPupilDilation->isChecked() && (*p_roughM).n_cols == 8){
-            if ((*p_roughM)(i ,6) > 0){
-                myPen.setWidth((*p_roughM)(i ,6) * 10);
-            }
-        }
-
-        myPen.setColor(QColor(255, 0, 0, 255));
-        painter.setPen(myPen);
-        painter.drawPoint( (*p_roughM)(i ,2 )  * ui->lPanelVisualization->width(), (*p_roughM)(i ,3 )  * ui->lPanelVisualization->height()); // XL
-
-        // Option 2 checked : Paint pupil dilation
-        if (ui->cbPupilDilation->isChecked()  && (*p_roughM).n_cols == 8){
-            if ((*p_roughM)(i ,7) > 0){
-                myPen.setWidth((*p_roughM)(i ,7) * 10);
-            }
-        }
-
-        myPen.setColor(QColor(0, 50, 128, 255));
-        painter.setPen(myPen);
-        painter.drawPoint( (*p_roughM)(i ,4 )  * ui->lPanelVisualization->width(), (*p_roughM)(i ,5 )  * ui->lPanelVisualization->height()); // XL
-
-
-        ui->lPanelXY_2->setPixmap(pixmapProcessLine);
-        ui->lPanelVisualization->setPixmap(pixmap);
-        ui->lPanelVisualization->repaint();
-
-        painterProcessLine.end();
-
-        qApp->processEvents();
-
-        // Timer !
-        startTime = getMilliCount();
-        while (getMilliSpan(startTime) < velocity){
-        }
-    }*/
-
-
 
 
 void DialogVideoPlayer::mediaStateChanged(QMediaPlayer::State state)

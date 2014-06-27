@@ -42,11 +42,11 @@ private:
 
     int playOnOff;
 
-    void playRough();
+    void playMovie();
 
 public slots:
     void openFile();
-    void play();
+    void playButton();
 
 private slots:
     void mediaStateChanged(QMediaPlayer::State state);
