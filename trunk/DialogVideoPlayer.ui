@@ -6,88 +6,61 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>731</width>
+    <width>424</width>
     <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Grafix Movie Player</string>
   </property>
-  <widget class="QWidget" name="horizontalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>249</y>
-     <width>381</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
-     <widget class="QPushButton" name="buttonOpen">
-      <property name="text">
-       <string>Open...</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="buttonPlay">
-      <property name="text">
-       <string>Play</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QSlider" name="sliderPosition">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QVideoWidget" name="videoWidget" native="true">
-   <property name="geometry">
-    <rect>
-     <x>390</x>
-     <y>10</y>
-     <width>381</width>
-     <height>231</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="gazePanel">
-   <property name="geometry">
-    <rect>
-     <x>300</x>
-     <y>50</y>
-     <width>381</width>
-     <height>231</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QGraphicsView" name="graphicsView">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>10</y>
-     <width>371</width>
-     <height>231</height>
-    </rect>
-   </property>
-  </widget>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QCheckBox" name="checkBoxSmooth">
+     <property name="layoutDirection">
+      <enum>Qt::RightToLeft</enum>
+     </property>
+     <property name="text">
+      <string>Use Smooth Data</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGraphicsView" name="graphicsView"/>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="buttonOpen">
+       <property name="text">
+        <string>Open...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonPlay">
+       <property name="text">
+        <string>Play</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="sliderPosition">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="statusLabel">
+     <property name="text">
+      <string>Ready to load a move.</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QVideoWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">qvideowidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
