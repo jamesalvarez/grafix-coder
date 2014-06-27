@@ -189,7 +189,7 @@ void DialogVideoPlayer::playMovie()
     uword last_index = (*p_roughM).n_rows - 1;
 
     //bool show_fixation_numbers = !this->p_fixAllM->is_empty();
-    show_fixation_numbers = false;
+    bool show_fixation_numbers = false;
 
     double width_multi = (double)display_width / (double)expWidth;
     double height_multi = (double)display_height / (double)expHeight;
