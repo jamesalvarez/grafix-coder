@@ -50,6 +50,7 @@ MainWindow2::MainWindow2(QWidget *parent) :
     connect( ui->actionChange_Configuration, SIGNAL(triggered()), this, SLOT(fncPress_subMenuChangeConfiguration()));
     connect( ui->actionClose, SIGNAL( triggered()), this, SLOT( fncPress_subMenuClose()));
     connect( ui->actionReload_Last_Configuration, SIGNAL( triggered()), this, SLOT(fncPress_subMenuReloadConfiguration()));
+    connect( ui->actionMovie, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuMovie()));
 
     // Main Buttons
     connect( ui->bNext, SIGNAL( clicked() ), this, SLOT( fncPress_bNext() ) );
@@ -1641,6 +1642,13 @@ void MainWindow2::fncPress_subMenuReloadConfiguration()
 void MainWindow2::fncPress_subMenuClose()
 {
     this->close();
+}
+
+void MainWindow2::fncPress_subMenuMovie()
+{
+    DialogVideoPlayer dvp;
+    dvp.loadData(p_active_participant, roughM, smoothM, fixAllM);
+    dvp.exec();
 }
 
 void MainWindow2::fncChange_tParticipantNumber()
