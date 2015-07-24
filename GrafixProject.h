@@ -15,7 +15,7 @@
 #include <QString>
 #include <QFileDialog>
 
-#include "armadillo"
+#include <armadillo>
 
 using namespace arma;
 
