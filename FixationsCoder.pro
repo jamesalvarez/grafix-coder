@@ -9,7 +9,11 @@ TEMPLATE = app
 
 QT += core gui widgets printsupport multimediawidgets opengl
 
-QMAKE_CXXFLAGS += -Wno-unused-local-typedefs
+QMAKE_CXXFLAGS += -Wno-unused-local-typedefs -larmadillo
+
+#osx deployment target
+macx: QMAKE_CFLAGS += -mmacosx-version-min=10.6
+macx: QMAKE_CXXFLAGS += -mmacosx-version-min=10.6
 
 SOURCES += main.cpp \
     MyConstants.cpp \
@@ -95,7 +99,8 @@ FORMS    += \
 
 INCLUDEPATH += $$PWD/TRUNCATED_KERNEL_BF
 
-INCLUDEPATH += /usr/include
+#needed for armadillo (installed with cmake)
+macx: INCLUDEPATH += /usr/local/include
 
 win32: INCLUDEPATH += C:/Qt/boost_1_54_0/boost
 

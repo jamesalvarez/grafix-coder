@@ -837,6 +837,17 @@ void MainWindow2::paintSmoothData()
     QPainter painterFlags(&pixmapFlags);
     QPen myPen(Qt::red, 1, Qt::SolidLine);
     painter.drawText(QPoint(10,10),"Smoothed Data:");
+
+    if (smoothM.n_rows < (_displayStopIndex - 1)) {
+        //no smoothM matrix so exit
+        ui->lPanelSmooth->setPixmap(pixmap);
+        ui->lPanelFlags->setPixmap(pixmapFlags);
+
+        painter.end();
+        painterFlags.end();
+        return;
+    }
+
     for (uword i = _displayStartIndex; i < _displayStopIndex; ++i) {
 
         myPen.setColor(QColor(255, 0, 0, 127));
