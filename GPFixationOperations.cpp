@@ -186,7 +186,7 @@ mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int
            // cout << "THE SPACE IS NOT FREE" << endl;
         }else{ // Modify the matrix
             // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smooth pursuit, PupilDilation];
-            double dur = ((roughM(to,0) - roughM(0,0))/ 1000 ) - ((roughM(from,0) - roughM(0,0))/ 1000 );
+            double dur = ((roughM(to,0) - roughM(0,0)) ) - ((roughM(from,0) - roughM(0,0)) );
 
             // Only use the points where eyes were detected:
             mat roughCutM;
@@ -367,7 +367,7 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
             stopIndex =  fixAllM(lastElem-1,1);
 
             // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smoothPursuit, PupilDilation];
-            double dur = ((roughM(stopIndex,0) - roughM(0,0))/ 1000 ) - ((roughM(startIndex,0) - roughM(0,0))/ 1000 );
+            double dur = ((roughM(stopIndex,0) - roughM(0,0)) ) - ((roughM(startIndex,0) - roughM(0,0)) );
 
             // Only use the points where eyes were detected:
             mat roughCutM;
@@ -427,7 +427,7 @@ void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *
 {
     // For each fixation, recalculate all the values
     // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smoothPursuit, PupilDilation];
-    double dur = ((roughM((*fixAllM)(row,1),0) - roughM(0,0))/ 1000 ) - ((roughM((*fixAllM)(row,0),0) - roughM(0,0))/ 1000 );
+    double dur = ((roughM((*fixAllM)(row,1),0) - roughM(0,0)) ) - ((roughM((*fixAllM)(row,0),0) - roughM(0,0)) );
 
     // Only use the points where eyes were detected:
     mat roughCutM;

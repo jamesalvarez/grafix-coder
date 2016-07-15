@@ -157,31 +157,11 @@ void DialogExport::fncPress_bExport(){
     // **** Save the file
     QString fn = QFileDialog::getSaveFileName(this,"Save exported data","","*.csv");
 
-    GPMatrixFunctions::saveFileSafe(exportM,fn);
-
-
-    /*std::string fileName = _participant->GetFullDirectory().toStdString() + "/fix_export_" + _participant->GetName().toStdString() + ".csv";
-
-    ofstream fout(fileName.c_str());
-
-    for(uword i=0; i <exportM.n_rows; i++){
-        for (uword j=0; j < exportM.n_cols; j++){
-            if(j == 0){
-                fout << std::setprecision(20) << exportM(i,j);
-            }else if (j != 0){
-                fout << ',';
-                fout << std::setprecision(5) << exportM(i,j);
-            }
-            if (j == exportM.n_cols-1)
-                fout << endl;
-        }
-
+    if (fn != "" && GPMatrixFunctions::saveFileSafe(exportM,fn)) {
+        _saved = true;
+        _filename = fn;
     }
 
-    fout.close();*/
-
-    _saved = true;
-    _filename = fn;
     this->close();
 }
 

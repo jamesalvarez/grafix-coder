@@ -164,7 +164,7 @@ void DialogHeatMap::paintHeatMap(mat* p_fixations){
 
     // Create Intensity map
     for(int j = 1, c = (*p_fixations).n_rows; j < c; ++j) {
-        double dm =  (*p_fixations)(j,2)*1000 * 150 / 500; // Vary the diameter it has to be a number from 30 to 150
+        double dm =  (*p_fixations)(j,2) * 150 / 500; // Vary the diameter it has to be a number from 30 to 150
         //int alpha = dm;
         if (dm < 0){
             dm = 0;

@@ -395,7 +395,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
 
                 //no need to smooth just one data point, so copy it
                 if (validSegment.n_rows == 1) {
-                    SmoothM->at(validSegmentEndIndex,2) =  expWidth * ((RoughMCopy(validSegmentEndIndex,2) + RoughMCopy(validSegmentEndIndex,4)) / 2);
+                    SmoothM->at(validSegmentEndIndex,2) = expWidth * ((RoughMCopy(validSegmentEndIndex,2) + RoughMCopy(validSegmentEndIndex,4)) / 2);
                     SmoothM->at(validSegmentEndIndex,3) = expHeight * ((RoughMCopy(validSegmentEndIndex,3) + RoughMCopy(validSegmentEndIndex,5)) / 2);
                 } else {
                     // do fbf smoothing on segment
@@ -1198,6 +1198,9 @@ bool GPMatrixFunctions::saveFile(mat &matrix, QString fileName)
 {
     std::string filename = fileName.toStdString();
     std::ofstream stream(filename.c_str(),std::ios::binary);
+
+    stream << std::fixed;
+
     uword nRows = matrix.n_rows;
     uword nCols = matrix.n_cols;
     if (!stream) return false;

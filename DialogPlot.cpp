@@ -133,7 +133,7 @@ void DialogPlot::loadDurData(const GrafixParticipant *p)
     for (int i=sub200index; i<n_fixations; ++i)
     {
       x[i-sub200index] = 1+i-sub200index; // x goes from -1 to 1
-      y[i-sub200index] = durations.at(i,0) * 1000; // let's plot a quadratic function
+      y[i-sub200index] = durations.at(i,0); // let's plot a quadratic function
     }
 
     double max = y[0];
