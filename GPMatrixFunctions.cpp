@@ -395,34 +395,33 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
 
                 //no need to smooth just one data point, so copy it
                 if (validSegment.n_rows == 1) {
-                    SmoothM->at(validSegmentEndIndex,2) = (RoughMCopy(validSegmentEndIndex,2) + RoughMCopy(validSegmentEndIndex,4)) / 2;
-                    SmoothM->at(validSegmentEndIndex,3) = (RoughMCopy(validSegmentEndIndex,3) + RoughMCopy(validSegmentEndIndex,5)) / 2;
-                    break;
-                }
+                    SmoothM->at(validSegmentEndIndex,2) =  expWidth * ((RoughMCopy(validSegmentEndIndex,2) + RoughMCopy(validSegmentEndIndex,4)) / 2);
+                    SmoothM->at(validSegmentEndIndex,3) = expHeight * ((RoughMCopy(validSegmentEndIndex,3) + RoughMCopy(validSegmentEndIndex,5)) / 2);
+                } else {
+                    // do fbf smoothing on segment
+                    image_type image_X(validSegment.n_rows,1);
+                    image_type image_Y(validSegment.n_rows,1);
 
-                // do fbf smoothing on segment
-                image_type image_X(validSegment.n_rows,1);
-                image_type image_Y(validSegment.n_rows,1);
+                    image_type filtered_X(validSegment.n_rows,1);
+                    image_type filtered_Y(validSegment.n_rows,1);
 
-                image_type filtered_X(validSegment.n_rows,1);
-                image_type filtered_Y(validSegment.n_rows,1);
+                    //copy to image_type - there should be no missing data.
+                    for (uword j = 0; j < validSegment.n_rows; ++j) {
+                        uword dataIndex = j + validSegmentStartIndex;
+                        image_X(j,0) = (RoughMCopy(dataIndex,2) + RoughMCopy(dataIndex,4)) / 2;
+                        image_Y(j,0) = (RoughMCopy(dataIndex,3) + RoughMCopy(dataIndex,5)) / 2;
+                    }
 
-                //copy to image_type - there should be no missing data.
-                for (uword j = 0; j < validSegment.n_rows; ++j) {
-                    uword dataIndex = j + validSegmentStartIndex;
-                    image_X(j,0) = (RoughMCopy(dataIndex,2) + RoughMCopy(dataIndex,4)) / 2;
-                    image_Y(j,0) = (RoughMCopy(dataIndex,3) + RoughMCopy(dataIndex,5)) / 2;
-                }
+                    //filter the X and Y data
+                    GPMatrixFunctions::fast_LBF(image_X, sigma_s, Xsigma_r, false, &filtered_X);
+                    GPMatrixFunctions::fast_LBF(image_Y, sigma_s, Ysigma_r, false, &filtered_Y);
 
-                //filter the X and Y data
-                GPMatrixFunctions::fast_LBF(image_X, sigma_s, Xsigma_r, false, &filtered_X);
-                GPMatrixFunctions::fast_LBF(image_Y, sigma_s, Ysigma_r, false, &filtered_Y);
-
-                //copy to the smoothed matrix
-                for (uword j = 0; j < validSegment.n_rows; ++j) {
-                    uword dataIndex = j + validSegmentStartIndex;
-                    SmoothM->at(dataIndex,2) = filtered_X.at(j,0) * expWidth;
-                    SmoothM->at(dataIndex,3) = filtered_Y.at(j,0) * expHeight;
+                    //copy to the smoothed matrix
+                    for (uword j = 0; j < validSegment.n_rows; ++j) {
+                        uword dataIndex = j + validSegmentStartIndex;
+                        SmoothM->at(dataIndex,2) = filtered_X.at(j,0) * expWidth;
+                        SmoothM->at(dataIndex,3) = filtered_Y.at(j,0) * expHeight;
+                    }
                 }
 
                 inValidSegment = false;
