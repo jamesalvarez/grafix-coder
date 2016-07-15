@@ -1749,7 +1749,7 @@ void MainWindow2::fncChange_tInterpolation()
 }
 void MainWindow2::fncChange_tDisplacement()
 {
-    fncChangeLineEdit(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, ui->leInterpolation, ui->sliderDisplacement);
+    fncChangeLineEdit(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, ui->leDisplacement, ui->sliderDisplacement);
 }
 void MainWindow2::fncChange_tDisplacInterpolate()
 {
