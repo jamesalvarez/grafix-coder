@@ -99,6 +99,9 @@ FORMS    += \
 
 INCLUDEPATH += $$PWD/TRUNCATED_KERNEL_BF
 
+
+#to deploy on mac use macdeployqt
+
 #needed for armadillo (installed with cmake)
 macx: INCLUDEPATH += /usr/local/include
 

@@ -329,104 +329,140 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
 
  void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM)
  {
-      if(RoughM.is_empty())
-      {
-          //TODO: Handle errors with user
-          return;
-      }
+    if(RoughM.is_empty()) { return; }
 
-      GrafixSettingsLoader loader(path, configuration);
+    GrafixSettingsLoader settings(path, configuration);
+
+    bool copy_eyes = settings.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
+    int expWidth = settings.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
+    int expHeight = settings.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
+    double sigma_r = settings.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_R).toDouble();
+    double sigma_s = settings.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_S).toDouble();
+    double Xsigma_r = sigma_r / expWidth;
+    double Ysigma_r = sigma_r / expHeight;
+
+    // prepare the smooth matrix
+    SmoothM->zeros(RoughM.n_rows, 10);
+
+    // create copy of matrix to copy eyes etc
+    mat RoughMCopy = RoughM;
+
+    typedef Array_2D<double> image_type;
+
+    uword validSegmentStartIndex = 0;
+    uword validSegmentEndIndex = 0;
+    bool inValidSegment = false;
+
+    //mark missing data, and get segments inbetween to smotth
+    for (uword i = 0; i < RoughM.n_rows; ++i)
+    {
+        bool leftXMissing = (RoughM(i,2) < 0 || RoughM(i,2) > 1);
+        bool leftYMissing = (RoughM(i,3) < 0 || RoughM(i,3) > 1);
+        bool rightXMissing = (RoughM(i,4) < 0 || RoughM(i,4) > 1);
+        bool rightYMissing = (RoughM(i,5) < 0 || RoughM(i,5) > 1);
+
+        bool leftMissing = leftXMissing || leftYMissing;
+        bool rightMissing = rightXMissing || rightYMissing;
+
+        bool missing = copy_eyes ? (leftMissing && rightMissing) : (leftMissing || rightMissing);
 
 
-      bool copy_eyes = loader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
 
+        //copy eyes if necessary
+        if (copy_eyes && !missing) {
+            if (leftMissing && !rightMissing) {
+                RoughMCopy(i,2) = RoughM(i,4);
+                RoughMCopy(i,3) = RoughM(i,5);
+            } else if (rightMissing && !leftMissing) {
+                RoughMCopy(i,4) = RoughM(i,2);
+                RoughMCopy(i,5) = RoughM(i,3);
+            }
+        }
 
-      int expWidth = loader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
-      int expHeight = loader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
-      double sigma_r = loader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_R).toDouble();
-      double sigma_s = loader.LoadSetting(Consts::SETTING_SMOOTHING_SIGMA_S).toDouble();
+        bool lastRow = i == RoughM.n_rows - 1;
 
-      double Xsigma_r = sigma_r / expWidth;
-      double Ysigma_r = sigma_r / expHeight;
-     SmoothM->zeros(RoughM.n_rows, 4);
+        if (inValidSegment) {
 
-     typedef Array_2D<double> image_type;
+            //if at the last row and it is valid, then mark it so!
+            if (lastRow && !missing) {
+                validSegmentEndIndex  = i;
+            }
 
-     image_type image_X(RoughM.n_rows,1);
-     image_type image_Y(RoughM.n_rows,1);
+            if (missing || lastRow) {
 
-     image_type filtered_X(RoughM.n_rows,1);
-     image_type filtered_Y(RoughM.n_rows,1);
+                //found a segment - so lets copy it and smooth it
+                mat validSegment = RoughMCopy.rows(validSegmentStartIndex, validSegmentEndIndex);
 
-     //make a copy to correct errors
-     mat RoughM2 = RoughM;
+                //no need to smooth just one data point, so copy it
+                if (validSegment.n_rows == 1) {
+                    SmoothM->at(validSegmentEndIndex,2) = (RoughMCopy(validSegmentEndIndex,2) + RoughMCopy(validSegmentEndIndex,4)) / 2;
+                    SmoothM->at(validSegmentEndIndex,3) = (RoughMCopy(validSegmentEndIndex,3) + RoughMCopy(validSegmentEndIndex,5)) / 2;
+                    break;
+                }
 
-     //prepare data
-     for (uword i = 0; i < RoughM2.n_rows; ++i)
-     {
-         if (RoughM2(i,2) < 0 || RoughM2(i,2) > 1) RoughM2(i,2) = -1;
-         if (RoughM2(i,3) < 0 || RoughM2(i,3) > 1) RoughM2(i,3) = -1;
-         if (RoughM2(i,4) < 0 || RoughM2(i,4) > 1) RoughM2(i,4) = -1;
-         if (RoughM2(i,5) < 0 || RoughM2(i,5) > 1) RoughM2(i,5) = -1;
-     }
+                // do fbf smoothing on segment
+                image_type image_X(validSegment.n_rows,1);
+                image_type image_Y(validSegment.n_rows,1);
 
-     //copy eyes if necessary
-     for (uword i = 0; i < RoughM2.n_rows; ++i)
-     {        
-         if (RoughM2(i,2) <= -1 && RoughM2(i,4) <= -1){
-             image_X(i,0) = 0;
-             image_Y(i,0) = 0;
-         }else if (copy_eyes && RoughM2(i,2)!= -1 && RoughM2(i,4) <= -1 ) { // Left eyes were detected but not right
-             image_X(i,0) = RoughM2(i,2);
-             image_Y(i,0) = RoughM2(i,3);
-         }else if(copy_eyes && RoughM2(i,2) <= -1 && RoughM2(i,4) != -1){  // Right eyes were detected, not left
-             image_X(i,0) = RoughM2(i,4);
-             image_Y(i,0) = RoughM2(i,5);
-         }else if(!copy_eyes && ((RoughM2(i,2)!= -1 && RoughM2(i,4) <= -1) || (RoughM2(i,4)!= -1 && RoughM2(i,2) <= -1) )){
-             image_X(i,0) = 0;
-             image_Y(i,0) = 0;
-         }else{   // Both eyes were detected
-             image_X(i,0) = (RoughM2(i,2) + RoughM2(i,4))/2;  // x
-             image_Y(i,0) = (RoughM2(i,3) + RoughM2(i,5))/2;  // y
-         }
-     }
+                image_type filtered_X(validSegment.n_rows,1);
+                image_type filtered_Y(validSegment.n_rows,1);
 
-     //*** a loop which cuts the image if bad_allocs are thrown
-     GPMatrixFunctions::fast_LBF(image_X,sigma_s,Xsigma_r,false,&filtered_X);
-     GPMatrixFunctions::fast_LBF(image_Y,sigma_s,Ysigma_r,false,&filtered_Y);
+                //copy to image_type - there should be no missing data.
+                for (uword j = 0; j < validSegment.n_rows; ++j) {
+                    uword dataIndex = j + validSegmentStartIndex;
+                    image_X(j,0) = (RoughMCopy(dataIndex,2) + RoughMCopy(dataIndex,4)) / 2;
+                    image_Y(j,0) = (RoughMCopy(dataIndex,3) + RoughMCopy(dataIndex,5)) / 2;
+                }
 
-     SmoothM->zeros(RoughM2.n_rows,10);
-     for (uword i = 0; i < RoughM2.n_rows; ++i)
-     {
-         SmoothM->at(i,0) = RoughM2.at(i,0);
-         if (image_X(i,0) == 0)
-             SmoothM->at(i,2) = 0;
-         else
-             SmoothM->at(i,2) = filtered_X.at(i,0) * expWidth;
+                //filter the X and Y data
+                GPMatrixFunctions::fast_LBF(image_X, sigma_s, Xsigma_r, false, &filtered_X);
+                GPMatrixFunctions::fast_LBF(image_Y, sigma_s, Ysigma_r, false, &filtered_Y);
 
-         if (image_Y(i,0) == 0)
-             SmoothM->at(i,3) = 0;
-         else
-             SmoothM->at(i,3) = filtered_Y.at(i,0) * expHeight;
-     }
+                //copy to the smoothed matrix
+                for (uword j = 0; j < validSegment.n_rows; ++j) {
+                    uword dataIndex = j + validSegmentStartIndex;
+                    SmoothM->at(dataIndex,2) = filtered_X.at(j,0) * expWidth;
+                    SmoothM->at(dataIndex,3) = filtered_Y.at(j,0) * expHeight;
+                }
+
+                inValidSegment = false;
+            } else {
+                validSegmentEndIndex = i;
+
+            }
+        } else {
+            if (!missing) {
+                validSegmentStartIndex = i;
+                validSegmentEndIndex = i;
+                inValidSegment = true;
+            }
+        }
+
+        // copy timestamp
+        SmoothM->at(i,0) = RoughM.at(i,0);
+
+        // set missing data code
+        if (missing) {
+            SmoothM->at(i,2) = -1;
+            SmoothM->at(i,3) = -1;
+        }
+    }
  }
+
+
 
  void GPMatrixFunctions::fast_LBF(Array_2D<double>& image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double>* filtered_X)
  {
      typedef Array_2D<double> image_type;
 
-     try
-     {
-     Image_filter::fast_LBF(image_X,image_X,sigma_s,Xsigma_r,b,filtered_X,filtered_X);
-
+     try {
+        Image_filter::fast_LBF(image_X,image_X,sigma_s,Xsigma_r,b,filtered_X,filtered_X);
      }
-     catch(const std::runtime_error& re)
-     {
+     catch(const std::runtime_error& re) {
          // speciffic handling for runtime_error
          DialogGrafixError::LogNewError(0,"Runtime error: " + QString(re.what()));;
      }
-     catch(const std::exception& ex)
-     {
+     catch(const std::exception& ex) {
          // speciffic handling for all exceptions extending std::exception, except
          // std::runtime_error which is handled explicitly
          DialogGrafixError::LogNewError(0,"Error occurred: " + QString(ex.what()) +
@@ -487,7 +523,8 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
  }
 
  void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar)
- { // Here we interpolate the smoothed data and create an extra column
+ {
+     // Here we interpolate the smoothed data and create an extra column
      // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
 
      if (SmoothM.is_empty())
@@ -508,86 +545,89 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      mat aux2, aux3;
      uvec fixIndex;
 
-     // Remove previous interpolation and create the new coulmns
+     // Remove previous interpolation data and create the new columns
      mat aux = zeros(SmoothM.n_rows, 11);
      aux.cols(0,3) = SmoothM.cols(0,3);
      SmoothM = aux;
 
-     // 1- Calculate provisional velocity for each point and flag the points avobe threshold
+     // Calculate provisional velocities and saccades (cols 4 & 5)
      GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
 
-     // 2- Run the whole smooth file.
-     for(uword i = 0; i < SmoothM.n_rows; ++i)
-     {
-         if ( SmoothM(i,2) < 1 && SmoothM(i,3) < 1){ // If there is a missing point,
+     // Iterate through the samples, detecting missing points.
+     for(uword i = 0; i < SmoothM.n_rows; ++i) {
 
-             // Go to the previous saccade and calculate the average X and Y.
-             indexPrevSacc = euclideanDisPrev = xAvg = yAvg = -1;
-             for (int j = i; j > 0 ; --j){
-                 if (SmoothM(j,5) == 1){
-                     indexPrevSacc = j;
+         cout << SmoothM(i,2) << " , " << SmoothM(i,3) << endl;
+         if ( SmoothM(i,2) >= 0 || SmoothM(i,3) >= 0) {
+             continue; // Sample is not missing
+         }
+
+         // Go to the previous saccade and calculate the average X and Y.
+         indexPrevSacc = euclideanDisPrev = xAvg = yAvg = -1;
+         for (int j = i; j > 0 ; --j) {
+             if (SmoothM(j,5) == 1) {
+                 indexPrevSacc = j;
+                 break;
+             }
+         }
+
+         if (indexPrevSacc != -1 && indexPrevSacc < (int)i-1) {  // If there is a previous saccade we proceed
+             aux2 =  SmoothM.submat(indexPrevSacc, 2, i-1, 3); // cut the data for the previous fixation to calculate euclidean distance
+
+             // If the euclidean distance of the previous fixation is similar to the one for the next fixation, it may be the same fixation.
+
+             fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
+             //TODO: possible check we have found some... also if fail then error setting col 5?
+             aux3 = aux2.rows(fixIndex);
+             xAvg = mean(aux3.col(0)); // x
+             yAvg = mean(aux3.col(1)); // y
+             euclideanDisPrev = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
+
+             // Find the point where de data is back:
+             indexDataBack = -1;
+             for (uword j = i; j < SmoothM.n_rows; ++j){
+                 if (SmoothM(j,2) > 0 && SmoothM(j,3) > 0){
+                     indexDataBack = j ;
                      break;
                  }
              }
 
-             if (indexPrevSacc != -1 && indexPrevSacc < (int)i-1){  // If there is a previous saccade we proceed
-                 aux2 =  SmoothM.submat(indexPrevSacc, 2, i-1 , 3 ); // cut the data for the previous fixation to calculate euclidean distance
+             if (indexDataBack != -1){ // if the data comes back at some point
 
-                 // If the euclidean distance of the previous fixation is similar to the one for the next fixation, it may be the same fixation.
-
-                 fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
-                 //TODO: possible check we have found some... also if fail then error setting col 5?
-                 aux3 = aux2.rows(fixIndex);
-                 xAvg = mean(aux3.col(0)); // x
-                 yAvg = mean(aux3.col(1)); // y
-                 euclideanDisPrev = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
-
-                 // Find the point where de data is back:
-                 indexDataBack = -1;
-                 for (uword j = i; j < SmoothM.n_rows; ++j){
-                     if (SmoothM(j,2) > 0 && SmoothM(j,3) > 0){
-                         indexDataBack = j ;
+                 // find the next saccade. Start counting from  indexDataBack+2 , as the first point after missing data can be identified as saccade by mistake.
+                 indexNextSacc = -1;
+                 for (uword j = indexDataBack+2 ; j < SmoothM.n_rows; ++j){
+                     if (SmoothM(j,5) == 1 ){ // Saccade!
+                         indexNextSacc = j;
                          break;
                      }
                  }
 
-                 if (indexDataBack != -1){ // if the data comes back at some point
-
-                     // find the next saccade. Start counting from  indexDataBack+2 , as the first point after missing data can be identified as saccade by mistake.
-                     indexNextSacc = -1;
-                     for (uword j = indexDataBack+2 ; j < SmoothM.n_rows; ++j){
-                         if (SmoothM(j,5) == 1 ){ // Saccade!
-                             indexNextSacc = j;
-                             break;
-                         }
-                     }
-
-                     // if there is a next saccade:
-                     if (indexNextSacc != -1 && indexDataBack + 2 < indexNextSacc){
-                         aux2 =  SmoothM.submat(indexDataBack+2, 2, indexNextSacc , 3 ); // cut the data for the next fixation to calculate euclidean distance
-                         fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
-                         //todo: here again check it found any
-                         aux3 = aux2.rows(fixIndex);
-                         euclideanDisNext = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
-                     }
-
-                     // If the eucluclidean distance is similar (less than "displacInterpolation") at both ends and the gap is smaller than the latency, interpolate!
-                     if (euclideanDisNext != -1 && sqrt((euclideanDisNext - euclideanDisPrev)* (euclideanDisNext - euclideanDisPrev)) <= displacInterpolation && indexDataBack - (int)i < gapLenght){ // INTERPOLATE!!!
-                     //    cout << "**** Interpolate from  :" << i  << " too:" << indexDataBack << endl;
-
-                         SmoothM.rows(i,indexDataBack).col(2).fill(xAvg);
-                         SmoothM.rows(i,indexDataBack).col(3).fill(yAvg);
-                         SmoothM.rows(i,indexDataBack).col(6).fill(1);  //Interpolation index!
-
-                         GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsLoader); // Update.
-
-                     }
-
-                     i = indexDataBack;
+                 // if there is a next saccade:
+                 if (indexNextSacc != -1 && indexDataBack + 2 < indexNextSacc){
+                     aux2 =  SmoothM.submat(indexDataBack+2, 2, indexNextSacc , 3 ); // cut the data for the next fixation to calculate euclidean distance
+                     fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
+                     //todo: here again check it found any
+                     aux3 = aux2.rows(fixIndex);
+                     euclideanDisNext = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
                  }
 
+                 // If the eucluclidean distance is similar (less than "displacInterpolation") at both ends and the gap is smaller than the latency, interpolate!
+                 if (euclideanDisNext != -1 && sqrt((euclideanDisNext - euclideanDisPrev)* (euclideanDisNext - euclideanDisPrev)) <= displacInterpolation && indexDataBack - (int)i < gapLenght){ // INTERPOLATE!!!
+                 //    cout << "**** Interpolate from  :" << i  << " too:" << indexDataBack << endl;
+
+                     SmoothM.rows(i,indexDataBack).col(2).fill(xAvg);
+                     SmoothM.rows(i,indexDataBack).col(3).fill(yAvg);
+                     SmoothM.rows(i,indexDataBack).col(6).fill(1);  //Interpolation index!
+
+                     GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsLoader); // Update.
+
+                 }
+
+                 i = indexDataBack;
              }
+
          }
+
 
          gpProgressBar.endProcessing();
      }
@@ -840,51 +880,56 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
  }
 
 
+ /*
+  *                                   Calculate Velocity
+  * Takes 0 - 3 indexed columns of smooth matrix and returns 11 column matrix calculates velocity (col 4)
+  * and whether it is a saccade (col 5).
+  */
  void GPMatrixFunctions::fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader)
  {
-
-
      int invalidSamples      = Consts::INVALID_SAMPLES;
+     int expHeight           = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
      int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
-     //int expHeight           = settings.value(MyConstants::SETTING_EXP_HEIGHT).toInt();
-     double velocity         = settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
-     double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+     double velocityThreshold= settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
+     double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 
 
      mat aux;
-     double minC, maxC, amp, vel;
+     double minC, maxX, maxY;
+     double hzXdeg = hz * degreesPerPixel;
 
-     if (p_smoothM->n_cols < 5){
+     // If SmoothM has less than 5 columns, create an 11 column version and copy over the first 4 columns.
+     if (p_smoothM->n_cols < 5) {
          mat aux = zeros(p_smoothM->n_rows, 11);
          aux.cols(0,3) = p_smoothM->cols(0,3);
          (*p_smoothM) = aux;
      }
 
-     for (uword i = invalidSamples; i < p_smoothM->n_rows; ++i){
-         // a) Check if any of the coordinates for this or the previous samples where invalid
-         aux = p_smoothM->submat(i- invalidSamples, 2, i  , 3);
-         minC = aux.min();   // We calculate the min and max of both x and y together. If one is not correct, the othet either.
-         maxC = aux.max();
+     // Iterate through each data point, add velocity at row 4, and whether it is saccade at row 5
+     // invalidSamples is the number of samples to look backwards
+     for (uword i = invalidSamples; i < p_smoothM->n_rows; ++i) {
 
-         if (minC > 1 && maxC < expWidth)
-         { // b)The values are correct
-             /*
-             double xDist = expWidth * (p_smoothM->at(i-1,2) - p_smoothM->at(i,2));
-             double yDist = expHeight * (p_smoothM->at(i-1,3) - p_smoothM->at(i,3));
+         // Check if any of the coordinates for this or the previous samples were invalid
+         aux = p_smoothM->submat(i - invalidSamples, 2, i, 3);  //( row1, col1, row2, col2)
+         minC = aux.min();   //if any missing data minC will be -1
+         maxX = aux.col(0).max();
+         maxY = aux.col(1).max();
 
-             amp = sqrt(pow(xDist, 2) + pow (yDist, 2) );*/
-             amp = sqrt(((((*p_smoothM)(i-1,2) - (*p_smoothM)(i,2)) * ((*p_smoothM)(i-1,2) - (*p_smoothM)(i,2))) + (((*p_smoothM)(i-1,3) - (*p_smoothM)(i,3))*((*p_smoothM)(i-1,3) - (*p_smoothM)(i,3))) ) /2);
+         if (minC > 1 && maxY < expWidth && maxX < expHeight) {
 
-             vel = (amp *hz) * degreePerPixel ;
-             p_smoothM->at(i,4) = vel;
-             if (vel >= velocity ){ // If the velocity if higher than threshold
-                 p_smoothM->at(i,5) = 1; // is saccade
-             }else{
-                 p_smoothM->at(i,5) = 0;
-             }
+             // Calculate amplitude and velocity
+             double xDist = (*p_smoothM)(i-1,2) - (*p_smoothM)(i,2);
+             double yDist = (*p_smoothM)(i-1,3) - (*p_smoothM)(i,3);
+             double amplitude = sqrt(((xDist * xDist) + (yDist * yDist)) / 2);
+             double velocity = amplitude * hzXdeg;
+
+             // Velocity
+             p_smoothM->at(i,4) = velocity;
+
+             // Saccade
+             p_smoothM->at(i,5) = (velocity >= velocityThreshold ) ? 1 : 0;
          }
-
      }
  }
 

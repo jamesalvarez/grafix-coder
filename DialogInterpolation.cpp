@@ -11,7 +11,7 @@ DialogInterpolation::DialogInterpolation(QWidget *parent) :
     // Events
     connect( ui->b_accept, SIGNAL( clicked() ), this, SLOT( fncPress_bAccept() ) );
     connect( ui->b_cancel, SIGNAL( clicked() ), this, SLOT( close() ) );
-    connect( ui->b_Batch, SIGNAL( clicked() ), this, SLOT( fncPress_bBatch()));
+    connect( ui->b_Batch, SIGNAL( clicked() ), this, SLOT( fncPress_bBatch() ) );
 
 }
 
@@ -36,12 +36,13 @@ void DialogInterpolation::loadData(GrafixParticipant* participant, mat &SmoothM)
 
 void DialogInterpolation::fncPress_bAccept(){
 
-
     if ((*p_smoothM).is_empty())
-    {   // The data is still not smoothed, we cannot proceed.
+    {
+        // The data is still not smoothed, we cannot proceed.
         close();
     }else
-    { // Interpolate!
+    {
+        // Interpolate!
         ui->lMsg->setText("Processing ... ");
         qApp->processEvents();
         GPMatrixProgressBar gpProgressBar(this);
@@ -49,14 +50,11 @@ void DialogInterpolation::fncPress_bAccept(){
 
     }
 
-    if (!p_smoothM->is_empty())
+    if (!p_smoothM->is_empty() && GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
+        _participant->SetParticipantSetting(Consts::PSETTING_INTERPOLATED_DATE,QDateTime::currentDateTime());
+    else
     {
-        if (GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
-            _participant->SetParticipantSetting(Consts::PSETTING_INTERPOLATED_DATE,QDateTime::currentDateTime());
-        else
-        {
-            //TODO
-        }
+        //TODO
     }
 
     close();
