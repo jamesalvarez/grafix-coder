@@ -105,16 +105,37 @@ INCLUDEPATH += $$PWD/TRUNCATED_KERNEL_BF
 #needed for armadillo (installed with cmake)
 macx: INCLUDEPATH += /usr/local/include
 
-win32: INCLUDEPATH += C:/Qt/boost_1_54_0/boost
 
-win32: INCLUDEPATH += $$PWD/../armadillo-3.910.0/include
-win32: DEPENDPATH += $$PWD/../armadillo-3.910.0/include
+#win32: INCLUDEPATH += C:/Qt/boost_1_54_0/boost
 
-win32: INCLUDEPATH += $$PWD/../armadillo-3.910.0/examples/lib_win32
-win32: DEPENDPATH += $$PWD/../armadillo-3.910.0/examples/lib_win32
+#win32: INCLUDEPATH += $$PWD/../armadillo-7.200.2/include
+#win32: DEPENDPATH += $$PWD/../armadillo-7.200.2/include
 
-
-win32: LIBS += -L$$PWD/../armadillo-3.910.0/examples/lib_win32/ -lblas_win32_MT
+#win32: INCLUDEPATH += $$PWD/../armadillo-7.200.2/examples/lib_win32
+#win32: DEPENDPATH += $$PWD/../armadillo-7.200.2/examples/lib_win32
 
 
-win32: LIBS += -L$$PWD/../armadillo-3.910.0/examples/lib_win32/ -llapack_win32_MT
+#win32: LIBS += -L$$PWD/../armadillo-7.200.2/examples/lib_win32/ -lblas_win32_MT
+
+#win32: LIBS += -L$$PWD/../armadillo-7.200.2/examples/lib_win32/ -llapack_win32_MT
+
+
+#-------------------------------------------------
+#
+# Paths for ARMADILLO - put armadillo in the same directory as grafix-coder.
+# (But not it the actual directory)
+# Update the paths below to point to the correct directory names
+#
+#-------------------------------------------------
+win64: INCLUDEPATH += C:/Qt/boost_1_54_0/boost
+
+win64: INCLUDEPATH += $$PWD/../armadillo-7.200.2/include
+win64: DEPENDPATH += $$PWD/../armadillo-7.200.2/include
+
+win64: INCLUDEPATH += $$PWD/../armadillo-7.200.2/examples/lib_win64
+win64: DEPENDPATH += $$PWD/../armadillo-7.200.2/examples/lib_win64
+
+
+win64: LIBS += -L$$PWD/../armadillo-7.200.2/examples/lib_win64/ -lblas_win64_MT
+
+win64: LIBS += -L$$PWD/../armadillo-7.200.2/examples/lib_win64/ -llapack_win64_MT
