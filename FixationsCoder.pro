@@ -43,7 +43,8 @@ SOURCES += main.cpp \
     MainWindow2.cpp \
     GrafixSettingsLoader.cpp \
     Trilateral/Trilateral2003.cpp \
-    DialogVideoPlayer.cpp
+    DialogVideoPlayer.cpp \
+    FixationsListModel.cpp
 
 HEADERS  += \
     MyConstants.h \
@@ -73,7 +74,8 @@ HEADERS  += \
     MainWindow2.h \
     GrafixSettingsLoader.h \
     Trilateral/Trilateral2003.h \
-    DialogVideoPlayer.h
+    DialogVideoPlayer.h \
+    FixationsListModel.h
 
 FORMS    += \
     DialogTestSmoothParameters.ui \

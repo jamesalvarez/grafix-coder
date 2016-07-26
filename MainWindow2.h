@@ -20,6 +20,7 @@
 #include "DialogEstimateFixations.h"
 #include "DialogSaveNewConfiguration.h"
 #include "DialogVideoPlayer.h"
+#include "FixationsListModel.h"
 
 #include <QProgressDialog>
 #include <QMainWindow>
@@ -86,6 +87,7 @@ private:
     double _degPerPixel;
     int _expWidth;
     int _expHeight;
+    bool _copyEyes;
     Ui::MainWindow2 *ui;
     QMutex _files_mutex;
     QProgressDialog _files_progress;
@@ -111,6 +113,9 @@ private:
     bool _configuration_changed;
     bool _hold_changes;
     double _velocity_view_zoom;
+
+    FixationsListModel* _fixationList;
+
     //changing participant / display / editing
     void fncLoadSettings(GrafixConfiguration configuration);
     void fncSetActiveParticipant(int position);
@@ -139,7 +144,6 @@ private:
     void paintVelocity();
     void paintPupilDilation();
     void paintCurrentFixation(int from, int to);
-    void paintCurrentFixationOnList(int from, int to);
     void paintExperimentalSegments();
     void paintLabels();
     void paintClear();

@@ -19,6 +19,7 @@ MainWindow2::MainWindow2(QWidget *parent) :
     this->_displayIncrement = 0;
     this->_expHeight = Consts::DEFAULT_SETTING_EXP_HEIGHT;
     this->_expWidth = Consts::DEFAULT_SETTING_EXP_WIDTH;
+    this->_copyEyes = Consts::DEFAULT_SETTING_SMOOTHING_USE_OTHER_EYE;
     this->_files_next_position = 0;
     this->_files_stop_flag = false;
     this->_fixStartPos = 0;
@@ -149,8 +150,19 @@ MainWindow2::MainWindow2(QWidget *parent) :
 
     ui->stackedWidget->setCurrentWidget(ui->page_manual);
 
+    //setup fixations list
+    _fixationList = new FixationsListModel();
+    ui->fixationTableView->setModel(_fixationList);
+
+
+
     qApp->installEventFilter(this);
     fncSetToolTips();
+
+    ui->fixationTableView->setColumnWidth(0,40);
+    ui->fixationTableView->setColumnWidth(1,40);
+    ui->fixationTableView->setColumnWidth(2,80);
+    ui->fixationTableView->setColumnWidth(3,80);
 }
 
 bool MainWindow2::LoadProject()
@@ -224,6 +236,8 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             painter.drawLine(posX,0,posX,pixmap.height());
             this->p_over_display_label->setPixmap(pixmap);
             painter.end();
+        } else {
+            this->p_over_display_label->clear();
         }
 
         // Convert the posX value to the real one in the file:
@@ -243,14 +257,12 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                 if (_selectedFixationEnd && file_posX > _fixStartPos)
                 {
                    paintCurrentFixation(_fixStartPos, file_posX);
-                   paintCurrentFixationOnList(_fixStartPos, file_posX);
                    ui->lFrom->setText(QString::number(_fixStartPos));
                    ui->lTo->setText(QString::number(file_posX));
                 }
                 else if (_selectedFixationEnd == false && file_posX < _fixStartPos)
                 {
                     paintCurrentFixation(file_posX, _fixStartPos);
-                    paintCurrentFixationOnList(file_posX, _fixStartPos);
                     ui->lTo->setText(QString::number(_fixStartPos));
                     ui->lFrom->setText(QString::number(file_posX));
                 }
@@ -268,23 +280,11 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                 {
                     // "from" is bigger than "to". Paint rectangle
                    paintCurrentFixation(_fixStartPos, file_posX);
-                   paintCurrentFixationOnList(_fixStartPos, file_posX);
                 }
 
                 ui->lTo->setText(QString::number(file_posX));
             }
         }
-
-//        // If the cursor is in the central area we draw a line
-//        if (posX >= 0 && posX <=ui->lPanelFixations->width() )
-//        {
-//            QPixmap pixmap = *this->p_over_display_label->pixmap();
-//            QPainter painter(&pixmap);
-//            QPen myPen(Qt::green, 1, Qt::SolidLine);
-//            painter.drawLine(posX,0,posX,pixmap.height());
-//            this->p_over_display_label->setPixmap(pixmap);
-//            painter.end();
-//        }
     }
 
     if (event->type() == QEvent::MouseButtonRelease)
@@ -304,7 +304,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                 else
                 {
                     fixAllM.at(_selectedFixationRow,1) = fixStopPos;
-                    GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel);
+                    GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel, _copyEyes);
                 }
             }
             else if (_selectedFixationEnd == false && fixStopPos < _fixStartPos)
@@ -317,7 +317,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                 else
                 {
                     fixAllM.at(_selectedFixationRow,0) = fixStopPos;
-                    GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel);
+                    GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel, _copyEyes);
                 }
             }
 
@@ -377,7 +377,6 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                                                   this->fixAllM.at(_selectedFixationRow, 1);
 
             paintCurrentFixation(this->fixAllM.at(_selectedFixationRow, 0), this->fixAllM.at(_selectedFixationRow, 1));
-            paintCurrentFixationOnList(this->fixAllM.at(_selectedFixationRow, 0), this->fixAllM.at(_selectedFixationRow, 1));
             ui->lFrom->setText(QString::number(this->fixAllM.at(_selectedFixationRow, 0)));
             ui->lTo->setText(QString::number(this->fixAllM.at(_selectedFixationRow, 1)));
         }
@@ -507,7 +506,7 @@ void MainWindow2::fncLoadSettings(GrafixConfiguration configuration)
     _hz = _project.GetProjectSetting(Consts::SETTING_HZ, configuration).toInt();
     _secsFragment = _project.GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, configuration).toInt();
     _degPerPixel = _project.GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, configuration).toDouble();
-
+    _copyEyes = _project.GetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE, configuration).toBool();
     ui->sliderSigmaS->setValue(
                 Consts::GetSliderValue(Consts::SETTING_SMOOTHING_SIGMA_S,
                 _project.GetProjectSetting(
@@ -593,19 +592,19 @@ void MainWindow2::fncManipulateFix(int from, int to)
         switch (_currentAction)
         {
             case Consts::AC_CREATE:
-               fixAllM = GPFixationOperations::fncCreateFixation(fixAllM, roughM,   _hz,  _secsFragment,  _currentFragment, from, to, _expWidth, _expHeight, _degPerPixel);
+               fixAllM = GPFixationOperations::fncCreateFixation(fixAllM, roughM,   _hz,  _secsFragment,  _currentFragment, from, to, _expWidth, _expHeight, _degPerPixel, _copyEyes);
                break;
             case Consts::AC_DELETE:
                 fixAllM = GPFixationOperations::fncDeleteFixations(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
                 break;
             case Consts::AC_MERGE:
-                fixAllM = GPFixationOperations::fncMergeFixations(fixAllM, roughM, _hz,  _secsFragment,  _currentFragment, from,  to, _expWidth, _expHeight, _degPerPixel);
+                fixAllM = GPFixationOperations::fncMergeFixations(fixAllM, roughM, _hz,  _secsFragment,  _currentFragment, from,  to, _expWidth, _expHeight, _degPerPixel, _copyEyes);
                 break;
             case Consts::AC_SMOOTH_PURSUIT:
                 fixAllM = GPFixationOperations::fncSmoothPursuitFixation(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
                 break;
             case Consts::AC_RESET_TO_AUTO:
-                GPFixationOperations::fncResetFixation(p_fixAllM,autoFixAllM,roughM,from,to,_expWidth,_expHeight,_degPerPixel);
+                GPFixationOperations::fncResetFixation(p_fixAllM,autoFixAllM,roughM,from,to,_expWidth,_expHeight,_degPerPixel, _copyEyes);
                 break;
             //case Consts::AC_DRAG_ENDS:
             //    GPFixationOperations::fncResizeFixation(this->p_fixAllM, from, to);
@@ -913,7 +912,6 @@ void MainWindow2::paintSmoothData()
 void MainWindow2::paintFixations()
 {
 
-
     //this paints both the fixations and autofixations
     int fixTPos = 13;
     int fixPos = 15;
@@ -921,13 +919,10 @@ void MainWindow2::paintFixations()
     int autofixPos = 50;
     int autofixTPos = 48;
 
-    QPixmap pixmapFixList(ui->lPanelFixList->width()-2,ui->lPanelFixList->height()-2);
-    pixmapFixList.fill(Qt::transparent);
     QPixmap pixmap(ui->lPanelFixations->width()-2,ui->lPanelFixations->height()-2);
     pixmap.fill(Qt::white);
 
     QPainter painter(&pixmap);
-    QPainter painterFixList(&pixmapFixList);
 
     int counter = 0;
 
@@ -935,30 +930,37 @@ void MainWindow2::paintFixations()
     font.setPointSize ( 8 );
     painter.setFont(font);
 
-    font.setPointSize ( 8 );
-    painterFixList.setFont(font);
-
     std::stringstream number;
     number.str("");
 
     double posStart = 0;
     double posEnd = 0;
 
-    // Just to optimize the code
-    int auxIndex = 0;
-    if (fixAllM.n_rows > 0){
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= _displayStartIndex);
-        if (!fixIndex.empty()){
-            auxIndex = fixIndex(0);
-        }
-    }
+    int startFixationIndex = -1;
+    int endFixationIndex = -1;
 
+    //search for the fixations that appear in this segment
+    for (uword i = 0; i < fixAllM.n_rows  ; i++) {
 
-    for (uword i = auxIndex; i < fixAllM.n_rows  ; i++){
+        // Fixations that start anywhere in this segment
+        bool fixationStartsInSegment = (fixAllM(i,0) >= _displayStartIndex && fixAllM(i,0) <=  _displayStopIndex );
 
-        if ((fixAllM(i,0) >= _displayStartIndex && fixAllM(i,0) <=  _displayStopIndex ) ||(fixAllM(i,0) <= _displayStartIndex && fixAllM(i,1) >= _displayStartIndex )){
+        // Fixations that start before the segment begins, and end in this one.
+        bool fixationStartsBeforeSegment = (fixAllM(i,0) <= _displayStartIndex && fixAllM(i,1) >= _displayStartIndex );
 
-            if (fixAllM(i,0) <= _displayStartIndex && fixAllM(i,1) >= _displayStartIndex ) // If it's a fixation that didn't end in the previous segment
+        bool displayFixation = fixationStartsInSegment || fixationStartsBeforeSegment;
+
+        if (!displayFixation) {
+            continue;
+        } else {
+
+            if (startFixationIndex == -1) {
+                startFixationIndex = (int)i;
+            }
+
+            endFixationIndex = (int)i;
+
+            if (fixationStartsBeforeSegment )
                 posStart = -1;
             else
                 posStart = (fixAllM(i,0) - _displayStartIndex ) * (1/_displayIncrement);
@@ -974,27 +976,21 @@ void MainWindow2::paintFixations()
             number.str("");
             number << counter;
             painter.drawText( QPoint(posStart,fixTPos), number.str().c_str() );
-            if (counter <= 47){ // Paint the fixations list
-                painterFixList.drawText( QPoint(0,((counter +1) * 17)+ 20), number.str().c_str() );
-                number.str("");
-                number << fixAllM(i,0) ;
-                painterFixList.drawText( QPoint(30,((counter +1) * 17)+ 20), number.str().c_str());
-                number.str("");
-                number << fixAllM(i,1) ;
-                painterFixList.drawText( QPoint(90,((counter +1) * 17)+ 20), number.str().c_str());
-                number.str("");
-                number << fixAllM(i,2) ;
-                painterFixList.drawText( QPoint(150,((counter +1) * 17)+ 20), number.str().c_str());
-            }else if (counter == 48){
-                painterFixList.drawText( QPoint(0,((counter +1) * 17)+ 20), "...");
-            }
-
             counter ++; // Next fixation
 
-        }else if (fixAllM(i,1) >= _displayStopIndex){
-            break;
         }
     }
+
+    //update model
+    mat currentFixations;
+    if (startFixationIndex > -1 && endFixationIndex > -1) {
+        currentFixations = fixAllM.rows(startFixationIndex, endFixationIndex);
+    } else {
+        currentFixations = mat();
+    }
+
+    _fixationList->updateWithFixations(currentFixations, -1);
+
 
     //now paint auto fixations
    counter = 0;
@@ -1002,7 +998,7 @@ void MainWindow2::paintFixations()
    posEnd = 0;
 
    // Just to optimize the code
-   auxIndex = 0;
+   uword auxIndex = 0;
    if (autoFixAllM.n_rows > 0){
        uvec fixIndex =  arma::find(autoFixAllM.col(1) >= _displayStartIndex);
        if (!fixIndex.empty()){
@@ -1039,9 +1035,7 @@ void MainWindow2::paintFixations()
    }
 
     ui->lPanelFixations->setPixmap(pixmap);
-    ui->lPanelFixList->setPixmap(pixmapFixList);
     painter.end();
-    painterFixList.end();
 }
 
 
@@ -1159,70 +1153,7 @@ void MainWindow2::paintCurrentFixation(int from, int to)
 }
 
 
-void MainWindow2::paintCurrentFixationOnList(int from, int to)
-{
-    // Paint the fixation that we are manipulating at the list on the left.
-    // If we are creating the fixation on top of other fixations, it paints them bold
-    QPixmap pixmapFixList(ui->lPanelFixList->width()-2,ui->lPanelFixList->height()-2);
-    pixmapFixList.fill(Qt::transparent);
 
-    QPainter painterFixList(&pixmapFixList);
-
-    int counter = 0;
-    QFont font=painterFixList.font() ;
-
-    std::stringstream number;
-    number.str("");
-
-    int auxIndex = 0;
-    if (fixAllM.n_rows > 0){
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= _displayStartIndex);
-        if (!fixIndex.empty()){
-            auxIndex = fixIndex(0);
-        }
-    }
-    for (uword i = auxIndex; i < fixAllM.n_rows  ; i++){
-        if ((fixAllM(i,0) >= _displayStartIndex && fixAllM(i,0) <=  _displayStopIndex ) ||(fixAllM(i,0) <= _displayStartIndex && fixAllM(i,1) >= _displayStartIndex )){
-
-            // The current fixations that are in the interval ==> bold
-            if  ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from )){
-                font.setPointSize ( 12 );
-                font.setBold(true);
-                painterFixList.setFont(font);
-            }else{
-                font.setPointSize ( 10 );
-                font.setBold(false);
-                painterFixList.setFont(font);
-            }
-            number.str("");
-            number << counter;
-            if (counter <= 47){ // Paint the fixations list
-                painterFixList.drawText( QPoint(0,((counter +1) * 17)+ 20), number.str().c_str() );
-                number.str("");
-                number << fixAllM(i,0) ;
-                painterFixList.drawText( QPoint(30,((counter +1) * 17)+ 20), number.str().c_str());
-                number.str("");
-                number << fixAllM(i,1) ;
-                painterFixList.drawText( QPoint(90,((counter +1) * 17)+ 20), number.str().c_str());
-                number.str("");
-                number << fixAllM(i,2) ;
-                painterFixList.drawText( QPoint(150,((counter +1) * 17)+ 20), number.str().c_str());
-            }else if (counter == 48){
-                painterFixList.drawText( QPoint(0,((counter +1) * 17)+ 20), "...");
-                break;
-            }
-
-            counter ++; // Next fixation
-
-        }else if (fixAllM(i,1) >= _displayStopIndex){
-            break;
-        }
-    }
-
-    ui->lPanelFixList->setPixmap(pixmapFixList);
-
-    painterFixList.end();
-}
 
 void MainWindow2::paintLabels()
 {
@@ -1267,7 +1198,6 @@ void MainWindow2::paintClear()
     ui->lPanelMissingData->clear();
     ui->lPanelSmooth->clear();
     ui->lPanelFlags->clear();
-    ui->lPanelFixList->clear();
     ui->lPanelFixations->clear();
     ui->lPanelVelocity->clear();
     ui->lPanelPupilDilation->clear();
@@ -1583,10 +1513,7 @@ void MainWindow2::fncPress_subMenuRecalculateFixations()
 {
     // It recalcules all the values for the fixations
     fncWaitForLoad();
-    GPFixationOperations::fncRecalculateFixations(roughM, &fixAllM,
-                                                            this->_project.GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt(),
-                                                            this->_project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt(),
-                                                            this->_project.GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, Consts::ACTIVE_CONFIGURATION()).toInt());
+    GPFixationOperations::fncRecalculateFixations(roughM, &fixAllM, _expWidth, _expHeight, _degPerPixel, _copyEyes);
 
     if (!fixAllM.is_empty())
         GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
@@ -1698,7 +1625,6 @@ void MainWindow2::fncSettingsChanged()
 void MainWindow2::fncSetToolTips()
 {
     this->ui->lPanelMissingData->setToolTip("Missing Data");
-    this->ui->lPanelFixList->setToolTip("List of fixations in current segment");
     this->ui->lPanelFlags->setToolTip("Flags for various actions performed:\n"
                                       "Interpolation - missing data has been interpolated.\n"
                                       "Consecutive fixations merged - post-hoc merging has occurred.\n"

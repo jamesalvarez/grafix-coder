@@ -14,14 +14,13 @@ void GPFixationOperations::DeleteRow(mat *matrix, uword index)
     }
 }
 
-void GPFixationOperations::fncEditFixation(const mat &roughM, mat *fix_row, int from, int to, int expWidth, int expHeight, double degPerPixel)
-{
+void GPFixationOperations::fncEditFixation(const mat &roughM, mat *fix_row, int from, int to, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
     fix_row->at(0,0) = from;
     fix_row->at(0,1) = to;
-    fncRecalculateFixationValues(roughM, fix_row, expWidth, expHeight, degPerPixel);
+    fncRecalculateFixationValues(roughM, fix_row, 0, expWidth, expHeight, degPerPixel, copy_eyes);
 }
 
-void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel)
+void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel, bool copy_eyes)
 {
     //first find all fixations in fixAllM which fall into the reset range and remove them
     //remember if cuts - so we dont accidentally join things.
@@ -135,10 +134,10 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
         }
     }
 
-    fncRecalculateFixations(roughM, fixAllM, expWidth, expHeight, degPerPixel);
+    fncRecalculateFixations(roughM, fixAllM, expWidth, expHeight, degPerPixel, copy_eyes);
 }
 
-mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to,int  expWidth, int expHeight, double degPerPixel){
+mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to,int  expWidth, int expHeight, double degPerPixel, bool copy_eyes){
 
     if ((uword)to < roughM.n_rows && (uword)from < roughM.n_rows){ // Only if we are creating the fixation in the right place
         int startIndexSegment = ((segment-1) * secsSegment * hz);
@@ -200,7 +199,9 @@ mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int
 
             double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
             double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-            double variance = GPMatrixFunctions::fncCalculateRMSRough(&roughCutM, expWidth, expHeight, degPerPixel);
+
+
+            double variance = GPMatrixFunctions::fncCalculateRMSRough(roughCutM, expWidth, expHeight, degPerPixel, copy_eyes);
             double pupilDilation = 0;
             if (roughCutM.n_cols == 6){
                 pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
@@ -327,7 +328,7 @@ mat GPFixationOperations::fncSmoothPursuitFixation(mat fixAllM, int hz, int secs
 
 }
 
-mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to, int expWidth, int expHeight, double degPerPixel)
+mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int secsSegment,int segment, int from, int to, int expWidth, int expHeight, double degPerPixel, bool copy_eyes)
 {
     if (fixAllM.n_rows == 0) return fixAllM;
     if (from >= 0) {
@@ -381,7 +382,7 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
 
             double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
             double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-            double variance = GPMatrixFunctions::fncCalculateRMSRough(&roughCutM, expWidth, expHeight, degPerPixel);
+            double variance = GPMatrixFunctions::fncCalculateRMSRough(roughCutM, expWidth, expHeight, degPerPixel, copy_eyes);
             double pupilDilation = 0;
             if (roughCutM.n_cols == 6){
                 pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
@@ -419,11 +420,8 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
     return fixAllM;
 }
 
-void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *fixAllRow, int expWidth, int expHeight, double degPerPixel)
-{
-    fncRecalculateFixationValues(roughM, fixAllRow, 0, expWidth, expHeight, degPerPixel);
-}
-void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *fixAllM, uword row, int expWidth, int expHeight, double degPerPixel)
+
+void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *fixAllM, uword row, int expWidth, int expHeight, double degPerPixel, bool copy_eyes)
 {
     // For each fixation, recalculate all the values
     // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smoothPursuit, PupilDilation];
@@ -440,7 +438,7 @@ void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *
     }
     double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
     double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-    double variance = GPMatrixFunctions::fncCalculateRMSRough(&roughCutM, expWidth, expHeight, degPerPixel);
+    double variance = GPMatrixFunctions::fncCalculateRMSRough(roughCutM, expWidth, expHeight, degPerPixel, copy_eyes);
     double pupilDilation = 0;
     if (roughCutM.n_cols == 6){
         pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
@@ -454,12 +452,11 @@ void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *
 }
 // This method recalculates all the values for the fixations that are already detected.
 // It is useful if we want to import fixations that were not created with GraFIX
-void GPFixationOperations::fncRecalculateFixations(const mat &roughM, mat *fixAllM, int expWidth, int expHeight, double degPerPixel)
-{
+void GPFixationOperations::fncRecalculateFixations(const mat &roughM, mat *fixAllM, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
     for (uword i = 0; i < fixAllM->n_rows; ++i)
     {
         mat fix_row = fixAllM->row(i);
-        fncRecalculateFixationValues(roughM, &fix_row, expWidth, expHeight, degPerPixel);
+        fncRecalculateFixationValues(roughM, &fix_row, 0, expWidth, expHeight, degPerPixel, copy_eyes);
         fixAllM->row(i) = fix_row;
     }
 }

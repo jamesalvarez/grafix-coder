@@ -79,7 +79,7 @@ public:
     static int  fncGetMatrixColsFromFile(QString fullpath);
     //FicDurOperations
     static double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
-    static double fncCalculateRMSRough(mat *p_aux, int expWidth, int expHeight, double degree_per_pixel);
+    static double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);
     static void fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader);
     static void fncCalculateFixations(mat *p_fixAllM, mat *p_roughM , mat *p_smoothM, GrafixSettingsLoader settingsLoader);
     static void fncRemoveUndetectedValuesRough(mat *p_a);

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>656</width>
-    <height>622</height>
+    <width>699</width>
+    <height>707</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -356,24 +356,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="ltFixationListHeaders">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Nº      From       To         Duration (ms)</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="lPanelFixList">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
+        <widget class="QTableView" name="fixationTableView"/>
        </item>
       </layout>
      </widget>
@@ -1504,8 +1487,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>656</width>
-     <height>21</height>
+     <width>699</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuProject">

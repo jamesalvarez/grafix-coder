@@ -2,6 +2,7 @@
 #define DialogOpenProject_H
 
 #include <QMenu>
+#include <QFont>
 #include "GPTableModel.h"
 #include "GrafixProject.h"
 #include "DialogParticipantPaths.h"

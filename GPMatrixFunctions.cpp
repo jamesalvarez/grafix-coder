@@ -858,29 +858,85 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      return sqrt(mean(mean(b)));
  }*/
 
- // Root mean square (RMS)
- double GPMatrixFunctions::fncCalculateRMSRough(mat *p_a, int expWidth, int expHeight, double degPerPixel){ // a = [ leftx, lefty, rightx, righty]
+// Root mean square (RMS)
+// Will treat missing data as if its not there
+double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
 
-     if (p_a->n_rows == 0 )
-         return 0;
+    if (RoughM.n_rows < 2 )
+        return 0;
 
-     // Calculate mean euclidean distance.
-     mat b = zeros(p_a->n_rows);
-     for (uword j = 0; j < (*p_a).n_rows-1 ; ++j){
-         // Here, we are calculating the RMS
-        // b(j) =( ((((a(j,0) + a(j,2))/2 * expWidth) - xAvg ) * (((a(j,0) + a(j,2))/2 * expWidth) - xAvg ) + (((a(j,1) + a(j,3))/2 * expHeight) - yAvg ) * (((a(j,1) + a(j,3))/2 * expHeight) - yAvg ))/2);
-         b(j) = (((((*p_a)(j,0) + (*p_a)(j,2))/2 * expWidth) * degPerPixel) - (((((*p_a)(j+1,0) + (*p_a)(j+1,2))/2 * expWidth) * degPerPixel))) * (((((*p_a)(j,0) + (*p_a)(j,2))/2 * expWidth) * degPerPixel) - (((((*p_a)(j+1,0) + (*p_a)(j+1,2))/2 * expWidth) * degPerPixel)))    ; // X
-         b(j) = b(j)  + (((((*p_a)(j,1) + (*p_a)(j,3))/2 * expHeight) * degPerPixel) - (((((*p_a)(j+1,1) + (*p_a)(j+1,3))/2 * expHeight) * degPerPixel))) * (((((*p_a)(j,1) + (*p_a)(j,3))/2 * expHeight) * degPerPixel) - (((((*p_a)(j+1,1) + (*p_a)(j+1,3))/2 * expHeight) * degPerPixel))); // Y
-         b(j) = b(j) / 2;
-     }
+    mat RMS = mat(0, 2);
+    uword validRow = 0;
 
-     return sqrt(mean(mean(b)));
- }
+    // process missing data, and get segments inbetween to smotth
+    // [ leftx, lefty, rightx, righty]
+    for (uword i = 0; i < RoughM.n_rows; ++i) {
+        bool leftXMissing = (RoughM(i,2) < 0 || RoughM(i,2) > 1);
+        bool leftYMissing = (RoughM(i,3) < 0 || RoughM(i,3) > 1);
+        bool rightXMissing = (RoughM(i,4) < 0 || RoughM(i,4) > 1);
+        bool rightYMissing = (RoughM(i,5) < 0 || RoughM(i,5) > 1);
+
+        bool leftMissing = leftXMissing || leftYMissing;
+        bool rightMissing = rightXMissing || rightYMissing;
+
+        bool missing = copy_eyes ? (leftMissing && rightMissing) : (leftMissing || rightMissing);
+
+        if (!missing) {
+            RMS.insert_rows(validRow,1);
+
+            RMS(validRow,0) = (RoughM(i,4) + RoughM(i,2)) / 2;
+            RMS(validRow,1) = (RoughM(i,5) + RoughM(i,3)) / 2;
+
+            if (copy_eyes) {
+                if (leftMissing && !rightMissing) {
+                    RMS(validRow,0) = RoughM(i,4);
+                    RMS(validRow,1) = RoughM(i,5);
+                } else if (rightMissing && !leftMissing) {
+                    RMS(validRow,0) = RoughM(i,2);
+                    RMS(validRow,1) = RoughM(i,3);
+                }
+            }
+            validRow++;
+        }
+    }
+
+    if (RMS.n_rows < 2 )
+        return 0;
+
+    // Calculate mean euclidean distance.
+    mat squaredDistances = zeros(RMS.n_rows - 1);
+
+    double x1, y1, x2, y2, xDiff, yDiff;
+
+    double xMultiplier = expWidth * degPerPixel;
+    double yMultiplier = expHeight * degPerPixel;
+
+    x1 = RMS.at(0,0) * xMultiplier;
+    y1 = RMS.at(0,1) * yMultiplier;
+
+    for (uword j = 1; j < RMS.n_rows; ++j) {
+        x2 = RMS.at(j,0) * xMultiplier;
+        y2 = RMS.at(j,1) * yMultiplier;
+
+        xDiff = x1 - x2;
+        yDiff = y1 - y2;
+
+        double distance = ((xDiff * xDiff) + (yDiff * yDiff)) / 2;
+        squaredDistances(j - 1) = distance * distance;
+
+        x1 = x2;
+        y1 = y2;
+    }
+
+    double rms = sqrt(mean(mean(squaredDistances)));
+    qDebug() << " rms: " << rms;
+    return rms;
+}
 
  /*
   * Returns the mean euclidean distance from average of all points in passed array
   */
-double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
+double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
 
     double xAvg = mean(p_a->col(0)); // x
     double yAvg = mean(p_a->col(1)); // y
@@ -977,12 +1033,10 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
  {
 
 
-     //int invalidSamples      = MyConstants::INVALID_SAMPLES;
+     bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
      int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
      int expHeight           = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
-     //double velocity         = settings.value(MyConstants::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
      double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-     //int hz                  = settings.value(MyConstants::SETTING_HZ).toInt();
 
      //clear fixall matrix
      (*p_fixAllM).reset();
@@ -1009,7 +1063,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
 
                  double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
                  double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-                 double variance = fncCalculateRMSRough(&roughCutM,expWidth,expHeight,degreePerPixel);
+                 double variance = fncCalculateRMSRough(roughCutM,expWidth,expHeight,degreePerPixel, copy_eyes);
                  double pupilDilation = 0;
                  if (roughCutM.n_cols == 6){
                      pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
@@ -1094,7 +1148,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
      //int invalidSamples      = MyConstants::INVALID_SAMPLES;
      int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
      int expHeight           = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
-     //double velocity         = settings.value(MyConstants::SETTING_INTERP_VELOCITY_THRESHOLD).toDouble();
+     bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
      double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
      double displacement     = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble();
@@ -1153,7 +1207,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
 
              averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
              averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-             variance = fncCalculateRMSRough(&roughCutM, expWidth,expHeight,degreePerPixel);
+             variance = fncCalculateRMSRough(roughCutM, expWidth,expHeight,degreePerPixel,copy_eyes);
              pupilDilation = 0;
              if (roughCutM.n_cols == 6){
                  pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
