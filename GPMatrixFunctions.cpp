@@ -526,6 +526,8 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      // Here we interpolate the smoothed data and create an extra column
      // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
 
+     qDebug() << "Interpolating...";
+
      if (SmoothM.is_empty())
          return;
 
@@ -536,10 +538,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      double interpolationLatency = settingsLoader.LoadSetting(Consts::SETTING_INTERP_LATENCY).toDouble();
      double displacInterpolation = settingsLoader.LoadSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
      int    gapLenght            = interpolationLatency * hz / 1000;
-
-
-     int indexPrevSacc, indexNextSacc, indexDataBack;
-     double euclideanDisPrev, euclideanDisNext = -1, xAvg, yAvg;
+     double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
 
      mat aux2, aux3;
      uvec fixIndex;
@@ -555,13 +554,15 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      // Iterate through the samples, detecting missing points.
      for(uword i = 0; i < SmoothM.n_rows; ++i) {
 
-         cout << SmoothM(i,2) << " , " << SmoothM(i,3) << endl;
+
          if ( SmoothM(i,2) >= 0 || SmoothM(i,3) >= 0) {
              continue; // Sample is not missing
          }
 
+         qDebug() << endl << "sample missing at: " << i;
+
          // Go to the previous saccade and calculate the average X and Y.
-         indexPrevSacc = euclideanDisPrev = xAvg = yAvg = -1;
+         int indexPrevSacc = -1;
          for (int j = i; j > 0 ; --j) {
              if (SmoothM(j,5) == 1) {
                  indexPrevSacc = j;
@@ -569,67 +570,102 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
              }
          }
 
-         if (indexPrevSacc != -1 && indexPrevSacc < (int)i-1) {  // If there is a previous saccade we proceed
-             aux2 =  SmoothM.submat(indexPrevSacc, 2, i-1, 3); // cut the data for the previous fixation to calculate euclidean distance
+         qDebug() << " previous saccade at: " << indexPrevSacc;
 
-             // If the euclidean distance of the previous fixation is similar to the one for the next fixation, it may be the same fixation.
+         bool previousSaccadeDetected = indexPrevSacc != -1 && indexPrevSacc < (int)i-1;
 
-             fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
-             //TODO: possible check we have found some... also if fail then error setting col 5?
-             aux3 = aux2.rows(fixIndex);
-             xAvg = mean(aux3.col(0)); // x
-             yAvg = mean(aux3.col(1)); // y
-             euclideanDisPrev = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
+         if (!previousSaccadeDetected) {
+             continue;
+         }
 
-             // Find the point where de data is back:
-             indexDataBack = -1;
-             for (uword j = i; j < SmoothM.n_rows; ++j){
-                 if (SmoothM(j,2) > 0 && SmoothM(j,3) > 0){
-                     indexDataBack = j ;
-                     break;
-                 }
+         // cut the data for the previous fixation to calculate euclidean distance
+         aux2 =  SmoothM.submat(indexPrevSacc, 2, i-1, 3);
+         fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
+         aux3 = aux2.rows(fixIndex);
+
+         // get the location of this preceeding fixation
+         double xAvg = mean(aux3.col(0));
+         double yAvg = mean(aux3.col(1));
+
+         qDebug() << " xAvg: " << xAvg << " yAvg: " << yAvg;
+
+         //euclideanDisPrev = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
+
+         // Find the point where the data is back:
+         int indexDataBack = -1;
+         for (uword j = i; j < SmoothM.n_rows; ++j){
+             if (SmoothM(j,2) > 0 && SmoothM(j,3) > 0){
+                 indexDataBack = j ;
+                 break;
              }
+         }
 
-             if (indexDataBack != -1){ // if the data comes back at some point
+         qDebug() << " indexDataBack: " << indexDataBack;
 
-                 // find the next saccade. Start counting from  indexDataBack+2 , as the first point after missing data can be identified as saccade by mistake.
-                 indexNextSacc = -1;
-                 for (uword j = indexDataBack+2 ; j < SmoothM.n_rows; ++j){
-                     if (SmoothM(j,5) == 1 ){ // Saccade!
-                         indexNextSacc = j;
-                         break;
-                     }
-                 }
+         if (indexDataBack == -1){
+             // if the data doesn't back at some point
+             continue;
+         }
 
-                 // if there is a next saccade:
-                 if (indexNextSacc != -1 && indexDataBack + 2 < indexNextSacc){
-                     aux2 =  SmoothM.submat(indexDataBack+2, 2, indexNextSacc , 3 ); // cut the data for the next fixation to calculate euclidean distance
-                     fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
-                     //todo: here again check it found any
-                     aux3 = aux2.rows(fixIndex);
-                     euclideanDisNext = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
-                 }
-
-                 // If the eucluclidean distance is similar (less than "displacInterpolation") at both ends and the gap is smaller than the latency, interpolate!
-                 if (euclideanDisNext != -1 && sqrt((euclideanDisNext - euclideanDisPrev)* (euclideanDisNext - euclideanDisPrev)) <= displacInterpolation && indexDataBack - (int)i < gapLenght){ // INTERPOLATE!!!
-                 //    cout << "**** Interpolate from  :" << i  << " too:" << indexDataBack << endl;
-
-                     SmoothM.rows(i,indexDataBack).col(2).fill(xAvg);
-                     SmoothM.rows(i,indexDataBack).col(3).fill(yAvg);
-                     SmoothM.rows(i,indexDataBack).col(6).fill(1);  //Interpolation index!
-
-                     GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsLoader); // Update.
-
-                 }
-
-                 i = indexDataBack;
+         // find the next saccade. Start counting from  indexDataBack+2 , as the first point after missing data can be identified as saccade by mistake.
+         int indexNextSacc = -1;
+         for (uword j = indexDataBack+2 ; j < SmoothM.n_rows; ++j){
+             if (SmoothM(j,5) == 1 ){ // Saccade!
+                 indexNextSacc = j;
+                 break;
              }
+         }
+
+         qDebug() << " indexNextSacc: " << indexDataBack;
+
+         // if there is a next saccade:
+         bool followingSaccadeDetected = indexNextSacc != -1 && indexDataBack + 2 < indexNextSacc;
+
+         if (!followingSaccadeDetected) {
+             continue;
+         }
+
+         aux2 =  SmoothM.submat(indexDataBack+2, 2, indexNextSacc , 3 ); // cut the data for the next fixation to calculate euclidean distance
+         fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
+         //todo: here again check it found any
+         aux3 = aux2.rows(fixIndex);
+
+         // get the location of the following fixation
+         double xAvg2 = mean(aux3.col(0));
+         double yAvg2 = mean(aux3.col(1));
+
+         qDebug() << " xAvg2: " << xAvg2 << " yAvg2: " << yAvg2;
+
+         // If the eucluclidean distance is similar (less than "displacInterpolation") at both ends and the gap is smaller than the latency, interpolate!
+         double xDiff = xAvg - xAvg2;
+         double yDiff = yAvg - yAvg2;
+
+
+         double distance = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+         double distanceInDegrees = distance * degreesPerPixel;
+
+         qDebug() << " distance: " << distance << " degrees: " << distanceInDegrees;
+
+         bool interpolationInRange = distanceInDegrees <= displacInterpolation;
+         bool interpolationDistanceInRange = indexDataBack - (int)i < gapLenght;
+         qDebug() << " inRange: " << interpolationInRange << " inDistance: " << interpolationDistanceInRange;
+         if (interpolationInRange && interpolationDistanceInRange) {
+             // INTERPOLATE!!!
+            qDebug() << "**** Interpolated from  :" << i  << " too:" << indexDataBack << endl;
+
+             SmoothM.rows(i,indexDataBack).col(2).fill(xAvg);
+             SmoothM.rows(i,indexDataBack).col(3).fill(yAvg);
+             SmoothM.rows(i,indexDataBack).col(6).fill(1);  //Interpolation index!
+
+             GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsLoader); // Update.
 
          }
 
+         i = indexDataBack;
 
-         gpProgressBar.endProcessing();
      }
+
+     gpProgressBar.endProcessing();
 
  }
 
@@ -841,18 +877,23 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      return sqrt(mean(mean(b)));
  }
 
- double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
+ /*
+  * Returns the mean euclidean distance from average of all points in passed array
+  */
+double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a){
 
-     double xAvg = mean(p_a->col(0)); // x
-     double yAvg = mean(p_a->col(1)); // y
+    double xAvg = mean(p_a->col(0)); // x
+    double yAvg = mean(p_a->col(1)); // y
 
-     // Calculate mean euclidean distance.
-     mat b = zeros(p_a->n_rows);
-     for (uword j = 0; j < p_a->n_rows ; ++j){
-         b(j) =sqrt((((p_a->at(j,0) - xAvg ) * (p_a->at(j,0) - xAvg )) + ( (p_a->at(j,1) - yAvg ) * (p_a->at(j,1) - yAvg )))/2);
-     }
-     return (mean(mean(b)));
- }
+    // Calculate mean euclidean distance.
+    mat b = zeros(p_a->n_rows);
+    for (uword j = 0; j < p_a->n_rows ; ++j) {
+        double xDiffFromAvg = p_a->at(j,0) - xAvg;
+        double yDiffFromAvg = p_a->at(j,1) - yAvg;
+        b(j) =sqrt(((xDiffFromAvg * xDiffFromAvg) + ( yDiffFromAvg * yDiffFromAvg))/2);
+    }
+    return (mean(mean(b)));
+}
 
  void GPMatrixFunctions::fncRemoveUndetectedValuesRough(mat *p_a){ // Removes the rows where any of the eyes were detected
      // Remove the rows where there was no valid data.
@@ -1073,7 +1114,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
 
         // Recalculate euclidean distances for both fixations, using the smoothed data.
          aux =  p_smoothM->submat(p_fixAllM->at(i,0), 2, p_fixAllM->at(i,1) , 3 ); // cut the data for the next fixation to calculate euclidean distance
-         fixIndex =  arma::find(aux.col(0) > 1); // Remove the -1 values for doing this calculation!!
+         fixIndex =  arma::find(aux.col(0) > -1); // Remove the -1 values for doing this calculation!!
          aux = aux.rows(fixIndex);
          if (!aux.is_empty()){
              xDist1 = mean(aux.col(0));
@@ -1083,7 +1124,7 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
          }
 
          aux =  p_smoothM->submat(p_fixAllM->at(i+1,0), 2, p_fixAllM->at(i+1,1) , 3 ); // cut the data for the next fixation to calculate euclidean distance
-         fixIndex =  arma::find(aux.col(0) > 1); // Remove the -1 values for doing this calculation!!
+         fixIndex =  arma::find(aux.col(0) > -1); // Remove the -1 values for doing this calculation!!
          aux = aux.rows(fixIndex);
          if (!aux.is_empty()){
              xDist2 = mean(aux.col(0));
