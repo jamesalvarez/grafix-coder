@@ -159,10 +159,12 @@ MainWindow2::MainWindow2(QWidget *parent) :
     qApp->installEventFilter(this);
     fncSetToolTips();
 
+    //set up fixation table view
+    ui->fixationTableView->setSelectionMode(QAbstractItemView::NoSelection);
     ui->fixationTableView->setColumnWidth(0,40);
     ui->fixationTableView->setColumnWidth(1,40);
-    ui->fixationTableView->setColumnWidth(2,80);
-    ui->fixationTableView->setColumnWidth(3,80);
+    ui->fixationTableView->setColumnWidth(2,60);
+    ui->fixationTableView->setColumnWidth(3,60);
 }
 
 bool MainWindow2::LoadProject()

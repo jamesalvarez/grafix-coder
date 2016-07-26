@@ -157,6 +157,11 @@ void DialogExport::fncPress_bExport(){
     // **** Save the file
     QString fn = QFileDialog::getSaveFileName(this,"Save exported data","","*.csv");
 
+    //check that fn has extension
+    if (QFileInfo(fn).suffix() == "") {
+        fn += ".csv";
+    }
+
     if (fn != "" && GPMatrixFunctions::saveFileSafe(exportM,fn)) {
         _saved = true;
         _filename = fn;

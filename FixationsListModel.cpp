@@ -61,6 +61,11 @@ QVariant FixationsListModel::headerData(int section, Qt::Orientation orientation
                 return QVariant();
         }
     }
+
+    if (role == Qt::DisplayRole && orientation == Qt::Vertical) {
+        return section;
+    }
+
     return QVariant();
 }
 
