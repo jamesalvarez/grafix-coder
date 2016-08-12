@@ -47,7 +47,12 @@ void DialogStatistics::computeStatistics(){
 
         // mean Variance
         o.str("");
-        o << mean(mean(fixAllM.col(5)));
+
+        mat variances = fixAllM.col(5);
+        uvec aboveOrEqualToZeroRMS = arma::find(variances > 0);
+        variances = variances.elem(aboveOrEqualToZeroRMS);
+
+        o << mean(mean(variances));
         ui->l_variance_m->setText(o.str().c_str());
 
     }
