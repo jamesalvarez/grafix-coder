@@ -838,38 +838,20 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
 
  }
 
- /*/ Root mean square (RMS)
- double GPMatrixFunctions::fncCalculateRMSRough(mat *p_a, int expWidth, int expHeight, double degree_per_pixel)
- { // a = [ leftx, lefty, rightx, righty]
-
-     if (p_a->n_rows == 0 )
-         return 0;
-
-     // Calculate mean euclidean distance.
-     mat b = zeros(p_a->n_rows);
-     for (uword j = 0; j < p_a->n_rows-1 ; ++j){
-         // Here, we are calculating the RMS
-        // b(j) =( ((((a(j,0) + a(j,2))/2 * expWidth) - xAvg ) * (((a(j,0) + a(j,2))/2 * expWidth) - xAvg ) + (((a(j,1) + a(j,3))/2 * expHeight) - yAvg ) * (((a(j,1) + a(j,3))/2 * expHeight) - yAvg ))/2);
-         b(j) = pow(expWidth * degree_per_pixel * ((((p_a->at(j,0) + p_a->at(j,2))/2)) - ((((p_a->at(j+1,0) + p_a->at(j+1,2))/2)))),2); // X
-         b(j) += pow(expHeight * degree_per_pixel * ((((p_a->at(j,1) + p_a->at(j,3))/2)) - ((((p_a->at(j+1,1) + p_a->at(j+1,3))/2)))),2); // Y
-         b(j) = b(j) / 2;
-     }
-
-     return sqrt(mean(mean(b)));
- }*/
 
 // Root mean square (RMS)
 // Will treat missing data as if its not there
 double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
 
     if (RoughM.n_rows < 2 )
-        return 0;
+        return -1;
 
     mat RMS = mat(0, 2);
     uword validRow = 0;
 
     // process missing data, and get segments inbetween to smotth
     // [ leftx, lefty, rightx, righty]
+    // Creates RMS matrix which has only non missing samples
     for (uword i = 0; i < RoughM.n_rows; ++i) {
         bool leftXMissing = (RoughM(i,2) < 0 || RoughM(i,2) > 1);
         bool leftYMissing = (RoughM(i,3) < 0 || RoughM(i,3) > 1);
@@ -901,7 +883,7 @@ double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int ex
     }
 
     if (RMS.n_rows < 2 )
-        return 0;
+        return -1;
 
     // Calculate mean euclidean distance.
     mat squaredDistances = zeros(RMS.n_rows - 1);
@@ -921,7 +903,7 @@ double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int ex
         xDiff = x1 - x2;
         yDiff = y1 - y2;
 
-        double distance = ((xDiff * xDiff) + (yDiff * yDiff)) / 2;
+        double distance = ((xDiff * xDiff) + (yDiff * yDiff));
         squaredDistances(j - 1) = distance * distance;
 
         x1 = x2;
@@ -1012,7 +994,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
          maxX = aux.col(0).max();
          maxY = aux.col(1).max();
 
-         if (minC > 1 && maxY < expWidth && maxX < expHeight) {
+         if (minC > 0 && maxY < expWidth && maxX < expHeight) {
 
              // Calculate amplitude and velocity
              double xDist = (*p_smoothM)(i-1,2) - (*p_smoothM)(i,2);
