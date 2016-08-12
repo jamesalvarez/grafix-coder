@@ -521,153 +521,121 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
      }
  }
 
- void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar)
- {
-     // Here we interpolate the smoothed data and create an extra column
-     // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
+void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar)
+{
+    // Here we interpolate the smoothed data and create an extra column
+    // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
 
-     qDebug() << "Interpolating...";
+    qDebug() << "Interpolating...";
 
-     if (SmoothM.is_empty())
-         return;
+    if (SmoothM.is_empty())
+     return;
 
-     gpProgressBar.beginProcessing("Interpolating Data", 100);
-
-
-     double hz                   = settingsLoader.LoadSetting(Consts::SETTING_HZ).toDouble();
-     double interpolationLatency = settingsLoader.LoadSetting(Consts::SETTING_INTERP_LATENCY).toDouble();
-     double displacInterpolation = settingsLoader.LoadSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
-     int    gapLenght            = interpolationLatency * hz / 1000;
-     double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-
-     mat aux2, aux3;
-     uvec fixIndex;
-
-     // Remove previous interpolation data and create the new columns
-     mat aux = zeros(SmoothM.n_rows, 11);
-     aux.cols(0,3) = SmoothM.cols(0,3);
-     SmoothM = aux;
-
-     // Calculate provisional velocities and saccades (cols 4 & 5)
-     GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
-
-     // Iterate through the samples, detecting missing points.
-     for(uword i = 0; i < SmoothM.n_rows; ++i) {
+    gpProgressBar.beginProcessing("Interpolating Data", 100);
 
 
-         if ( SmoothM(i,2) >= 0 || SmoothM(i,3) >= 0) {
-             continue; // Sample is not missing
-         }
+    double hz                   = settingsLoader.LoadSetting(Consts::SETTING_HZ).toDouble();
+    double interpolationLatency = settingsLoader.LoadSetting(Consts::SETTING_INTERP_LATENCY).toDouble();
+    double maxDisplacementInterpolation = settingsLoader.LoadSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
+    int    maxSamplesInterpolation            = interpolationLatency * hz / 1000;
+    double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
 
-         qDebug() << endl << "sample missing at: " << i;
+    qDebug() << "Samples threshold: " << maxSamplesInterpolation << " Displacement: " << maxDisplacementInterpolation;
 
-         // Go to the previous saccade and calculate the average X and Y.
-         int indexPrevSacc = -1;
-         for (int j = i; j > 0 ; --j) {
-             if (SmoothM(j,5) == 1) {
-                 indexPrevSacc = j;
-                 break;
-             }
-         }
-
-         qDebug() << " previous saccade at: " << indexPrevSacc;
-
-         bool previousSaccadeDetected = indexPrevSacc != -1 && indexPrevSacc < (int)i-1;
-
-         if (!previousSaccadeDetected) {
-             continue;
-         }
-
-         // cut the data for the previous fixation to calculate euclidean distance
-         aux2 =  SmoothM.submat(indexPrevSacc, 2, i-1, 3);
-         fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
-         aux3 = aux2.rows(fixIndex);
-
-         // get the location of this preceeding fixation
-         double xAvg = mean(aux3.col(0));
-         double yAvg = mean(aux3.col(1));
-
-         qDebug() << " xAvg: " << xAvg << " yAvg: " << yAvg;
-
-         //euclideanDisPrev = GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(&aux3);
-
-         // Find the point where the data is back:
-         int indexDataBack = -1;
-         for (uword j = i; j < SmoothM.n_rows; ++j){
-             if (SmoothM(j,2) > 0 && SmoothM(j,3) > 0){
-                 indexDataBack = j ;
-                 break;
-             }
-         }
-
-         qDebug() << " indexDataBack: " << indexDataBack;
-
-         if (indexDataBack == -1){
-             // if the data doesn't back at some point
-             continue;
-         }
-
-         // find the next saccade. Start counting from  indexDataBack+2 , as the first point after missing data can be identified as saccade by mistake.
-         int indexNextSacc = -1;
-         for (uword j = indexDataBack+2 ; j < SmoothM.n_rows; ++j){
-             if (SmoothM(j,5) == 1 ){ // Saccade!
-                 indexNextSacc = j;
-                 break;
-             }
-         }
-
-         qDebug() << " indexNextSacc: " << indexDataBack;
-
-         // if there is a next saccade:
-         bool followingSaccadeDetected = indexNextSacc != -1 && indexDataBack + 2 < indexNextSacc;
-
-         if (!followingSaccadeDetected) {
-             continue;
-         }
-
-         aux2 =  SmoothM.submat(indexDataBack+2, 2, indexNextSacc , 3 ); // cut the data for the next fixation to calculate euclidean distance
-         fixIndex =  arma::find(aux2.col(0) > 0); // Remove the -1 values for doing this calculation!!
-         //todo: here again check it found any
-         aux3 = aux2.rows(fixIndex);
-
-         // get the location of the following fixation
-         double xAvg2 = mean(aux3.col(0));
-         double yAvg2 = mean(aux3.col(1));
-
-         qDebug() << " xAvg2: " << xAvg2 << " yAvg2: " << yAvg2;
-
-         // If the eucluclidean distance is similar (less than "displacInterpolation") at both ends and the gap is smaller than the latency, interpolate!
-         double xDiff = xAvg - xAvg2;
-         double yDiff = yAvg - yAvg2;
+    // Reset previous interpolation results
+    if (SmoothM.n_cols > 7) {
+        for(uword i = 0; i < SmoothM.n_rows; ++i) {
+            if (SmoothM(i,6) == 1) {
+                SmoothM(i,2) = -1;
+                SmoothM(i,3) = -1;
+            }
+        }
+    }
 
 
-         double distance = sqrt((xDiff * xDiff) + (yDiff * yDiff));
-         double distanceInDegrees = distance * degreesPerPixel;
+    // Remove previous interpolation data and create the new columns
+    mat aux = zeros(SmoothM.n_rows, 11);
+    aux.cols(0,3) = SmoothM.cols(0,3);
+    SmoothM = aux;
 
-         qDebug() << " distance: " << distance << " degrees: " << distanceInDegrees;
+    // Iterate through the samples, detecting missing points.
+    for(uword i = 0; i < SmoothM.n_rows; ++i) {
 
-         bool interpolationInRange = distanceInDegrees <= displacInterpolation;
-         bool interpolationDistanceInRange = indexDataBack - (int)i < gapLenght;
-         qDebug() << " inRange: " << interpolationInRange << " inDistance: " << interpolationDistanceInRange;
-         if (interpolationInRange && interpolationDistanceInRange) {
-             // INTERPOLATE!!!
-            qDebug() << "**** Interpolated from  :" << i  << " too:" << indexDataBack << endl;
+        // Sample is not missing
+        if ( SmoothM(i,2) >= 0 && SmoothM(i,3) >= 0) continue;
 
-             SmoothM.rows(i,indexDataBack).col(2).fill(xAvg);
-             SmoothM.rows(i,indexDataBack).col(3).fill(yAvg);
-             SmoothM.rows(i,indexDataBack).col(6).fill(1);  //Interpolation index!
 
-             GPMatrixFunctions::fncCalculateVelocity(&SmoothM,settingsLoader); // Update.
 
-         }
+        // Skip if first sample is missing
+        if (i == 0) continue;
 
-         i = indexDataBack;
+        // Find the previous non-missing data
+        int indexPrevData = -1;
+        for (int j = i-1; j > 0 ; --j) {
+            if ( SmoothM(j,2) >= 0 && SmoothM(j,3) >= 0) {
+                indexPrevData = j;
+                break;
+            }
+        }
 
-     }
 
-     gpProgressBar.endProcessing();
 
- }
+        // If no previous data is detected, then cannot interpolate
+        if (indexPrevData == -1) continue;
+
+        qDebug() << endl << "sample missing at: " << i;
+        qDebug() << " indexPrevData: " << indexPrevData;
+
+        // Find the point where the data is back:
+        int indexDataBack = -1;
+        for (uword j = i; j < SmoothM.n_rows; ++j){
+            if (SmoothM(j,2) > 0 && SmoothM(j,3) > 0){
+                indexDataBack = j ;
+                break;
+            }
+        }
+
+        qDebug() << " indexDataBack: " << indexDataBack;
+
+        // If the data doesn't come back then cannot interpolate
+        if (indexDataBack == -1) break;
+
+        int gapLength = indexDataBack - indexPrevData;
+
+        // Skip main search to this point
+        i = indexDataBack;
+
+        if (gapLength > maxSamplesInterpolation) {
+            qDebug() << " gap length: " << gapLength << " cannot interpolate as over samples threshold ";
+            continue;
+        }
+
+        //Check the displacement distance
+        double xDiff = SmoothM(indexDataBack,2) - SmoothM(indexPrevData,2);
+        double yDiff = SmoothM(indexDataBack,3) - SmoothM(indexPrevData,3);
+        double displacement = degreesPerPixel * sqrt((xDiff * xDiff) + (yDiff * yDiff));
+
+        if (displacement > maxDisplacementInterpolation) {
+            qDebug() << " displacement: " << displacement << " cannot interpolate: over distance threshold ";
+            continue;
+        }
+
+        qDebug() << "interpolating...";
+
+        // Jumps in signal for each sample to interpolate linearly
+        double xInterval = xDiff / gapLength;
+        double yInterval = yDiff / gapLength;
+
+        for(int j = indexPrevData + 1; j < indexDataBack; j++) {
+            SmoothM(j,2) = SmoothM(j-1,2) + xInterval;
+            SmoothM(j,3) = SmoothM(j-1,3) + yInterval;
+            SmoothM(j,6) = 1;
+        }
+
+
+    }
+    gpProgressBar.endProcessing();
+}
 
  // Smoothing algorithm
  // Bilateral filtering algorithm based on Ed Vul (Frank, Vul, & Johnson,2009; based on Durand & Dorsey, 2002).
