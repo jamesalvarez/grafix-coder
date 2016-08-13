@@ -266,8 +266,8 @@
   <widget class="QPushButton" name="b_cancel">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>380</y>
+     <x>20</x>
+     <y>390</y>
      <width>131</width>
      <height>41</height>
     </rect>
@@ -286,8 +286,8 @@
   <widget class="QPushButton" name="b_export">
    <property name="geometry">
     <rect>
-     <x>350</x>
-     <y>380</y>
+     <x>280</x>
+     <y>390</y>
      <width>131</width>
      <height>41</height>
     </rect>
@@ -300,7 +300,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Export</string>
+    <string>Export Current</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_5">
@@ -405,6 +405,26 @@
    </property>
    <property name="text">
     <string>Peak Velocity</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_export_all">
+   <property name="geometry">
+    <rect>
+     <x>540</x>
+     <y>390</y>
+     <width>131</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Export All</string>
    </property>
   </widget>
  </widget>

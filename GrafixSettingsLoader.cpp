@@ -47,6 +47,7 @@ int GrafixSettingsLoader::LoadSliderSetting(QString setting)
 
 void GrafixSettingsLoader::SetSetting(const QString setting, const QVariant value)
 {
+    QString key = setting + "_" + QString::number(this->_configuration.second);
     QSettings settings(_path, QSettings::IniFormat);
-    settings.setValue(setting, value);
+    settings.setValue(key, value);
 }

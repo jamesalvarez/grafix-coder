@@ -20,7 +20,25 @@ const QString Consts::SETTING_POSTHOC_LIMIT_RMS_VAL=           "SETTING_POSTHOC_
 const QString Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG=          "SETTING_POSTHOC_LIMIT_RMS_FLAG";
 const QString Consts::SETTING_POSTHOC_MIN_DURATION_VAL=        "SETTING_POSTHOC_MIN_DURATION_VAL";
 const QString Consts::SETTING_POSTHOC_MIN_DURATION_FLAG=       "SETTING_POSTHOC_MIN_DURATION_FLAG";
-
+const QString Consts::SETTING_EXPORT_LEFT_X_ROUGH = "SETTING_EXPORT_LEFT_X_ROUGH";
+const QString Consts::SETTING_EXPORT_LEFT_Y_ROUGH = "SETTING_EXPORT_LEFT_Y_ROUGH";
+const QString Consts::SETTING_EXPORT_RIGHT_X_ROUGH = "SETTING_EXPORT_RIGHT_X_ROUGH";
+const QString Consts::SETTING_EXPORT_RIGHT_Y_ROUGH = "SETTING_EXPORT_RIGHT_Y_ROUGH";
+const QString Consts::SETTING_EXPORT_LEFT_PUPIL = "SETTING_EXPORT_LEFT_PUPIL";
+const QString Consts::SETTING_EXPORT_RIGHT_PUPIL = "SETTING_EXPORT_RIGHT_PUPIL";
+const QString Consts::SETTING_EXPORT_X_SMOOTH = "SETTING_EXPORT_X_SMOOTH";
+const QString Consts::SETTING_EXPORT_Y_SMOOTH = "SETTING_EXPORT_Y_SMOOTH";
+const QString Consts::SETTING_EXPORT_FIXATION_NUMBER = "SETTING_EXPORT_FIXATION_NUMBER";
+const QString Consts::SETTING_EXPORT_FIXATION_DURATION = "SETTING_EXPORT_FIXATION_DURATION";
+const QString Consts::SETTING_EXPORT_FIXATION_X_AVERAGE = "SETTING_EXPORT_FIXATION_X_AVERAGE";
+const QString Consts::SETTING_EXPORT_FIXATION_Y_AVERAGE = "SETTING_EXPORT_FIXATION_Y_AVERAGE";
+const QString Consts::SETTING_EXPORT_FIXATION_DISTANCE = "SETTING_EXPORT_FIXATION_DISTANCE";
+const QString Consts::SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT = "SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT";
+const QString Consts::SETTING_EXPORT_SACCADE_NUMBER = "SETTING_EXPORT_SACCADE_NUMBER";
+const QString Consts::SETTING_EXPORT_SACCADE_DURATION = "SETTING_EXPORT_SACCADE_DURATION";
+const QString Consts::SETTING_EXPORT_SACCADE_DISTANCE = "SETTING_EXPORT_SACCADE_DISTANCE";
+const QString Consts::SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE = "SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE";
+const QString Consts::SETTING_EXPORT_SACCADE_VELOCITY_PEAK = "SETTING_EXPORT_SACCADE_VELOCITY_PEAK";
 
 const QString Consts::PSETTING_ESTIMATED_FIX_DATE=  "PSETTING_ESTIMATED_FIX_DATE";
 const QString Consts::PSETTING_INTERPOLATED_DATE=   "PSETTING_INTERPOLATED_DATE";
@@ -73,6 +91,25 @@ const QList<QString> Consts::LIST_CONFIGURATION_SETTINGS()
     ret.append(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG);
     ret.append(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG);
     ret.append(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG);
+    ret.append(Consts::SETTING_EXPORT_LEFT_X_ROUGH);
+    ret.append(Consts::SETTING_EXPORT_LEFT_Y_ROUGH);
+    ret.append(Consts::SETTING_EXPORT_RIGHT_X_ROUGH);
+    ret.append(Consts::SETTING_EXPORT_RIGHT_Y_ROUGH);
+    ret.append(Consts::SETTING_EXPORT_LEFT_PUPIL);
+    ret.append(Consts::SETTING_EXPORT_RIGHT_PUPIL);
+    ret.append(Consts::SETTING_EXPORT_X_SMOOTH);
+    ret.append(Consts::SETTING_EXPORT_Y_SMOOTH);
+    ret.append(Consts::SETTING_EXPORT_FIXATION_NUMBER);
+    ret.append(Consts::SETTING_EXPORT_FIXATION_DURATION);
+    ret.append(Consts::SETTING_EXPORT_FIXATION_X_AVERAGE);
+    ret.append(Consts::SETTING_EXPORT_FIXATION_Y_AVERAGE);
+    ret.append(Consts::SETTING_EXPORT_FIXATION_DISTANCE);
+    ret.append(Consts::SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT);
+    ret.append(Consts::SETTING_EXPORT_SACCADE_NUMBER);
+    ret.append(Consts::SETTING_EXPORT_SACCADE_DURATION);
+    ret.append(Consts::SETTING_EXPORT_SACCADE_DISTANCE);
+    ret.append(Consts::SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE);
+    ret.append(Consts::SETTING_EXPORT_SACCADE_VELOCITY_PEAK);
     return ret;
 }
 
@@ -162,6 +199,44 @@ const QVariant Consts::DefaultSetting(QString setting)
         return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_R);
     else if (setting == Consts::SETTING_SMOOTHING_SIGMA_S)
         return QVariant(Consts::DEFAULT_SETTING_SMOOTHING_SIGMA_S);
+    else if (setting == Consts::SETTING_EXPORT_LEFT_X_ROUGH)
+        return QVariant(Consts::DEFAULT_SETTING_EXPORT_LEFT_X_ROUGH);
+    else if (setting == Consts::SETTING_EXPORT_LEFT_Y_ROUGH)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_LEFT_Y_ROUGH);
+    else if (setting == Consts::SETTING_EXPORT_RIGHT_X_ROUGH)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_RIGHT_X_ROUGH);
+    else if (setting == Consts::SETTING_EXPORT_RIGHT_Y_ROUGH)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_RIGHT_Y_ROUGH);
+    else if (setting == Consts::SETTING_EXPORT_LEFT_PUPIL)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_LEFT_PUPIL);
+    else if (setting == Consts::SETTING_EXPORT_RIGHT_PUPIL)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_RIGHT_PUPIL);
+    else if (setting == Consts::SETTING_EXPORT_X_SMOOTH)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_X_SMOOTH);
+    else if (setting == Consts::SETTING_EXPORT_Y_SMOOTH)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_Y_SMOOTH);
+    else if (setting == Consts::SETTING_EXPORT_FIXATION_NUMBER)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_FIXATION_NUMBER);
+    else if (setting == Consts::SETTING_EXPORT_FIXATION_DURATION)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_FIXATION_DURATION);
+    else if (setting == Consts::SETTING_EXPORT_FIXATION_X_AVERAGE)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_FIXATION_X_AVERAGE);
+    else if (setting == Consts::SETTING_EXPORT_FIXATION_Y_AVERAGE)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_FIXATION_Y_AVERAGE);
+    else if (setting == Consts::SETTING_EXPORT_FIXATION_DISTANCE)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_FIXATION_DISTANCE);
+    else if (setting == Consts::SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT);
+    else if (setting == Consts::SETTING_EXPORT_SACCADE_NUMBER)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_SACCADE_NUMBER);
+    else if (setting == Consts::SETTING_EXPORT_SACCADE_DURATION)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_SACCADE_DURATION);
+    else if (setting == Consts::SETTING_EXPORT_SACCADE_DISTANCE)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_SACCADE_DISTANCE);
+    else if (setting == Consts::SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE);
+    else if (setting == Consts::SETTING_EXPORT_SACCADE_VELOCITY_PEAK)
+                return QVariant(Consts::DEFAULT_SETTING_EXPORT_SACCADE_VELOCITY_PEAK);
     else
         return 0;
 }
@@ -194,7 +269,7 @@ double Consts::GetValueFromSlider(QString setting, int slider_value)
     if (setting == Consts::SETTING_POSTHOC_LIMIT_RMS_VAL ||
         setting == Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL ||
         setting == Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT)
-        return (double)(slider_value) / 100 / 100;
+        return (double)(slider_value) / 10000;
     return 0;
 }
 

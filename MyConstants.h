@@ -6,18 +6,21 @@
 #include <QList>
 #include <QVariant>
 
-typedef struct config { QString first;
-                 int second;
-                 bool operator==(config a)
-                 {
-                     return (a.first == this->first && a.second == this->second);
-                 }
-                      } GrafixConfiguration;
+typedef struct config {
+    QString first;
+    int second;
+    bool operator==(config a) {
+        return (a.first == this->first && a.second == this->second);
+    }
+} GrafixConfiguration;
 
-class Consts
-{
+class Consts {
 public:
     Consts();
+
+    static const GrafixConfiguration ACTIVE_CONFIGURATION();
+    static const QList<QString> LIST_CONFIGURATION_SETTINGS();
+    static const QVariant DefaultSetting(QString setting);
 
     // HZ
     static const int HZ_50 = 50; // Eye tracking Hz
@@ -98,6 +101,26 @@ public:
     static const int DEFAULT_SETTING_SMOOTHING_SIGMA_R = 40;
     static const bool DEFAULT_SETTING_SMOOTHING_USE_OTHER_EYE = true;
 
+    static const bool DEFAULT_SETTING_EXPORT_LEFT_X_ROUGH = false;
+    static const bool DEFAULT_SETTING_EXPORT_LEFT_Y_ROUGH = false;
+    static const bool DEFAULT_SETTING_EXPORT_RIGHT_X_ROUGH = false;
+    static const bool DEFAULT_SETTING_EXPORT_RIGHT_Y_ROUGH = false;
+    static const bool DEFAULT_SETTING_EXPORT_LEFT_PUPIL = false;
+    static const bool DEFAULT_SETTING_EXPORT_RIGHT_PUPIL = false;
+    static const bool DEFAULT_SETTING_EXPORT_X_SMOOTH = false;
+    static const bool DEFAULT_SETTING_EXPORT_Y_SMOOTH = false;
+    static const bool DEFAULT_SETTING_EXPORT_FIXATION_NUMBER = false;
+    static const bool DEFAULT_SETTING_EXPORT_FIXATION_DURATION = false;
+    static const bool DEFAULT_SETTING_EXPORT_FIXATION_X_AVERAGE = false;
+    static const bool DEFAULT_SETTING_EXPORT_FIXATION_Y_AVERAGE = false;
+    static const bool DEFAULT_SETTING_EXPORT_FIXATION_DISTANCE = false;
+    static const bool DEFAULT_SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT = false;
+    static const bool DEFAULT_SETTING_EXPORT_SACCADE_NUMBER = false;
+    static const bool DEFAULT_SETTING_EXPORT_SACCADE_DURATION = false;
+    static const bool DEFAULT_SETTING_EXPORT_SACCADE_DISTANCE = false;
+    static const bool DEFAULT_SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE = false;
+    static const bool DEFAULT_SETTING_EXPORT_SACCADE_VELOCITY_PEAK = false;
+
     //Settings Tokens
     static const QString SETTING_PROJECT;
     static const QString SETTING_HZ;
@@ -125,6 +148,26 @@ public:
     static const QString SETTING_NUMBER_PARTICIPANTS;
     static const QString SETTING_LAST_SAVED;
 
+    static const QString SETTING_EXPORT_LEFT_X_ROUGH;
+    static const QString SETTING_EXPORT_LEFT_Y_ROUGH;
+    static const QString SETTING_EXPORT_RIGHT_X_ROUGH;
+    static const QString SETTING_EXPORT_RIGHT_Y_ROUGH;
+    static const QString SETTING_EXPORT_LEFT_PUPIL;
+    static const QString SETTING_EXPORT_RIGHT_PUPIL;
+    static const QString SETTING_EXPORT_X_SMOOTH;
+    static const QString SETTING_EXPORT_Y_SMOOTH;
+    static const QString SETTING_EXPORT_FIXATION_NUMBER;
+    static const QString SETTING_EXPORT_FIXATION_DURATION;
+    static const QString SETTING_EXPORT_FIXATION_X_AVERAGE;
+    static const QString SETTING_EXPORT_FIXATION_Y_AVERAGE;
+    static const QString SETTING_EXPORT_FIXATION_DISTANCE;
+    static const QString SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT;
+    static const QString SETTING_EXPORT_SACCADE_NUMBER;
+    static const QString SETTING_EXPORT_SACCADE_DURATION;
+    static const QString SETTING_EXPORT_SACCADE_DISTANCE;
+    static const QString SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE;
+    static const QString SETTING_EXPORT_SACCADE_VELOCITY_PEAK;
+
     static const int MAXSLIDER_SETTING_INTERP_LATENCY = 18000;
     static const int MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD = 10000;
     static const int MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT = 15000;
@@ -137,10 +180,9 @@ public:
     static const int MINSLIDER_SETTING_SMOOTHING_SIGMA_R = 100;
     static const int MINSLIDER_SETTING_SMOOTHING_SIGMA_S = 50;
 
-    static const GrafixConfiguration ACTIVE_CONFIGURATION();
-    static const QList<QString> LIST_CONFIGURATION_SETTINGS();
-    static const QVariant DefaultSetting(QString setting);
 
+
+    // Participant settings
     static const QString PSETTING_NAME;
     static const QString PSETTING_ROUGH_PATH;
     static const QString PSETTING_SEGMENTS_PATH;
@@ -170,29 +212,17 @@ public:
     static const QString HELP_RESET_MODE;
     static const QString HELP_DRAG_MODE;
     static const QString HELP_MANUAL_EXEC;
-
-     static const QString HELP_POSITION;
-
+    static const QString HELP_POSITION;
     static const QString HELP_SETTING_SIGMA_S;
-
     static const QString HELP_SETTING_SIGMA_R;
-
     static const QString HELP_SETTING_INTERP_TIME;
     static const QString HELP_SETTING_INTERP_DISP;
-
     static const QString HELP_SETTING_VEL;
-
     static const QString HELP_SETTING_MERGE;
-
     static const QString HELP_SETTING_VARIANCE;
-
     static const QString HELP_SETTING_MIN_DUR;
-
-
     static const QString HELP_BUTTON_FILTER;
-
     static const QString HELP_BUTTON_INTERP;
-
     static const QString HELP_BUTTON_EST;
 
     static int GetSliderValue(QString setting, double value);

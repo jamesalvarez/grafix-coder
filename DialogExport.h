@@ -33,6 +33,8 @@ public:
     bool Saved();
     QString Filename();
 
+    QString getSettingForCheckBox(QCheckBox* checkBox);
+
 private:
     Ui::DialogExport *ui;
 
@@ -43,9 +45,11 @@ private:
     mat experimentalSegmentsM;
     bool _saved;
     QString _filename;
+    QVector<QCheckBox*> _checkboxes;
 
 public slots:
      void fncPress_bExport();
+     void fncPress_bExportAll();
      void fncPress_bCancel();
 
 };
