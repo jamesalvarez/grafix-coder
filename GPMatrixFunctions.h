@@ -58,6 +58,7 @@ public:
     //Take address of rough matrix and smooth matrix.
     //Replaces SmoothM with a smoothed version of RoughM
     static void interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar);
+    static void prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes);
     static void smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
@@ -82,6 +83,9 @@ public:
     static double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);
     static void fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader);
     static void fncCalculateFixations(mat *p_fixAllM, mat *p_roughM , mat *p_smoothM, GrafixSettingsLoader settingsLoader);
+
+    static void fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, mat *p_roughM, GrafixSettingsLoader settingsLoader);
+
     static void fncRemoveUndetectedValuesRough(mat *p_a);
     static void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
     static void fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);

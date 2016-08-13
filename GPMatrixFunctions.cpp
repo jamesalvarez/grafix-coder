@@ -188,15 +188,52 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
 
  }
 
+void GPMatrixFunctions::prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes) {
+
+    //copy time stamp
+    preparedRoughM = zeros(RoughM.n_rows, 3);
+    preparedRoughM.col(0) = RoughM.col(0);
+
+    if(RoughM.is_empty()) { return; }
+
+    for (uword i = 0; i < RoughM.n_rows; ++i)
+    {
+        bool leftXMissing = (RoughM(i,2) < 0 || RoughM(i,2) > 1);
+        bool leftYMissing = (RoughM(i,3) < 0 || RoughM(i,3) > 1);
+        bool rightXMissing = (RoughM(i,4) < 0 || RoughM(i,4) > 1);
+        bool rightYMissing = (RoughM(i,5) < 0 || RoughM(i,5) > 1);
+
+        bool leftMissing = leftXMissing || leftYMissing;
+        bool rightMissing = rightXMissing || rightYMissing;
+
+        bool missing = copy_eyes ? (leftMissing && rightMissing) : (leftMissing || rightMissing);
+
+        // make everything missing if it is
+        if (missing) {
+            preparedRoughM(i,1) = -1;
+            preparedRoughM(i,2) = -1;
+        } else {
+            preparedRoughM(i,1) = (RoughM(i,2) + RoughM(i,4)) / 2;
+            preparedRoughM(i,2) = (RoughM(i,3) + RoughM(i,5)) / 2;
+
+            //copy eyes if necessary
+            if (copy_eyes) {
+                if (leftMissing && !rightMissing) {
+                    preparedRoughM(i,1) = RoughM(i,4);
+                    preparedRoughM(i,2) = RoughM(i,5);
+                } else if (rightMissing && !leftMissing) {
+                    preparedRoughM(i,1) = RoughM(i,2);
+                    preparedRoughM(i,2) = RoughM(i,3);
+                }
+            }
+        }
+    }
+}
+
  void GPMatrixFunctions::smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar)
 {
      QSettings settings(settingsPath, QSettings::IniFormat);
 
-     if(!settings.contains(Consts::SETTING_SMOOTHING_USE_OTHER_EYE))
-     {
-         //TODO: Handle errors with user
-         return;
-     }
      bool copy_eyes = settings.value(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
      int expWidth = settings.value(Consts::SETTING_EXP_WIDTH).toInt();
      int expHeight = settings.value(Consts::SETTING_EXP_HEIGHT).toInt();
@@ -1036,6 +1073,75 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
          }
      }
  }
+
+void GPMatrixFunctions::fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, mat *p_roughM, GrafixSettingsLoader settingsLoader) {
+
+    double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+    int hz = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
+    bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
+    double hzXdeg = hz * degreesPerPixel;
+
+    //clear saccades matrix
+    (*p_saccadesM).reset();
+
+    if (p_fixAllM->n_rows < 2) return;
+    
+    mat roughMCopy;
+
+    prepareRoughMatrix(roughMCopy, *p_roughM, copy_eyes);
+
+    for (uword i = 1; i < p_fixAllM->n_rows ; i++) {
+        double startOfSaccade = p_fixAllM->at(i-1,1);
+        double endOfSaccade = p_fixAllM->at(i,1) - 1;
+
+        mat saccade = p_roughM->rows(startOfSaccade, endOfSaccade); //.col(exportM.n_cols).fill(fixAllM(i,6));
+
+        double duration = ((p_roughM->at(endOfSaccade,0) - p_roughM->at(startOfSaccade,0)));
+
+        double xDiff = p_fixAllM->at(i,3) - p_fixAllM->at(i-1,3);
+        double yDiff = p_fixAllM->at(i,4) - p_fixAllM->at(i-1,4);
+
+        double amplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+
+        double averageVelocity = 0;
+        int nSamples = 0;
+        
+        double peakVelocity = -1;
+        
+        for (uword j = startOfSaccade; j < p_fixAllM->n_rows ; j++) {
+
+            //check not missing
+            if (roughMCopy(j,1) > -1 && roughMCopy(j+1,1) > -1) {
+
+                double xDiff = roughMCopy(j,1) - roughMCopy(j+1,1);
+                double yDiff = roughMCopy(j,2) - roughMCopy(j+1,2);
+
+                double sampleAmplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+                double sampleDuration = ((p_roughM->at(j+1,0) - p_roughM->at(j,0)));
+                double sampleVelocity = sampleAmplitude / sampleDuration;
+
+                nSamples++;
+                peakVelocity = qMax(peakVelocity, sampleVelocity);
+                averageVelocity += sampleVelocity;
+            }
+        }
+
+        if (nSamples > 0) {
+            averageVelocity = averageVelocity / nSamples;
+        } else {
+            averageVelocity = -1;
+        }
+
+        mat row;
+        row << startOfSaccade << endOfSaccade << duration << amplitude << averageVelocity << peakVelocity << endr;
+
+        if (p_saccadesM->n_rows == 0) {
+            (*p_saccadesM) = row;
+        } else {
+            (*p_saccadesM) = join_cols((*p_saccadesM), row);
+        }
+    }
+}
 
  void GPMatrixFunctions::fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM){
      mat fixations;
