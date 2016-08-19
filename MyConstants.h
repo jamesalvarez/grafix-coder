@@ -156,6 +156,7 @@ public:
     static const QString SETTING_EXPORT_RIGHT_PUPIL;
     static const QString SETTING_EXPORT_X_SMOOTH;
     static const QString SETTING_EXPORT_Y_SMOOTH;
+    static const QString SETTING_EXPORT_VELOCITY;
     static const QString SETTING_EXPORT_FIXATION_NUMBER;
     static const QString SETTING_EXPORT_FIXATION_DURATION;
     static const QString SETTING_EXPORT_FIXATION_X_AVERAGE;

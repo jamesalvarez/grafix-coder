@@ -22,7 +22,7 @@ DialogExport::DialogExport(QWidget *parent) :
         ui->cb_yAverage << ui->cb_euclideanDis <<
         ui->cb_sacNumber << ui->cb_sacDuration <<
         ui->cb_smoothpursuit <<ui->cb_sacAmplitude <<
-        ui->cb_sacVelocityAv << ui->cb_sacVelocityPeak;
+        ui->cb_sacVelocityAv << ui->cb_sacVelocityPeak << ui->cb_velocity;
 }
 
 DialogExport::~DialogExport()
@@ -105,7 +105,8 @@ QString DialogExport::getSettingForCheckBox(QCheckBox* checkBox) {
         return Consts::SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE;
     if (checkBox == ui->cb_sacVelocityPeak)
         return Consts::SETTING_EXPORT_SACCADE_VELOCITY_PEAK;
-
+    if (checkBox == ui->cb_velocity)
+        return Consts::SETTING_EXPORT_VELOCITY;
     return "";
 
 }

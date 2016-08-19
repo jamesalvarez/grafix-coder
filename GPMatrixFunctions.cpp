@@ -133,24 +133,23 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
       gpProgressBar.endProcessing();
  }
 
+ /*
+  * Main function called by UI to estimate fixations automatically (applying post-hoc corrections).
+  */
  void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader)
  {
-    if (SmoothM.is_empty())
-    {
-         return;// If the data is not smoothed we don't allow to estimate fixations.
-    }
+    if (SmoothM.is_empty()) return;// If the data is not smoothed we don't allow to estimate fixations.
 
     //TODO check if velocity is calculated.
     GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
 
-
     // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM
-    GPMatrixFunctions::fncCalculateFixations(&AutoFixAllM, &RoughM, &SmoothM, settingsLoader);
+    GPMatrixFunctions::fncCalculateFixations(AutoFixAllM, RoughM, SmoothM, settingsLoader);
 
     //we cannot work with less than one fixation
     if(AutoFixAllM.n_rows < 1) return;
 
-    //GPMatrixFunctions::saveFile(AutoFixAllM, _participant->GetPath(GrafixParticipant::AUTOFIXALL));
+
     // **** POST-HOC VALIDATION **** (The order is important!)
 
     // Add columns for the flags in the smooth data if needed
@@ -163,7 +162,6 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
     }
 
     //TODO Check if fixations found or next part crasheds
-
 
     bool cb_displacement = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool();
     bool cb_velocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG).toBool();
@@ -186,8 +184,12 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
         GPMatrixFunctions::fncRemoveMinFixations(&AutoFixAllM, &SmoothM, sliderMinFixation);
 
 
+    debugPrintMatrix(AutoFixAllM);
  }
 
+ /*
+  * Marks all out of range and one eye missing data as missing + combines eyes
+  */
 void GPMatrixFunctions::prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes) {
 
     //copy time stamp
@@ -228,6 +230,27 @@ void GPMatrixFunctions::prepareRoughMatrix(mat &preparedRoughM, const mat &Rough
             }
         }
     }
+}
+
+/*
+ * Returns only non missing rows of rough data.  (Also prepares the matrix via prepareRoughMatrix)
+ */
+void GPMatrixFunctions::excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes) {
+
+    cutRoughM.reset();
+
+    mat preparedRoughMatrix;
+
+    prepareRoughMatrix(preparedRoughMatrix, RoughM, copy_eyes);
+
+    for (uword i = 0; i < RoughM.n_rows; ++i)
+    {
+        bool missing = (preparedRoughMatrix(i,1) == -1 || preparedRoughMatrix(i,2) == -1);
+        if (!missing) {
+            cutRoughM = join_cols(cutRoughM, preparedRoughMatrix.row(i));
+        }
+    }
+
 }
 
  void GPMatrixFunctions::smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar)
@@ -851,59 +874,33 @@ double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int ex
     if (RoughM.n_rows < 2 )
         return -1;
 
-    mat RMS = mat(0, 2);
-    uword validRow = 0;
+    mat preparedRoughM;
+    prepareRoughMatrix(preparedRoughM, RoughM, copy_eyes);
+    return calculateRMSRaw(preparedRoughM, expWidth, expHeight, degPerPixel);
+}
 
-    // process missing data, and get segments inbetween to smotth
-    // [ leftx, lefty, rightx, righty]
-    // Creates RMS matrix which has only non missing samples
-    for (uword i = 0; i < RoughM.n_rows; ++i) {
-        bool leftXMissing = (RoughM(i,2) < 0 || RoughM(i,2) > 1);
-        bool leftYMissing = (RoughM(i,3) < 0 || RoughM(i,3) > 1);
-        bool rightXMissing = (RoughM(i,4) < 0 || RoughM(i,4) > 1);
-        bool rightYMissing = (RoughM(i,5) < 0 || RoughM(i,5) > 1);
-
-        bool leftMissing = leftXMissing || leftYMissing;
-        bool rightMissing = rightXMissing || rightYMissing;
-
-        bool missing = copy_eyes ? (leftMissing && rightMissing) : (leftMissing || rightMissing);
-
-        if (!missing) {
-            RMS.insert_rows(validRow,1);
-
-            RMS(validRow,0) = (RoughM(i,4) + RoughM(i,2)) / 2;
-            RMS(validRow,1) = (RoughM(i,5) + RoughM(i,3)) / 2;
-
-            if (copy_eyes) {
-                if (leftMissing && !rightMissing) {
-                    RMS(validRow,0) = RoughM(i,4);
-                    RMS(validRow,1) = RoughM(i,5);
-                } else if (rightMissing && !leftMissing) {
-                    RMS(validRow,0) = RoughM(i,2);
-                    RMS(validRow,1) = RoughM(i,3);
-                }
-            }
-            validRow++;
-        }
-    }
-
-    if (RMS.n_rows < 2 )
+/*
+ * Calculate RMS, but rough matrix must have all missing data removed
+ */
+double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel) {
+    if (preparedRoughM.n_rows < 2 )
         return -1;
-
     // Calculate mean euclidean distance.
-    mat squaredDistances = zeros(RMS.n_rows - 1);
+    mat squaredDistances = zeros(preparedRoughM.n_rows - 1);
 
     double x1, y1, x2, y2, xDiff, yDiff;
 
     double xMultiplier = expWidth * degPerPixel;
     double yMultiplier = expHeight * degPerPixel;
 
-    x1 = RMS.at(0,0) * xMultiplier;
-    y1 = RMS.at(0,1) * yMultiplier;
+    x1 = preparedRoughM.at(0,1) * xMultiplier;
+    y1 = preparedRoughM.at(0,2) * yMultiplier;
 
-    for (uword j = 1; j < RMS.n_rows; ++j) {
-        x2 = RMS.at(j,0) * xMultiplier;
-        y2 = RMS.at(j,1) * yMultiplier;
+    debugPrintMatrix(preparedRoughM);
+
+    for (uword j = 1; j < preparedRoughM.n_rows; ++j) {
+        x2 = preparedRoughM.at(j,1) * xMultiplier;
+        y2 = preparedRoughM.at(j,2) * yMultiplier;
 
         xDiff = x1 - x2;
         yDiff = y1 - y2;
@@ -915,11 +912,13 @@ double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int ex
         y1 = y2;
     }
 
+    //debugPrintMatrix(squaredDistances);
+
     double rms = sqrt(mean(mean(squaredDistances)));
-    qDebug() << " rms: " << rms;
+
+    //qDebug() << " rms " << rms;
     return rms;
 }
-
  /*
   * Returns the mean euclidean distance from average of all points in passed array
   */
@@ -1016,7 +1015,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
      }
  }
 
- void GPMatrixFunctions::fncCalculateFixations(mat *p_fixAllM, mat *p_roughM, mat *p_smoothM, GrafixSettingsLoader settingsLoader)
+ void GPMatrixFunctions::fncCalculateFixations(mat &fixAllM, mat &roughM, mat &smoothM, GrafixSettingsLoader settingsLoader)
  {
 
 
@@ -1026,53 +1025,67 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
      double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
 
      //clear fixall matrix
-     (*p_fixAllM).reset();
+     fixAllM.reset();
 
      int indexStartFix = -1;
-     for(uword i = 0; i < p_smoothM->n_rows-1; i ++){
-         if (p_smoothM->at(i,5) == 1 ){ // Saccade. Velocity over threshold
-             if (indexStartFix == -1 && p_smoothM->at(i + 1,5) == 0){ // The next point is the start of a fixation
-                 indexStartFix = i;
-             }else if (indexStartFix != -1 ){ // End of the fixation. Create fixation!
+     for(uword i = 0; i < smoothM.n_rows-1; i ++){
 
-                 //duration is in ms
-                 double dur = ((p_roughM->at(i,0) - p_roughM->at(indexStartFix,0)));
+         bool inFixation = smoothM.at(i,5) == 0 && smoothM.at(i,2) > -1 && smoothM.at(i,3) > -1;
 
-                 // Only use the points where eyes were detected:
-                 mat roughCutM;
-                 if (p_roughM->n_cols == 8){
-                     roughCutM= p_roughM->submat(indexStartFix,2,i,7);
-                     fncRemoveUndetectedValuesRough(&roughCutM);
-                 }else{
-                     roughCutM= p_roughM->submat(indexStartFix,2,i,5);
-                     fncRemoveUndetectedValuesRough(&roughCutM);
-                 }
-
-                 double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
-                 double averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-                 double variance = fncCalculateRMSRough(roughCutM,expWidth,expHeight,degreePerPixel, copy_eyes);
-                 double pupilDilation = 0;
-                 if (roughCutM.n_cols == 6){
-                     pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
-                 }
-
-                 mat row;
-                 row << indexStartFix << i << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
-
-                 if (p_fixAllM->n_rows == 0){
-                     (*p_fixAllM) = row;
-                 }else {
-                     (*p_fixAllM) = join_cols((*p_fixAllM), row);
-                 }
-
-                 i = i - 1; // Otherwise it doesn't capture some fixations that as very close together
-                 indexStartFix = -1;
+         if (inFixation) { //the velocity between this and previous sample was below threshold
+             if (indexStartFix == -1) { //the previous sample was the beginning of the fixation
+                 indexStartFix = i - 1;
              }
-         }else if(indexStartFix != -1  && p_smoothM->at(i,2) < 1 && p_smoothM->at(i,3) < 1 ){ // Remove fake fixations: When the data disapears, the saccade flag does nt get activated and it creates fake fixations.
-             indexStartFix = -1;
+         } else { //the velocity between this and the previous sample was above threshold
+             if (indexStartFix != -1) { //the previous sample was the end of the fixation
+
+
+                 //duration is in ms calculated from timestamps
+                 int indexEndFix = i - 1;
+                 //qDebug() << " found fixation: " << indexStartFix << " to " << indexEndFix;
+                 double dur = ((roughM.at(indexEndFix,0) - roughM.at(indexStartFix,0)));
+
+                 mat preparedRoughM;
+                 excludeMissingDataRoughMatrix(preparedRoughM, roughM.rows(indexStartFix,indexEndFix), copy_eyes);
+
+
+                 double averageX = mean(preparedRoughM.col(1));
+                 double averageY = mean(preparedRoughM.col(2));
+                 double variance = calculateRMSRaw(preparedRoughM, expWidth, expHeight, degreePerPixel);
+                 double pupilDilation = (roughM.n_cols > 6) ? (mean(roughM.col(4)) + mean(roughM.col(5)))/2 : 0;
+
+                 //qDebug() << averageX << averageY << variance << pupilDilation;
+
+                 mat newRow;
+                 newRow << indexStartFix << indexEndFix << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
+
+                 if (fixAllM.n_rows == 0){
+                     fixAllM = newRow;
+                 }else {
+                     fixAllM = join_cols(fixAllM, newRow);
+                 }
+
+                 indexStartFix = -1;
+
+             }
          }
      }
+
+     debugPrintMatrix(fixAllM);
  }
+
+void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
+    qDebug() << "Matrix with cols: " << matrix.n_cols << " and rows: " << matrix.n_rows;
+    if (matrix.n_rows > 0) {
+        for(uword j = 0; j < matrix.n_rows; ++j) {
+            QString rowPrint = "";
+            for(uword k = 0; k < matrix.n_cols; ++k) {
+                rowPrint += " " + QString::number(matrix.at(j,k));
+            }
+            qDebug() << rowPrint;
+        }
+    }
+}
 
 void GPMatrixFunctions::fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, mat *p_roughM, GrafixSettingsLoader settingsLoader) {
 
@@ -1547,37 +1560,45 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
     mat exportM = roughM.col(0);
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_LEFT_X_ROUGH).toBool()){    // X left rough
-        join_rows(exportM, roughM.col(2));
+        exportM = join_rows(exportM, roughM.col(2));
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_LEFT_Y_ROUGH).toBool()){    // Y left rough
-        join_rows(exportM, roughM.col(3));
+        exportM = join_rows(exportM, roughM.col(3));
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_RIGHT_X_ROUGH).toBool()){    // x right rough
-        join_rows(exportM, roughM.col(4));
+        exportM = join_rows(exportM, roughM.col(4));
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_RIGHT_Y_ROUGH).toBool()){    // Y right rough
-        join_rows(exportM, roughM.col(5));
+        exportM = join_rows(exportM, roughM.col(5));
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_LEFT_PUPIL).toBool()){    // Pupil dilation left
-        join_rows(exportM, roughM.col(6));
+        exportM = join_rows(exportM, roughM.col(6));
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_RIGHT_PUPIL).toBool()){    // Pupil dilation right
-        join_rows(exportM, roughM.col(7));
+        exportM = join_rows(exportM, roughM.col(7));
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_X_SMOOTH).toBool()){    // Flitered X
         if (smoothM.n_rows == exportM.n_rows) {
-            join_rows(exportM, smoothM.col(2));
+            exportM = join_rows(exportM, smoothM.col(2));
         } else {
             exportM.insert_cols(exportM.n_cols, 1, true);
         }
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_Y_SMOOTH).toBool()){    // Flitered Y
         if (smoothM.n_rows == exportM.n_rows) {
-            join_rows(exportM, smoothM.col(3));
+            exportM = join_rows(exportM, smoothM.col(3));
         } else {
             exportM.insert_cols(exportM.n_cols, 1, true);
         }
     }
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_VELOCITY).toBool()) {
+        if (smoothM.n_rows == exportM.n_rows && smoothM.n_cols >= 4) {
+            exportM = join_rows(exportM, smoothM.col(4));
+        } else {
+            exportM.insert_cols(exportM.n_cols, 1, true);
+        }
+    }
+
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_NUMBER).toBool()){    // Fixation number!
 
         int new_col_index = exportM.n_cols;

@@ -433,6 +433,19 @@
     <string>Export All</string>
    </property>
   </widget>
+  <widget class="QCheckBox" name="cb_velocity">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>180</y>
+     <width>141</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Velocity</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

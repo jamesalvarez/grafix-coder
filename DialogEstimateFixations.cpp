@@ -62,10 +62,7 @@ void DialogEstimateFixations::fncPress_bAccept(){
 
         _participant->SetParticipantSetting(Consts::PSETTING_ESTIMATED_FIX_DATE, QDateTime::currentDateTime());
     }
-    else
-    {
-        //TODO
-    }
+
 
 
     close();
