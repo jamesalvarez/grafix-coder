@@ -140,8 +140,7 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
  {
     if (SmoothM.is_empty()) return;// If the data is not smoothed we don't allow to estimate fixations.
 
-    //TODO check if velocity is calculated.
-    GPMatrixFunctions::fncCalculateVelocity(&SmoothM, settingsLoader);
+    GPMatrixFunctions::fncCalculateVelocity(SmoothM, settingsLoader);
 
     // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM
     GPMatrixFunctions::fncCalculateFixations(AutoFixAllM, RoughM, SmoothM, settingsLoader);
@@ -965,53 +964,53 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
  /*
   *                                   Calculate Velocity
   * Takes 0 - 3 indexed columns of smooth matrix and returns 11 column matrix calculates velocity (col 4)
-  * and whether it is a saccade (col 5).
+  * and whether it is a saccade (col 5). -1 s are put if any missing data either side.
   */
- void GPMatrixFunctions::fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader)
+ void GPMatrixFunctions::fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader)
  {
-     int invalidSamples      = Consts::INVALID_SAMPLES;
-     int expHeight           = settingsLoader.LoadSetting(Consts::SETTING_EXP_HEIGHT).toInt();
-     int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
      double velocityThreshold= settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
      double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 
-
-     mat aux;
-     double minC, maxX, maxY;
      double hzXdeg = hz * degreesPerPixel;
 
      // If SmoothM has less than 5 columns, create an 11 column version and copy over the first 4 columns.
-     if (p_smoothM->n_cols < 5) {
-         mat aux = zeros(p_smoothM->n_rows, 11);
-         aux.cols(0,3) = p_smoothM->cols(0,3);
-         (*p_smoothM) = aux;
+     if (smoothM.n_cols < 5) {
+         mat aux = zeros(smoothM.n_rows, 11);
+         aux.cols(0,3) = smoothM.cols(0,3);
+         smoothM = aux;
      }
 
      // Iterate through each data point, add velocity at row 4, and whether it is saccade at row 5
-     // invalidSamples is the number of samples to look backwards
-     for (uword i = invalidSamples; i < p_smoothM->n_rows; ++i) {
 
-         // Check if any of the coordinates for this or the previous samples were invalid
-         aux = p_smoothM->submat(i - invalidSamples, 2, i, 3);  //( row1, col1, row2, col2)
-         minC = aux.min();   //if any missing data minC will be -1
-         maxX = aux.col(0).max();
-         maxY = aux.col(1).max();
 
-         if (minC > 0 && maxY < expWidth && maxX < expHeight) {
+     double x_1back = smoothM(0,2);
+     double y_1back = smoothM(0,3);
+
+
+     for (uword i = 1; i < smoothM.n_rows; ++i) {
+
+         double x_cur = smoothM(i,2);
+         double y_cur = smoothM(i,3);
+
+         if (x_1back > -1 && x_cur > -1 && y_1back > -1 && y_cur > -1) {
 
              // Calculate amplitude and velocity
-             double xDist = (*p_smoothM)(i-1,2) - (*p_smoothM)(i,2);
-             double yDist = (*p_smoothM)(i-1,3) - (*p_smoothM)(i,3);
+             double xDist = x_1back - x_cur;
+             double yDist = y_1back - y_cur;
              double amplitude = sqrt(((xDist * xDist) + (yDist * yDist)) / 2);
              double velocity = amplitude * hzXdeg;
 
              // Velocity
-             p_smoothM->at(i,4) = velocity;
-
-             // Saccade
-             p_smoothM->at(i,5) = (velocity >= velocityThreshold ) ? 1 : 0;
+             smoothM.at(i,4) = velocity;
+             smoothM.at(i,5) = (velocity >= velocityThreshold ) ? 1 : 0;
+         } else {
+             smoothM.at(i,4) = -1;
+             smoothM.at(i,5) = -1;
          }
+
+         x_1back = x_cur;
+         y_1back = y_cur;
      }
  }
 

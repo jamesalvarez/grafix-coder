@@ -83,7 +83,7 @@ public:
     static double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
     static double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);
     static double calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel);
-    static void fncCalculateVelocity(mat *p_smoothM, GrafixSettingsLoader settingsLoader);
+    static void fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader);
     static void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
 
     static void debugPrintMatrix(mat &matrix);

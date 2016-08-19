@@ -1063,7 +1063,12 @@ void MainWindow2::paintVelocity()
         x_cur = smoothM(_displayStartIndex+1,2);
         y_1back = smoothM(_displayStartIndex,3);
         y_cur = smoothM(_displayStartIndex+1,3);
-        prevAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
+
+        if (x_1back > -1 && x_cur > -1 && y_1back > -1 && y_cur > -1) {
+            prevAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
+        } else {
+            prevAmp = 0;
+        }
 
         for (uword i = _displayStartIndex+2; i < _displayStopIndex; ++i) {
             x1 = (i-_displayStartIndex-1)*(1/_displayIncrement );
