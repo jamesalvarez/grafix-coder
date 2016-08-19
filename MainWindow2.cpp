@@ -1497,17 +1497,10 @@ void MainWindow2::fncPress_subMenuExport()
 {
     // Export the fixations in the middle of the segments
     fncWaitForLoad();
-    if (!fixAllM.is_empty()){
-        DialogExport w;
-        w.setWindowTitle(tr("Export data"));
-        w.loadData(p_active_participant, roughM, smoothM, fixAllM, experimentalSegmentsM);
-        w.exec();
-
-        if (w.Saved())
-        {
-            ui->statusbar->showMessage("Exported data to: " + w.Filename());
-        }
-    }
+    DialogExport w;
+    w.setWindowTitle(tr("Export data"));
+    w.loadData(p_active_participant, roughM, smoothM, fixAllM);
+    w.exec();
 }
 
 

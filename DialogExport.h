@@ -13,6 +13,7 @@
 #include "armadillo"
 #include "GrafixProject.h"
 #include "DialogGrafixError.h"
+#include "DialogBatchProcess.h"
 #include <iomanip>
 using namespace arma;
 using namespace std;
@@ -29,9 +30,7 @@ public:
     explicit DialogExport(QWidget *parent = 0);
     ~DialogExport();
 
-    void loadData(GrafixParticipant *particpant, mat roughM,mat smoothM, mat fixAllM, mat experimentalSegmentsM);
-    bool Saved();
-    QString Filename();
+    void loadData(GrafixParticipant *particpant, mat roughM,mat smoothM, mat fixAllM);
 
     QString getSettingForCheckBox(QCheckBox* checkBox);
 
@@ -43,8 +42,7 @@ private:
     mat smoothM;
     mat fixAllM;
     mat experimentalSegmentsM;
-    bool _saved;
-    QString _filename;
+
     QVector<QCheckBox*> _checkboxes;
 
 public slots:

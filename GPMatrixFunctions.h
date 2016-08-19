@@ -78,6 +78,8 @@ public:
     static bool saveFileSafe(mat &matrix, QString fileName);
     static bool readFileSafe(mat &matrix, QString fileName);
     static int  fncGetMatrixColsFromFile(QString fullpath);
+    static bool exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QString filename, GrafixSettingsLoader &settingsLoader);
+
     //FicDurOperations
     static double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
     static double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);

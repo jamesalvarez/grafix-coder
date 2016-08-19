@@ -49,18 +49,25 @@ void DialogBatchProcess::changeTask(Consts::BATCH_TASK task)
 
 void DialogBatchProcess::accept()
 {
-    GPMatrixProgressBar gpProgress(this);
+
     QItemSelectionModel *select = ui->tableBatch->selectionModel();
 
 
     if (select->hasSelection())
     {
-        QModelIndexList selected = select->selectedRows();
+        QString dir; // Get user to choose a directory to output to
+
+        if (_current_task == Consts::TASK_EXPORT)
+            dir = QFileDialog::getExistingDirectory(this, "Choose directory to export to.",
+                                                     QString(),
+                                                     QFileDialog::ShowDirsOnly
+                                                     | QFileDialog::DontResolveSymlinks);
 
         DialogGrafixError::LogNewError(NULL,"Beginning Batch Process...");
 
+        GPMatrixProgressBar gpProgress(this);
+        QModelIndexList selected = select->selectedRows();
         gpProgress.beginBatch(selected.count());
-
         for (int i = 0; i < selected.count(); i++)
         {
             QModelIndex s = selected[i];
@@ -70,62 +77,80 @@ void DialogBatchProcess::accept()
             {
                 switch (_current_task)
                 {
-                case Consts::TASK_SMOOTH:
-                    mat roughM;
-                    mat smoothM;
-                    if (!GPMatrixFunctions::readFile(roughM,p->GetMatrixPath(Consts::MATRIX_ROUGH))) break;
+                    case Consts::TASK_SMOOTH: {
+                        mat roughM;
+                        mat smoothM;
+                        if (!GPMatrixFunctions::readFile(roughM,p->GetMatrixPath(Consts::MATRIX_ROUGH))) break;
 
-                    GPMatrixFunctions::smoothRoughMatrixFBF(roughM,
-                                                this->_project->GetProjectSettingsPath(),
-                                                Consts::ACTIVE_CONFIGURATION(),
-                                                &smoothM,
-                                                &gpProgress);
+                        GPMatrixFunctions::smoothRoughMatrixFBF(roughM,
+                                                    this->_project->GetProjectSettingsPath(),
+                                                    Consts::ACTIVE_CONFIGURATION(),
+                                                    &smoothM,
+                                                    &gpProgress);
 
-                    if (GPMatrixFunctions::saveFile(smoothM,p->GetMatrixPath(Consts::MATRIX_SMOOTH)))
-                        p->SetParticipantSetting(Consts::PSETTING_SMOOTHED_DATE, QDateTime::currentDateTime());
-
-                    break;
-                case Consts::TASK_INTERPOLATE:
-                    mat smoothM;
-                    if (!GPMatrixFunctions::readFile(smoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH))) break;
-
-                    GPMatrixFunctions::interpolateData(smoothM,
-                                                      _project->GetProjectSettingsPath(),
-                                                      gpProgress);
-
-                    if (GPMatrixFunctions::saveFile(smoothM,p->GetMatrixPath(Consts::MATRIX_SMOOTH)))
-                        p->SetParticipantSetting(Consts::PSETTING_INTERPOLATED_DATE,QDateTime::currentDateTime());
-
-                    break;
-                case Consts::TASK_ESTIMATE_FIXATIONS:
-                    mat SmoothM, AutoFixAllM, RoughM, SegmentsM;
-                    bool loaded = GPMatrixFunctions::readFileSafe(SmoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH)) &&
-                        GPMatrixFunctions::readFileSafe(RoughM, p->GetMatrixPath(Consts::MATRIX_ROUGH));
-
-                    if (!loaded) break;
-
-                    GrafixSettingsLoader settingsLoader((*_project));
-
-                    GPMatrixFunctions::estimateFixations(RoughM,
-                                                         SmoothM,
-                                                         AutoFixAllM,
-                                                         settingsLoader,
-                                                         gpProgress);
-
-                    if (GPMatrixFunctions::saveFileSafe(SmoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH)) &
-                        GPMatrixFunctions::saveFileSafe(AutoFixAllM, p->GetMatrixPath(Consts::MATRIX_AUTOFIXALL)))
-                    {
-                        //if there is a segments files only save the segment fixations
-                        if (GPMatrixFunctions::readFileSafe(SegmentsM, p->GetMatrixPath(Consts::MATRIX_SEGMENTS)))
-                        {
-                            GPMatrixFunctions::fncReturnFixationinSegments( &AutoFixAllM, &SegmentsM);
-                        }
-                        GPMatrixFunctions::saveFileSafe(AutoFixAllM, p->GetMatrixPath(Consts::MATRIX_FIXALL));
-                        p->SetParticipantSetting(Consts::PSETTING_ESTIMATED_FIX_DATE, QDateTime::currentDateTime());
+                        if (GPMatrixFunctions::saveFile(smoothM,p->GetMatrixPath(Consts::MATRIX_SMOOTH)))
+                            p->SetParticipantSetting(Consts::PSETTING_SMOOTHED_DATE, QDateTime::currentDateTime());
                     }
 
                     break;
-                case Consts::TASK_EXPORT:
+                    case Consts::TASK_INTERPOLATE: {
+                        mat smoothM;
+                        if (!GPMatrixFunctions::readFile(smoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH))) break;
+
+                        GPMatrixFunctions::interpolateData(smoothM,
+                                                          _project->GetProjectSettingsPath(),
+                                                          gpProgress);
+
+                        if (GPMatrixFunctions::saveFile(smoothM,p->GetMatrixPath(Consts::MATRIX_SMOOTH)))
+                            p->SetParticipantSetting(Consts::PSETTING_INTERPOLATED_DATE,QDateTime::currentDateTime());
+                    }
+
+                    break;
+                    case Consts::TASK_ESTIMATE_FIXATIONS: {
+                        mat SmoothM, AutoFixAllM, RoughM, SegmentsM;
+                        bool loaded = GPMatrixFunctions::readFileSafe(SmoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH)) &&
+                            GPMatrixFunctions::readFileSafe(RoughM, p->GetMatrixPath(Consts::MATRIX_ROUGH));
+
+                        if (!loaded) break;
+
+                        GrafixSettingsLoader settingsLoader((*_project));
+
+                        GPMatrixFunctions::estimateFixations(RoughM,
+                                                             SmoothM,
+                                                             AutoFixAllM,
+                                                             settingsLoader,
+                                                             gpProgress);
+
+                        if (GPMatrixFunctions::saveFileSafe(SmoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH)) &
+                            GPMatrixFunctions::saveFileSafe(AutoFixAllM, p->GetMatrixPath(Consts::MATRIX_AUTOFIXALL)))
+                        {
+                            //if there is a segments files only save the segment fixations
+                            if (GPMatrixFunctions::readFileSafe(SegmentsM, p->GetMatrixPath(Consts::MATRIX_SEGMENTS)))
+                            {
+                                GPMatrixFunctions::fncReturnFixationinSegments( &AutoFixAllM, &SegmentsM);
+                            }
+                            GPMatrixFunctions::saveFileSafe(AutoFixAllM, p->GetMatrixPath(Consts::MATRIX_FIXALL));
+                            p->SetParticipantSetting(Consts::PSETTING_ESTIMATED_FIX_DATE, QDateTime::currentDateTime());
+                        }
+                    }
+
+                    break;
+                    case Consts::TASK_EXPORT: {
+
+
+                        QString filename = dir + "/" + p->GetName() + ".csv";
+                        GrafixSettingsLoader settingsLoader(*_project);
+
+                        //get all matrixes
+                        mat roughM, smoothM, fixAllM;
+
+                        if (GPMatrixFunctions::readFileSafe(roughM, p->GetMatrixPath(Consts::MATRIX_ROUGH))) {
+                            GPMatrixFunctions::readFileSafe(smoothM, p->GetMatrixPath(Consts::MATRIX_SMOOTH));
+                            GPMatrixFunctions::readFileSafe(fixAllM, p->GetMatrixPath(Consts::MATRIX_FIXALL));
+                            GPMatrixFunctions::exportFile(roughM, smoothM, fixAllM, filename, settingsLoader);
+                        }
+
+                    }
 
                     break;
                 }

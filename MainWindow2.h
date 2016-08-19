@@ -90,7 +90,6 @@ private:
     bool _copyEyes;
     Ui::MainWindow2 *ui;
     QMutex _files_mutex;
-    QProgressDialog _files_progress;
     QFuture<void> _files_future;
     bool _files_stop_flag;
     int _files_next_position;
