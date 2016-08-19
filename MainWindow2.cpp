@@ -1053,30 +1053,37 @@ void MainWindow2::paintVelocity()
     {
         double prevVel, curVel, prevAmp, curAmp = 0;
         int x1,x2 = 0;
-        double x_2back, x_1back, x_cur, y_2back, y_1back, y_cur;
+        double x_1back, x_cur, y_1back, y_cur;
+
+        // Paint Smooth velocity
+        myPen.setColor(QColor(255, 0, 0, 127));
+        painter.setPen(myPen);
+
+        x_1back = smoothM(_displayStartIndex,2);
+        x_cur = smoothM(_displayStartIndex+1,2);
+        y_1back = smoothM(_displayStartIndex,3);
+        y_cur = smoothM(_displayStartIndex+1,3);
+        prevAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
 
         for (uword i = _displayStartIndex+2; i < _displayStopIndex; ++i) {
             x1 = (i-_displayStartIndex-1)*(1/_displayIncrement );
             x2 = (i-_displayStartIndex)*(1/_displayIncrement );
 
-            x_2back = smoothM(i-2,2);
             x_1back = smoothM(i-1,2);
             x_cur   = smoothM(i,2);
-            y_2back = smoothM(i-2,3);
             y_1back = smoothM(i-1,3);
             y_cur   = smoothM(i,3);
 
             // oldAmp=sqrt(((XTwoBack-XOneBack)^2+(YTwoBack-YOneBack)^2)/2);
-            prevAmp = sqrt((double)( ((x_2back - x_1back)* (x_2back - x_1back)) + ((y_2back - y_1back)* (y_2back - y_1back)))/2);
+            //prevAmp = sqrt((double)( ((x_2back - x_1back)* (x_2back - x_1back)) + ((y_2back - y_1back)* (y_2back - y_1back)))/2);
             curAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
 
             prevVel = (double)prevAmp*_hz * _degPerPixel * this->_velocity_view_zoom; // We calculate it x2 to see it better
             curVel = (double)curAmp*_hz * _degPerPixel * this->_velocity_view_zoom;
 
-            // Paint Smooth velocity
-            myPen.setColor(QColor(255, 0, 0, 127));
-            painter.setPen(myPen);
+
             painter.drawLine(QPoint(x1, prevVel), QPoint(x2,curVel)); // XL
+            prevAmp = curAmp;
         }
 
         //now draw halfway line
