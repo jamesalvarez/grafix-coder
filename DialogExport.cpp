@@ -120,7 +120,7 @@ void DialogExport::fncPress_bExport(){
     }
 
     // **** Save the file
-    QString filename = QFileDialog::getSaveFileName(this,"Save exported data","","*.csv");
+    QString filename = QFileDialog::getSaveFileName(this,"Save exported data",QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),"*.csv");
 
     //check that fn has extension
     if (QFileInfo(filename).suffix() == "") {

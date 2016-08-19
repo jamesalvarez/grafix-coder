@@ -225,7 +225,7 @@ void DialogHeatMap::fncPress_bCancel(){
 }
 
 void DialogHeatMap::fncPress_bInputImage(){
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),"",tr("Files (*.*)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),tr("Files (*.*)"));
     if (!fileName.isEmpty()){
         ui->l_selectImage->setText(fileName);
         saveCurrentImage((SegmentsM)(currentSegment-1,0), fileName);

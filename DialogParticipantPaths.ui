@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>DialogParticipantPaths</class>
  <widget class="QDialog" name="DialogParticipantPaths">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -12,6 +15,9 @@
   </property>
   <property name="windowTitle">
    <string>Load Participant Files</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -140,9 +146,9 @@
   <widget class="QPushButton" name="buttonNotes">
    <property name="geometry">
     <rect>
-     <x>510</x>
+     <x>444</x>
      <y>40</y>
-     <width>75</width>
+     <width>141</width>
      <height>23</height>
     </rect>
    </property>
@@ -153,9 +159,9 @@
   <widget class="QPushButton" name="buttonOpenDirectory">
    <property name="geometry">
     <rect>
-     <x>510</x>
+     <x>444</x>
      <y>10</y>
-     <width>75</width>
+     <width>141</width>
      <height>23</height>
     </rect>
    </property>

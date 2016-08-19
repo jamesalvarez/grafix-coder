@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>DialogParticipantEditNotes</class>
  <widget class="QDialog" name="DialogParticipantEditNotes">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -12,6 +15,9 @@
   </property>
   <property name="windowTitle">
    <string>Edit Participant Notes</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -34,7 +40,7 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>91</width>
+     <width>171</width>
      <height>16</height>
     </rect>
    </property>

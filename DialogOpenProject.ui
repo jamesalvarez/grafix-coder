@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>DialogOpenProject</class>
  <widget class="QDialog" name="DialogOpenProject">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +14,10 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Project Setup</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -88,27 +94,14 @@
   <widget class="QPushButton" name="buttonAddParticipant">
    <property name="geometry">
     <rect>
-     <x>400</x>
+     <x>360</x>
      <y>60</y>
-     <width>101</width>
+     <width>141</width>
      <height>23</height>
     </rect>
    </property>
    <property name="text">
     <string>Add Participant</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="buttonOpenDirectory">
-   <property name="geometry">
-    <rect>
-     <x>420</x>
-     <y>30</y>
-     <width>75</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Open Folder</string>
    </property>
   </widget>
  </widget>

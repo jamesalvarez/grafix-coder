@@ -189,7 +189,6 @@ bool MainWindow2::LoadProject()
         }
 
         DialogOpenProject w(&_project);
-        w.setWindowTitle(tr("Select project or create new one"));
         w.exec();
 
         //saves directory of this project
@@ -1459,7 +1458,6 @@ void MainWindow2::fncPress_subMenuProjectOpen()
     fncWaitForLoad();
 
     DialogOpenProject w(&_project);
-    w.setWindowTitle(tr("Select project or create new one"));
     w.exec();
 
     //saves directory of project returned

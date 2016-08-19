@@ -59,7 +59,7 @@ void DialogBatchProcess::accept()
 
         if (_current_task == Consts::TASK_EXPORT)
             dir = QFileDialog::getExistingDirectory(this, "Choose directory to export to.",
-                                                     QString(),
+                                                     QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
                                                      QFileDialog::ShowDirsOnly
                                                      | QFileDialog::DontResolveSymlinks);
 

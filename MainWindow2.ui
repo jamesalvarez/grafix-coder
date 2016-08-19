@@ -1594,7 +1594,7 @@
   </action>
   <action name="actionNew_Open">
    <property name="text">
-    <string>New / Open</string>
+    <string>Project Settings</string>
    </property>
   </action>
   <action name="actionExport_Data">
@@ -1614,7 +1614,7 @@
   </action>
   <action name="actionConfiguration">
    <property name="text">
-    <string>Settings</string>
+    <string>Tracker Settings</string>
    </property>
   </action>
   <action name="actionReload_Last_Configuration">

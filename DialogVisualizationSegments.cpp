@@ -637,7 +637,7 @@ void DialogVisualizationSegments::fncPress_bCancel(){
 }
 
 void DialogVisualizationSegments::fncPress_bInputImage(){
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),"",tr("Files (*.*)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),tr("Files (*.*)"));
     if (!fileName.isEmpty()){
         ui->l_selectImage->setText(fileName);
         saveCurrentImage(segmentsM(currentSegment-1,0), fileName);

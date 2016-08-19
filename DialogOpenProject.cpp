@@ -21,7 +21,7 @@ DialogOpenProject::DialogOpenProject(GrafixProject * project, QWidget *parent) :
     connect(ui->buttonNewProject,SIGNAL(clicked()),this,SLOT(fncNewProjectClicked()));
     connect(ui->buttonLoadProject,SIGNAL(clicked()),this,SLOT(fncLoadProjectClicked()));
     connect(ui->tableViewParticipants,SIGNAL(doubleClicked(QModelIndex)),this,SLOT(fncItemDoubleClicked(QModelIndex)));
-    connect(ui->buttonOpenDirectory, SIGNAL(clicked()),this,SLOT(fncPress_buttonOpenDirectory()));
+    //connect(ui->buttonOpenDirectory, SIGNAL(clicked()),this,SLOT(fncPress_buttonOpenDirectory()));
 
 }
 
@@ -76,14 +76,14 @@ void DialogOpenProject::fncNewProjectClicked()
     {
     case QMessageBox::No:
     {
-        QString newp = QFileDialog::getSaveFileName(this,"Create new project");
+        QString newp = QFileDialog::getSaveFileName(this,"Create new project", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
         if (QDir().mkdir(newp))
             _model->NewProject(newp);
         break;
     }
     case QMessageBox::Yes:
     {
-        QString dir = QFileDialog::getExistingDirectory(this,"Choose existing directory");
+        QString dir = QFileDialog::getExistingDirectory(this,"Choose existing directory", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
         int ret = QMessageBox::Yes;
         if (QFile(dir + "/project.ini").exists())
         {
@@ -108,7 +108,7 @@ void DialogOpenProject::fncNewProjectClicked()
 
 void DialogOpenProject::fncLoadProjectClicked()
 {
-    QString dir = QFileDialog::getExistingDirectory(this,"Choose existing project directory");
+    QString dir = QFileDialog::getExistingDirectory(this,"Choose existing project directory", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
     if (!dir.isEmpty()) _model->LoadData(dir);
 }
 

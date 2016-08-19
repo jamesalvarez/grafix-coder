@@ -2,16 +2,22 @@
 <ui version="4.0">
  <class>DialogHeatMap</class>
  <widget class="QDialog" name="DialogHeatMap">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>824</width>
+    <width>840</width>
     <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Visualization of experimental segments</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>

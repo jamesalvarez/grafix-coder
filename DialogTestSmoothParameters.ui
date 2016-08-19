@@ -6,12 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1270</width>
+    <width>1308</width>
     <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -203,13 +206,13 @@
         <property name="minimumSize">
          <size>
           <width>300</width>
-          <height>500</height>
+          <height>600</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>300</width>
-          <height>500</height>
+          <height>600</height>
          </size>
         </property>
         <property name="frameShape">
@@ -727,7 +730,7 @@
        <widget class="QPushButton" name="bApply">
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>150</width>
           <height>23</height>
          </size>
         </property>
