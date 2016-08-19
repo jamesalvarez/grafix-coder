@@ -18,7 +18,8 @@ public:
         FC_ROUGHFILE,
         FC_SMOOTHFILE,
         FC_INTERPOLATE,
-        FC_ESTIMATE_FIX
+        FC_ESTIMATE_FIX,
+        FC_EXPORT
     };
 
     GPTabelModel(QObject *parent = 0);
