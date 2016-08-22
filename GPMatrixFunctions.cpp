@@ -1667,7 +1667,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(i + 1);
+            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(i + 1);
         }
     }
 
@@ -1676,7 +1676,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,2));
+            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,2));
         }
     }
 
@@ -1685,7 +1685,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,3));
+            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,3));
         }
     }
 
@@ -1694,7 +1694,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,4));
+            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,4));
         }
     }
 
@@ -1703,7 +1703,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,5));
+            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,5));
         }
     }
 
