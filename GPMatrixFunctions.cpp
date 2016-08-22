@@ -1086,7 +1086,7 @@ void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
     }
 }
 
-void GPMatrixFunctions::fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, mat *p_roughM, GrafixSettingsLoader settingsLoader) {
+void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &roughM, GrafixSettingsLoader settingsLoader) {
 
     double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
     int hz = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
@@ -1094,42 +1094,50 @@ void GPMatrixFunctions::fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, m
     double hzXdeg = hz * degreesPerPixel;
 
     //clear saccades matrix
-    (*p_saccadesM).reset();
+    saccadesM.reset();
 
-    if (p_fixAllM->n_rows < 2) return;
+    if (fixAllM.n_rows < 2) return;
     
-    mat roughMCopy;
+    mat preparedRoughM;
 
-    prepareRoughMatrix(roughMCopy, *p_roughM, copy_eyes);
+    prepareRoughMatrix(preparedRoughM, roughM, copy_eyes);
 
-    for (uword i = 1; i < p_fixAllM->n_rows ; i++) {
-        double startOfSaccade = p_fixAllM->at(i-1,1);
-        double endOfSaccade = p_fixAllM->at(i,1) - 1;
+    for (uword indexFixation = 1; indexFixation < fixAllM.n_rows ; indexFixation++) {
+        double startOfSaccade = fixAllM.at(indexFixation-1,1); //end of previous fixation
+        double endOfSaccade = fixAllM.at(indexFixation,0); // beginning of next fixation
 
-        mat saccade = p_roughM->rows(startOfSaccade, endOfSaccade); //.col(exportM.n_cols).fill(fixAllM(i,6));
 
-        double duration = ((p_roughM->at(endOfSaccade,0) - p_roughM->at(startOfSaccade,0)));
 
-        double xDiff = p_fixAllM->at(i,3) - p_fixAllM->at(i-1,3);
-        double yDiff = p_fixAllM->at(i,4) - p_fixAllM->at(i-1,4);
+        if (startOfSaccade >= endOfSaccade) {
+            qDebug() << "what? ";
+            continue;
+        }
+
+
+        double duration = ((roughM.at(endOfSaccade,0) - roughM.at(startOfSaccade,0)));
+
+        double xDiff = fixAllM.at(indexFixation,3) - fixAllM.at(indexFixation-1,3);
+        double yDiff = fixAllM.at(indexFixation,4) - fixAllM.at(indexFixation-1,4);
 
         double amplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+
+        //calculate average and peak velocity
 
         double averageVelocity = 0;
         int nSamples = 0;
         
         double peakVelocity = -1;
         
-        for (uword j = startOfSaccade; j < p_fixAllM->n_rows ; j++) {
+        for (uword j = startOfSaccade; j < (endOfSaccade - 1) ; j++) {
 
             //check not missing
-            if (roughMCopy(j,1) > -1 && roughMCopy(j+1,1) > -1) {
+            if (preparedRoughM(j,1) > -1 && preparedRoughM(j+1,1) > -1) {
 
-                double xDiff = roughMCopy(j,1) - roughMCopy(j+1,1);
-                double yDiff = roughMCopy(j,2) - roughMCopy(j+1,2);
+                double xDiff = preparedRoughM(j, 1) - preparedRoughM(j+1, 1);
+                double yDiff = preparedRoughM(j, 2) - preparedRoughM(j+1, 2);
 
                 double sampleAmplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
-                double sampleDuration = ((p_roughM->at(j+1,0) - p_roughM->at(j,0)));
+                double sampleDuration = ((roughM.at(j+1,0) - roughM.at(j,0)));
                 double sampleVelocity = sampleAmplitude / sampleDuration;
 
                 nSamples++;
@@ -1147,10 +1155,10 @@ void GPMatrixFunctions::fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, m
         mat row;
         row << startOfSaccade << endOfSaccade << duration << amplitude << averageVelocity << peakVelocity << endr;
 
-        if (p_saccadesM->n_rows == 0) {
-            (*p_saccadesM) = row;
+        if (saccadesM.n_rows == 0) {
+            saccadesM = row;
         } else {
-            (*p_saccadesM) = join_cols((*p_saccadesM), row);
+            saccadesM = join_cols(saccadesM, row);
         }
     }
 }
@@ -1553,7 +1561,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
 
     // Calculate saccades
     mat saccadesM;
-    GPMatrixFunctions::fncCalculateSaccades(&saccadesM, &fixAllM, &roughM, settingsLoader);
+    GPMatrixFunctions::fncCalculateSaccades(saccadesM, fixAllM, roughM, settingsLoader);
 
     // Collect data to export in matrix
     mat exportM = roughM.col(0);
@@ -1659,7 +1667,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(i + 1);
+            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(i + 1);
         }
     }
 
@@ -1668,7 +1676,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,2));
+            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,2));
         }
     }
 
@@ -1677,7 +1685,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,3));
+            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,3));
         }
     }
 
@@ -1686,7 +1694,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,4));
+            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,4));
         }
     }
 
@@ -1695,7 +1703,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
-            exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,5));
+            exportM.rows(saccadesM(i,0) + 1, saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,5));
         }
     }
 

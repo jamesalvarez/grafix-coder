@@ -87,7 +87,7 @@ public:
     static void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
 
     static void debugPrintMatrix(mat &matrix);
-    static void fncCalculateSaccades(mat *p_saccadesM, mat *p_fixAllM, mat *p_roughM, GrafixSettingsLoader settingsLoader);
+    static void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &roughM, GrafixSettingsLoader settingsLoader);
 
     static void fncRemoveUndetectedValuesRough(mat *p_a);
     static void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
