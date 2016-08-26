@@ -140,9 +140,11 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
  {
     if (SmoothM.is_empty()) return;// If the data is not smoothed we don't allow to estimate fixations.
 
+    qDebug() << "Calculating velocity...";
     GPMatrixFunctions::fncCalculateVelocity(SmoothM, settingsLoader);
 
     // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM
+    qDebug() << "Calculating fixations...";
     GPMatrixFunctions::fncCalculateFixations(AutoFixAllM, RoughM, SmoothM, settingsLoader);
 
     //we cannot work with less than one fixation
@@ -152,12 +154,12 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
     // **** POST-HOC VALIDATION **** (The order is important!)
 
     // Add columns for the flags in the smooth data if needed
-    if (SmoothM.n_cols == 4){
-     mat aux = zeros(SmoothM.n_rows, 10);
-     aux.cols(0,3) = SmoothM.cols(0,3);
-     SmoothM = aux;
-    }else{
-     SmoothM.cols(7,9).fill(0); // Restart
+    if (SmoothM.n_cols < 10) {
+        mat aux = zeros(SmoothM.n_rows, 10);
+        aux.cols(0,3) = SmoothM.cols(0,3);
+        SmoothM = aux;
+    } else {
+        SmoothM.cols(7,9).fill(0); // Restart
     }
 
     //TODO Check if fixations found or next part crasheds
@@ -169,21 +171,29 @@ void GPMatrixProgressBar::updateProgressDialog(int progress, QString label)
     double sliderMinFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toDouble();
 
     // Merge all fixations with a displacement lower than the displacement threshold
-    if (cb_displacement)
-        GPMatrixFunctions::fncMergeDisplacementThreshold(&RoughM, &SmoothM, &AutoFixAllM,  settingsLoader);
+    if (cb_displacement) {
+        debugPrintMatrix(AutoFixAllM);
+        qDebug() << "Merging...";
+        GPMatrixFunctions::fncMergeDisplacementThreshold(RoughM, SmoothM, AutoFixAllM,  settingsLoader);
+        debugPrintMatrix(AutoFixAllM);
+    }
 
 
     // Remove all fixations below the minimun variance
-    if (cb_velocityVariance)
+    if (cb_velocityVariance) {
+        qDebug() << "Removing high variance...";
         GPMatrixFunctions::fncRemoveHighVarianceFixations( &SmoothM,  &AutoFixAllM, sliderVelocityVariance);
+    }
 
 
     // Remove all the fixations below the minimun fixation
-    if (cb_minFixation)
+    if (cb_minFixation) {
+        qDebug() << "Removing minimum length...";
         GPMatrixFunctions::fncRemoveMinFixations(&AutoFixAllM, &SmoothM, sliderMinFixation);
+    }
 
 
-    debugPrintMatrix(AutoFixAllM);
+    //debugPrintMatrix(AutoFixAllM);
  }
 
  /*
@@ -895,7 +905,7 @@ double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int
     x1 = preparedRoughM.at(0,1) * xMultiplier;
     y1 = preparedRoughM.at(0,2) * yMultiplier;
 
-    debugPrintMatrix(preparedRoughM);
+    //debugPrintMatrix(preparedRoughM);
 
     for (uword j = 1; j < preparedRoughM.n_rows; ++j) {
         x2 = preparedRoughM.at(j,1) * xMultiplier;
@@ -968,15 +978,19 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
   */
  void GPMatrixFunctions::fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader)
  {
+     if (smoothM.n_cols < 4) { return; }
+
      double velocityThreshold= settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
      double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 
      double hzXdeg = hz * degreesPerPixel;
 
-     // If SmoothM has less than 5 columns, create an 11 column version and copy over the first 4 columns.
+
+
+     // If SmoothM has less than 5 columns, create an 10 column version and copy over the first 4 columns.
      if (smoothM.n_cols < 5) {
-         mat aux = zeros(smoothM.n_rows, 11);
+         mat aux = zeros(smoothM.n_rows, 10);
          aux.cols(0,3) = smoothM.cols(0,3);
          smoothM = aux;
      }
@@ -1012,10 +1026,13 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
          x_1back = x_cur;
          y_1back = y_cur;
      }
+
+     qDebug() << "Finished calculating velocity";
  }
 
  void GPMatrixFunctions::fncCalculateFixations(mat &fixAllM, mat &roughM, mat &smoothM, GrafixSettingsLoader settingsLoader)
  {
+
 
 
      bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
@@ -1044,14 +1061,16 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
                  //qDebug() << " found fixation: " << indexStartFix << " to " << indexEndFix;
                  double dur = ((roughM.at(indexEndFix,0) - roughM.at(indexStartFix,0)));
 
+                 mat roughFixationM = roughM.rows(indexStartFix,indexEndFix);
+
                  mat preparedRoughM;
-                 excludeMissingDataRoughMatrix(preparedRoughM, roughM.rows(indexStartFix,indexEndFix), copy_eyes);
+                 excludeMissingDataRoughMatrix(preparedRoughM, roughFixationM, copy_eyes);
 
 
                  double averageX = mean(preparedRoughM.col(1));
                  double averageY = mean(preparedRoughM.col(2));
                  double variance = calculateRMSRaw(preparedRoughM, expWidth, expHeight, degreePerPixel);
-                 double pupilDilation = (roughM.n_cols > 6) ? (mean(roughM.col(4)) + mean(roughM.col(5)))/2 : 0;
+                 double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationM.col(4)) + mean(roughFixationM.col(5)))/2 : 0;
 
                  //qDebug() << averageX << averageY << variance << pupilDilation;
 
@@ -1070,7 +1089,8 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
          }
      }
 
-     debugPrintMatrix(fixAllM);
+     qDebug() << "Finished calculating fixations";
+     //debugPrintMatrix(fixAllM);
  }
 
 void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
@@ -1086,7 +1106,9 @@ void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
     }
 }
 
-void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &roughM, GrafixSettingsLoader settingsLoader) {
+void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader) {
+
+
 
     double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
     int hz = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
@@ -1098,10 +1120,6 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
     if (fixAllM.n_rows < 2) return;
     
-    mat preparedRoughM;
-
-    prepareRoughMatrix(preparedRoughM, roughM, copy_eyes);
-
     for (uword indexFixation = 1; indexFixation < fixAllM.n_rows ; indexFixation++) {
         double startOfSaccade = fixAllM.at(indexFixation-1,1); //end of previous fixation
         double endOfSaccade = fixAllM.at(indexFixation,0); // beginning of next fixation
@@ -1114,10 +1132,11 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
         }
 
 
-        double duration = ((roughM.at(endOfSaccade,0) - roughM.at(startOfSaccade,0)));
+        double duration = ((smoothM.at(endOfSaccade,0) - smoothM.at(startOfSaccade,0)));
 
-        double xDiff = fixAllM.at(indexFixation,3) - fixAllM.at(indexFixation-1,3);
-        double yDiff = fixAllM.at(indexFixation,4) - fixAllM.at(indexFixation-1,4);
+        //for amplitude take the position at the end of the fixation, and start of next
+        double xDiff = smoothM.at(startOfSaccade,2) - smoothM.at(endOfSaccade,2);
+        double yDiff = smoothM.at(startOfSaccade,3) - smoothM.at(endOfSaccade,3);
 
         double amplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
 
@@ -1131,13 +1150,13 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
         for (uword j = startOfSaccade; j < (endOfSaccade - 1) ; j++) {
 
             //check not missing
-            if (preparedRoughM(j,1) > -1 && preparedRoughM(j+1,1) > -1) {
+            if (smoothM(j,2) > -1 && smoothM(j+1,2) > -1) {
 
-                double xDiff = preparedRoughM(j, 1) - preparedRoughM(j+1, 1);
-                double yDiff = preparedRoughM(j, 2) - preparedRoughM(j+1, 2);
+                double xDiff = smoothM(j, 2) - smoothM(j+1, 2);
+                double yDiff = smoothM(j, 3) - smoothM(j+1, 3);
 
                 double sampleAmplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
-                double sampleDuration = ((roughM.at(j+1,0) - roughM.at(j,0)));
+                double sampleDuration = ((smoothM.at(j+1,0) - smoothM.at(j,0)));
                 double sampleVelocity = sampleAmplitude / sampleDuration;
 
                 nSamples++;
@@ -1218,8 +1237,11 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
  }
 
- void GPMatrixFunctions::fncMergeDisplacementThreshold(mat *p_roughM, mat *p_smoothM, mat *p_fixAllM, GrafixSettingsLoader settingsLoader){
-     if (p_fixAllM->n_rows < 3) return;
+ /*
+  * This merges fixations that are within 50ms of eachother, and have a displacement of less than the user setting
+  */
+ void GPMatrixFunctions::fncMergeDisplacementThreshold(mat &roughM, mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader){
+     if (fixAllM.n_rows < 3 || smoothM.n_cols < 7) return;
 
      //int invalidSamples      = MyConstants::INVALID_SAMPLES;
      int expWidth            = settingsLoader.LoadSetting(Consts::SETTING_EXP_WIDTH).toInt();
@@ -1227,87 +1249,68 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
      bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
      double degreePerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
      int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
-     double displacement     = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble();
-
-     double dur, averageX, averageY, variance, pupilDilation, xDist1, yDist1,xDist2, yDist2;
-
-     int gapLenght = 50 * hz / 1000; // to merge, the distance between one fixation and the next is less than 50 ms
-
-     mat aux, roughCutM, f1,f2;
-
-     uvec fixIndex;
+     double maximumDisplacement     = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL).toDouble();
+     int maximumDelay = 50 * hz / 1000; // to merge, the distance between one fixation and the next is less than 50 ms
 
 
-     p_smoothM->col(7).fill(0); // Restart
+     double xMultiplier = expWidth * degreePerPixel;
+     double yMultiplier = expHeight * degreePerPixel;
 
-     for (uword i = 0; i < p_fixAllM->n_rows-2; ++ i){
 
-        // Recalculate euclidean distances for both fixations, using the smoothed data.
-         aux =  p_smoothM->submat(p_fixAllM->at(i,0), 2, p_fixAllM->at(i,1) , 3 ); // cut the data for the next fixation to calculate euclidean distance
-         fixIndex =  arma::find(aux.col(0) > -1); // Remove the -1 values for doing this calculation!!
-         aux = aux.rows(fixIndex);
-         if (!aux.is_empty()){
-             xDist1 = mean(aux.col(0));
-             yDist1 = mean(aux.col(1));
-         }else{
-             xDist1 = yDist1 = 1000;
-         }
+     smoothM.col(7).fill(0); // Reset flags that mark merging
 
-         aux =  p_smoothM->submat(p_fixAllM->at(i+1,0), 2, p_fixAllM->at(i+1,1) , 3 ); // cut the data for the next fixation to calculate euclidean distance
-         fixIndex =  arma::find(aux.col(0) > -1); // Remove the -1 values for doing this calculation!!
-         aux = aux.rows(fixIndex);
-         if (!aux.is_empty()){
-             xDist2 = mean(aux.col(0));
-             yDist2 = mean(aux.col(1));
-         }else{
-             xDist2 = yDist2 = 0;
-         }
+     for (uword i = 0; i < fixAllM.n_rows-1; ++i){
+
+         double x1Degs = fixAllM.at(i,3) * xMultiplier;
+         double y1Degs = fixAllM.at(i,4) * yMultiplier;
+
+         double x2Degs = fixAllM.at(i+1,3) * xMultiplier;
+         double y2Degs = fixAllM.at(i+1,4) * yMultiplier;
+
+         double xDiff = x1Degs - x2Degs;
+         double yDiff = y1Degs - y2Degs;
+
+         double distance = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+         double delay = fixAllM.at(i+1,0) - fixAllM.at(i,1);
+
          // Merge if: The displacement from fixation 1 and fixation 2 is less than "displacement" AND
          // if the distance between fixation 1 and fixation 2 is less than 50 ms .
-         if (sqrt((xDist1 -  xDist2)* (xDist1 - xDist2)) * degreePerPixel <= displacement && sqrt((yDist1 -  yDist2)* (yDist1 - yDist2)) * degreePerPixel <= displacement  // if the euclidean distance between the two fixations is lower than the threshold, we merge!!
-             && p_fixAllM->at(i+1,0) - p_fixAllM->at(i,1) <= gapLenght){
-             // INdicate the flag
-             p_smoothM->operator()(span(p_fixAllM->at(i,0),p_fixAllM->at(i+1,1)),span(7, 7) ).fill(1);
+         if (distance <= maximumDisplacement && delay <= maximumDelay) {
+
+             // Flag on the smooth matrix
+             smoothM(span(fixAllM.at(i,0),fixAllM.at(i+1,1)),span(7, 7) ).fill(1);
 
              // MERGE!
-             dur = p_roughM->at(p_fixAllM->at(i+1,1),0)  - p_roughM->at(p_fixAllM->at(i,0),0);
+             double fixationDuration = roughM.at(fixAllM.at(i+1,1),0)  - roughM.at(fixAllM.at(i,0),0);
 
-             // Only use the points where eyes were detected:
-             if (p_roughM->n_cols == 8){  // Depens on if we have pupil dilation data or not!
-                 roughCutM= p_roughM->submat(p_fixAllM->at(i,0),2,p_fixAllM->at(i+1,1),7);
-                 fncRemoveUndetectedValuesRough(&roughCutM);
-             }else{
-                 roughCutM= p_roughM->submat(p_fixAllM->at(i,0),2,p_fixAllM->at(i+1,1),5);
-                 fncRemoveUndetectedValuesRough(&roughCutM);
-             }
+             mat roughFixationData = roughM.rows(fixAllM.at(i,0),fixAllM.at(i+1,1));
+             mat preparedRoughM;
+             excludeMissingDataRoughMatrix(preparedRoughM, roughFixationData, copy_eyes);
 
-             averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
-             averageY = mean((roughCutM.col(1) + roughCutM.col(3))/2);
-             variance = fncCalculateRMSRough(roughCutM, expWidth,expHeight,degreePerPixel,copy_eyes);
-             pupilDilation = 0;
-             if (roughCutM.n_cols == 6){
-                 pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
-             }
+             double averageX = mean(preparedRoughM.col(1));
+             double averageY = mean(preparedRoughM.col(2));
+             double variance = calculateRMSRaw(preparedRoughM, expWidth, expHeight, degreePerPixel);
+             double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationData.col(4)) + mean(roughFixationData.col(5)))/2 : 0;
 
-             p_fixAllM->at(i,1) = p_fixAllM->at(i+1,1);
-             p_fixAllM->at(i,2) = dur;
-             p_fixAllM->at(i,3) = averageX;
-             p_fixAllM->at(i,4) = averageY;
-             p_fixAllM->at(i,5) = variance;
-             p_fixAllM->at(i,6) = 0;
-             p_fixAllM->at(i,7) = pupilDilation;
 
-             f1 = p_fixAllM->operator()( span(0, i), span(0, p_fixAllM->n_cols-1) );
-             if (i + 1 < p_fixAllM->n_rows-1){
-                 f2 = p_fixAllM->operator()(span(i+2,p_fixAllM->n_rows-1),span(0, p_fixAllM->n_cols-1) );
-                 (*p_fixAllM) = join_cols(f1,f2);
-                  i = i-1;
-             }else{
-                 (*p_fixAllM) = f1;
-             }
+             fixAllM.at(i,1) = fixAllM.at(i+1,1);
+             fixAllM.at(i,2) = fixationDuration;
+             fixAllM.at(i,3) = averageX;
+             fixAllM.at(i,4) = averageY;
+             fixAllM.at(i,5) = variance;
+             fixAllM.at(i,6) = 0;
+             fixAllM.at(i,7) = pupilDilation;
+
+             fixAllM.shed_row(i + 1);
+
+             //see if this fixation can merge with next one
+             i = i-1;
+
 
          }
      }
+
+     qDebug() << "Merged.";
  }
 
  void GPMatrixFunctions::fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance){
@@ -1561,7 +1564,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
 
     // Calculate saccades
     mat saccadesM;
-    GPMatrixFunctions::fncCalculateSaccades(saccadesM, fixAllM, roughM, settingsLoader);
+    GPMatrixFunctions::fncCalculateSaccades(saccadesM, fixAllM, smoothM, settingsLoader);
 
     // Collect data to export in matrix
     mat exportM = roughM.col(0);

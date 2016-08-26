@@ -4,7 +4,15 @@
 
 ./macdeployqt /Users/james/Documents/build-FixationsCoder-Desktop_Qt_5_5_0_clang_64bit-Release/FixationsCoder.app
 
+or
+
+./macdeployqt /Users/james/Documents/Code/build-FixationsCoder-Desktop_Qt_5_5_0_clang_64bit-Release/FixationsCoder.app
+
 
 macdeployqt is located: 
 
 /Users/james/Qt/5.5/clang_64/bin
+
+or
+
+/Users/james/Qt5.5.0/5.5/clang_64/bin

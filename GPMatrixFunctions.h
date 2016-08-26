@@ -87,12 +87,12 @@ public:
     static void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
 
     static void debugPrintMatrix(mat &matrix);
-    static void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &roughM, GrafixSettingsLoader settingsLoader);
+    static void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader);
 
     static void fncRemoveUndetectedValuesRough(mat *p_a);
     static void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
     static void fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);
-    static void fncMergeDisplacementThreshold(mat *p_roughM,  mat *p_smoothM, mat *p_fixAllM, GrafixSettingsLoader settingsLoader);
+    static void fncMergeDisplacementThreshold(mat &roughM,  mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader);
     static void fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
 
 private:
