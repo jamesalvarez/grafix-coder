@@ -1024,46 +1024,20 @@ void MainWindow2::paintVelocity()
     QPainter painter(&pixmap);
     painter.drawText(QPoint(10,10),"Velocity:");
     QPen myPen(Qt::red, 1, Qt::SolidLine);
-    if(!smoothM.is_empty())
-    {
-        double prevVel, curVel, prevAmp, curAmp = 0;
-        int x1,x2 = 0;
-        double x_1back, x_cur, y_1back, y_cur;
+    myPen.setColor(QColor(255, 0, 0, 127));
+    painter.setPen(myPen);
 
-        // Paint Smooth velocity
-        myPen.setColor(QColor(255, 0, 0, 127));
-        painter.setPen(myPen);
+    if(smoothM.n_cols >= 5) {
+        double prevVelocity = smoothM(0, 4) * this->_velocity_view_zoom;
 
-        x_1back = smoothM(_displayStartIndex,2);
-        x_cur = smoothM(_displayStartIndex+1,2);
-        y_1back = smoothM(_displayStartIndex,3);
-        y_cur = smoothM(_displayStartIndex+1,3);
+        for (uword i = _displayStartIndex + 1; i < _displayStopIndex; ++i) {
+            double x1 = (i-_displayStartIndex-1)*(1/_displayIncrement );
+            double x2 = (i-_displayStartIndex)*(1/_displayIncrement );
 
-        if (x_1back > -1 && x_cur > -1 && y_1back > -1 && y_cur > -1) {
-            prevAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
-        } else {
-            prevAmp = 0;
-        }
+            double curVelocity = smoothM(i, 4) * this->_velocity_view_zoom;
 
-        for (uword i = _displayStartIndex+2; i < _displayStopIndex; ++i) {
-            x1 = (i-_displayStartIndex-1)*(1/_displayIncrement );
-            x2 = (i-_displayStartIndex)*(1/_displayIncrement );
-
-            x_1back = smoothM(i-1,2);
-            x_cur   = smoothM(i,2);
-            y_1back = smoothM(i-1,3);
-            y_cur   = smoothM(i,3);
-
-            // oldAmp=sqrt(((XTwoBack-XOneBack)^2+(YTwoBack-YOneBack)^2)/2);
-            //prevAmp = sqrt((double)( ((x_2back - x_1back)* (x_2back - x_1back)) + ((y_2back - y_1back)* (y_2back - y_1back)))/2);
-            curAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
-
-            prevVel = (double)prevAmp*_hz * _degPerPixel * this->_velocity_view_zoom; // We calculate it x2 to see it better
-            curVel = (double)curAmp*_hz * _degPerPixel * this->_velocity_view_zoom;
-
-
-            painter.drawLine(QPoint(x1, prevVel), QPoint(x2,curVel)); // XL
-            prevAmp = curAmp;
+            painter.drawLine(QPoint(x1, prevVelocity), QPoint(x2,curVelocity)); // XL
+            prevVelocity = curVelocity;
         }
 
         //now draw halfway line
@@ -1071,11 +1045,10 @@ void MainWindow2::paintVelocity()
         painter.setPen(QColor(0,0,0,127));
         painter.drawLine(QPoint(0,halfway_pixels),
                          QPoint(pixmap.width(), halfway_pixels));
-        painter.drawText(QPoint(10,halfway_pixels),QString::number(halfway_pixels / (_degPerPixel * _hz * this->_velocity_view_zoom)));
+        painter.drawText(QPoint(10,halfway_pixels),QString::number(halfway_pixels / (this->_velocity_view_zoom)));
 
         //and draw velocity threshold line
-        double vel_thresh_line = _project.GetProjectSetting(Consts::SETTING_VELOCITY_THRESHOLD,Consts::ACTIVE_CONFIGURATION()).toDouble() *
-                                 _hz * _degPerPixel * this->_velocity_view_zoom;
+        double vel_thresh_line = _project.GetProjectSetting(Consts::SETTING_VELOCITY_THRESHOLD,Consts::ACTIVE_CONFIGURATION()).toDouble() * this->_velocity_view_zoom;
         painter.setPen(QColor(0,0,255,127));
         painter.drawLine(QPoint(0,vel_thresh_line),
                          QPoint(pixmap.width(), vel_thresh_line));
@@ -1109,6 +1082,7 @@ void MainWindow2::paintPupilDilation()
             painter.drawPoint(x, y_left); // Left dilation
 
             myPen.setColor(QColor(0, 0, 128, 127));
+            painter.setPen(myPen);
             painter.drawPoint(x, y_right); // Right dilation
         }
     }
