@@ -26,7 +26,7 @@ MainWindow2::MainWindow2(QWidget *parent) :
     this->_fixStartPos = 0;
     this->_hz = Consts::DEFAULT_SETTING_HZ;
     this->_nFragments = 0;
-    this->_maxPupilDilation = 0;
+    this->_maxPupilDilation = 5;
     this->_previousFragment = 0;
     this->_secsFragment = Consts::DEFAULT_SETTING_SECS_FRAGMENT;
     this->_currentAction = Consts::AC_NOACTION; // create/ merge/ delete fixation
@@ -1094,18 +1094,22 @@ void MainWindow2::paintPupilDilation()
     painter.drawText(QPoint(10,10),"Pupil Dilation:");
     QPen myPen(Qt::red, 1, Qt::SolidLine);
 
-    if (roughM.n_cols == 8)
+    if (roughM.n_cols >= 8)
     {
         for (uword i = _displayStartIndex; i < _displayStopIndex; ++i) {
 
             myPen.setColor(QColor(255, 0, 0, 127));
             myPen.setWidth(1);
             painter.setPen(myPen);
-            painter.drawPoint((i-_displayStartIndex)*(1/_displayIncrement ), ui->lPanelPupilDilation->height() - (roughM(i ,6 ) * ui->lPanelPupilDilation->height()/_maxPupilDilation)); // Left dilation
+
+            int height = ui->lPanelPupilDilation->height();
+            int x = (i-_displayStartIndex)*(1/_displayIncrement );
+            int y_left = height - (roughM(i, 6) * height / _maxPupilDilation);
+            int y_right = height - (roughM(i, 7) * height / _maxPupilDilation);
+            painter.drawPoint(x, y_left); // Left dilation
 
             myPen.setColor(QColor(0, 0, 128, 127));
-            painter.setPen(myPen);
-            painter.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), ui->lPanelPupilDilation->height() - (roughM(i,7 ) * ui->lPanelPupilDilation->height()/_maxPupilDilation)); // Right dilation
+            painter.drawPoint(x, y_right); // Right dilation
         }
     }
 
