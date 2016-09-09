@@ -25,10 +25,10 @@ void DialogPlot::loadSpikeData(const GrafixParticipant *p)
     mat ts = zeros(n_fixations,1);
     for (uword i = 0; i<_fixAllM.n_rows; ++i)
     {
-        mat velocities = zeros(_fixAllM.at(i,1)-_fixAllM.at(i,0)-1,1);
+        mat velocities = zeros(_fixAllM.at(i,FIXCOL_END)-_fixAllM.at(i,FIXCOL_START)-1,1);
         double average_vel = 0;
         int counter = 0;
-        for (uword i2 = 1+_fixAllM.at(i,0); i2 < _fixAllM.at(i,1); ++i2)
+        for (uword i2 = 1+_fixAllM.at(i,FIXCOL_START); i2 < _fixAllM.at(i,FIXCOL_END); ++i2)
         {
             double x_1back = _dataM(i2-1,2);
             double x_cur   = _dataM(i2,2);
@@ -82,7 +82,7 @@ void DialogPlot::loadRMSData(const GrafixParticipant *p)
 
     int n_fixations = (int)_fixAllM.n_rows;
 
-    mat RMS = sort(_fixAllM.col(5),1);
+    mat RMS = sort(_fixAllM.col(FIXCOL_RMS),1);
 
     // generate some data:
     QVector<double> x(n_fixations), y(n_fixations); //
@@ -113,7 +113,7 @@ void DialogPlot::loadDurData(const GrafixParticipant *p)
 
     int n_fixations = (int)_fixAllM.n_rows;
 
-    mat durations = sort(_fixAllM.col(2),1);
+    mat durations = sort(_fixAllM.col(FIXCOL_RMS),1);
 
     int sub200index = 0;
     for (int i=0; i<n_fixations; ++i)
@@ -164,10 +164,10 @@ void DialogPlot::loadVelData(const GrafixParticipant *p)
 
     for (uword i = 1;i<n_fixations;++i)
     {
-        double x_1back = _fixAllM(i-1,2);
-        double x_cur   = _fixAllM(i,2);
-        double y_1back = _fixAllM(i-1,3);
-        double y_cur   = _fixAllM(i,3);
+        double x_1back = _fixAllM(i-1,FIXCOL_AVERAGEX);
+        double x_cur   = _fixAllM(i,FIXCOL_AVERAGEX);
+        double y_1back = _fixAllM(i-1,FIXCOL_AVERAGEY);
+        double y_cur   = _fixAllM(i,FIXCOL_AVERAGEY);
 
         double curAmp = sqrt((double)(((x_1back - x_cur)*(x_1back - x_cur)) + ((y_1back - y_cur)*(y_1back - y_cur)))/2);
         velocities.at(i-1,0) = curAmp;

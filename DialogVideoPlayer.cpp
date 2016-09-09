@@ -241,9 +241,9 @@ void DialogVideoPlayer::playMovie()
                         painter.setFont(serifFont);
 
 
-                        uvec fixIndex =  arma::find((*p_fixAllM).col(0) <= current_index);
+                        uvec fixIndex =  arma::find((*p_fixAllM).col(FIXCOL_START) <= current_index);
                         mat aux = (*p_fixAllM).rows(fixIndex);
-                        fixIndex =  arma::find(aux.col(1) >= current_index);
+                        fixIndex =  arma::find(aux.col(FIXCOL_END) >= current_index);
                         if (fixIndex.n_rows != 0)
                         {
                             // If there is a fixation between the values, paint it!

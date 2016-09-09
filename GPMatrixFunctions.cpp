@@ -914,7 +914,7 @@ double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int
         xDiff = x1 - x2;
         yDiff = y1 - y2;
 
-        double distanceSquared = ((xDiff * xDiff) + (yDiff * yDiff)) //squared and rooted cancel eachother out;
+        double distanceSquared = ((xDiff * xDiff) + (yDiff * yDiff)); //squared and rooted cancel eachother out;
         squaredDistances(j - 1) = distanceSquared;
 
         x1 = x2;
@@ -1200,7 +1200,7 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
              int end = a(i,2);
              // Go through the whole fixations matrix
              for (uword j = fixIndex; j < p_fixAllM->n_rows; ++j){
-                 if ((p_fixAllM->at(j,0) >= start && p_fixAllM->at(j,0) <= end )|| (p_fixAllM->at(j,0) < end && p_fixAllM->at(j,1) > end)){  // fixations that start  and end in the segment of start in the segment and end in the next
+                 if ((p_fixAllM->at(j,FIXCOL_START) >= start && p_fixAllM->at(j,FIXCOL_START) <= end )|| (p_fixAllM->at(j,FIXCOL_START) < end && p_fixAllM->at(j,FIXCOL_END) > end)){  // fixations that start  and end in the segment of start in the segment and end in the next
                      fixations = join_cols(fixations, p_fixAllM->row(j));
                  }
              }
@@ -1218,15 +1218,15 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
      p_smoothM->col(9).fill(0); // Restart
 
      // Find all fixations we will delete
-     uvec fixIndex =  arma::find(p_fixAllM->col(2) < minDur);
+     uvec fixIndex =  arma::find(p_fixAllM->col(FIXCOL_DURATION) < minDur);
      mat minFix = p_fixAllM->rows(fixIndex);
 
      for (uword i = 0; i < minFix.n_rows; ++i){  // Modify the flag for the fixations we delete
-         p_smoothM->operator()(span(minFix(i,0),minFix(i,1)),span(9,9) ).fill(1);
+         p_smoothM->operator()(span(minFix(i,FIXCOL_START),minFix(i,FIXCOL_END)),span(9,9) ).fill(1);
      }
 
      // Delete min fixations
-     fixIndex =  arma::find(p_fixAllM->col(2) > minDur);
+     fixIndex =  arma::find(p_fixAllM->col(FIXCOL_DURATION) > minDur);
 
      if (!fixIndex.empty())
      {
@@ -1263,29 +1263,29 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
      for (uword i = 0; i < fixAllM.n_rows-1; ++i){
 
-         double x1Degs = fixAllM.at(i,3) * xMultiplier;
-         double y1Degs = fixAllM.at(i,4) * yMultiplier;
+         double x1Degs = fixAllM.at(i,FIXCOL_AVERAGEX) * xMultiplier;
+         double y1Degs = fixAllM.at(i,FIXCOL_AVERAGEY) * yMultiplier;
 
-         double x2Degs = fixAllM.at(i+1,3) * xMultiplier;
-         double y2Degs = fixAllM.at(i+1,4) * yMultiplier;
+         double x2Degs = fixAllM.at(i+1,FIXCOL_AVERAGEX) * xMultiplier;
+         double y2Degs = fixAllM.at(i+1,FIXCOL_AVERAGEY) * yMultiplier;
 
          double xDiff = x1Degs - x2Degs;
          double yDiff = y1Degs - y2Degs;
 
          double distance = sqrt((xDiff * xDiff) + (yDiff * yDiff));
-         double delay = fixAllM.at(i+1,0) - fixAllM.at(i,1);
+         double delay = fixAllM.at(i+1,FIXCOL_START) - fixAllM.at(i,FIXCOL_END);
 
          // Merge if: The displacement from fixation 1 and fixation 2 is less than "displacement" AND
          // if the distance between fixation 1 and fixation 2 is less than 50 ms .
          if (distance <= maximumDisplacement && delay <= maximumDelay) {
 
              // Flag on the smooth matrix
-             smoothM(span(fixAllM.at(i,0),fixAllM.at(i+1,1)),span(7, 7) ).fill(1);
+             smoothM(span(fixAllM.at(i,FIXCOL_START),fixAllM.at(i+1,FIXCOL_END)),span(7, 7) ).fill(1);
 
              // MERGE!
-             double fixationDuration = roughM.at(fixAllM.at(i+1,1),0)  - roughM.at(fixAllM.at(i,0),0);
+             double fixationDuration = roughM.at(fixAllM.at(i+1,FIXCOL_END),0)  - roughM.at(fixAllM.at(i,FIXCOL_START),0);
 
-             mat roughFixationData = roughM.rows(fixAllM.at(i,0),fixAllM.at(i+1,1));
+             mat roughFixationData = roughM.rows(fixAllM.at(i,FIXCOL_START),fixAllM.at(i+1,FIXCOL_END));
              mat preparedRoughM;
              excludeMissingDataRoughMatrix(preparedRoughM, roughFixationData, copy_eyes);
 
@@ -1295,13 +1295,13 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
              double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationData.col(4)) + mean(roughFixationData.col(5)))/2 : 0;
 
 
-             fixAllM.at(i,1) = fixAllM.at(i+1,1);
-             fixAllM.at(i,2) = fixationDuration;
-             fixAllM.at(i,3) = averageX;
-             fixAllM.at(i,4) = averageY;
-             fixAllM.at(i,5) = variance;
-             fixAllM.at(i,6) = 0;
-             fixAllM.at(i,7) = pupilDilation;
+             fixAllM.at(i,FIXCOL_END) = fixAllM.at(i+1,FIXCOL_END);
+             fixAllM.at(i,FIXCOL_DURATION) = fixationDuration;
+             fixAllM.at(i,FIXCOL_AVERAGEX) = averageX;
+             fixAllM.at(i,FIXCOL_AVERAGEY) = averageY;
+             fixAllM.at(i,FIXCOL_RMS) = variance;
+             fixAllM.at(i,FIXCOL_SMOOTH_PURSUIT) = 0;
+             fixAllM.at(i,FIXCOL_PUPIL) = pupilDilation;
 
              fixAllM.shed_row(i + 1);
 
@@ -1322,14 +1322,14 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
      for (uword i = 0; i < p_fixAllM->n_rows-1; ++i)
      {
-         if (p_fixAllM->at(i,5) > variance)
+         if (p_fixAllM->at(i,FIXCOL_RMS) > variance)
          {
              // Remove fixation
-             p_smoothM->operator()(span(p_fixAllM->at(i,0),p_fixAllM->at(i,1)),span(8,8) ).fill(1); // Indicate it
+             p_smoothM->operator()(span(p_fixAllM->at(i,FIXCOL_START),p_fixAllM->at(i,FIXCOL_END)),span(8,8) ).fill(1); // Indicate it
          }
      }
 
-     uvec fixIndex =  arma::find(p_fixAllM->col(5) < variance);
+     uvec fixIndex =  arma::find(p_fixAllM->col(FIXCOL_RMS) < variance);
      if (!fixIndex.empty())
      {
          (*p_fixAllM) = p_fixAllM->rows(fixIndex);
@@ -1618,7 +1618,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
 
         // Calculate fixation number
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
-            exportM.rows(fixAllM(i,0), fixAllM(i,1)).col(new_col_index).fill(i+1);
+            exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(i+1);
         }
     }
 
@@ -1627,7 +1627,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
-            exportM.rows(fixAllM(i,0), fixAllM(i,1)).col(new_col_index).fill(fixAllM(i,2));
+            exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_DURATION));
         }
     }
 
@@ -1636,7 +1636,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
-            exportM.rows(fixAllM(i,0), fixAllM(i,1)).col(new_col_index).fill(fixAllM(i,3));
+            exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_AVERAGEX));
         }
     }
 
@@ -1645,16 +1645,16 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
-            exportM.rows(fixAllM(i,0), fixAllM(i,1)).col(new_col_index).fill(fixAllM(i,4));
+            exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_AVERAGEY));
         }
     }
 
-    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_DISTANCE).toBool()){    // Euclidean distance
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_DISTANCE).toBool()){    // RMS
         int new_col_index = exportM.n_cols;
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
-            exportM.rows(fixAllM(i,0), fixAllM(i,1)).col(new_col_index).fill(fixAllM(i,5));
+            exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_RMS));
         }
     }
 
@@ -1663,7 +1663,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
-            exportM.rows(fixAllM(i,0), fixAllM(i,1)).col(new_col_index).fill(fixAllM(i,6));
+            exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_SMOOTH_PURSUIT));
         }
     }
 

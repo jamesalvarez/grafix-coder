@@ -6,6 +6,16 @@
 #include <QList>
 #include <QVariant>
 
+
+#define FIXCOL_START 0
+#define FIXCOL_END 1
+#define FIXCOL_DURATION 2
+#define FIXCOL_AVERAGEX 3
+#define FIXCOL_AVERAGEY 4
+#define FIXCOL_RMS 5
+#define FIXCOL_SMOOTH_PURSUIT 6
+#define FIXCOL_PUPIL 7
+
 typedef struct config {
     QString first;
     int second;

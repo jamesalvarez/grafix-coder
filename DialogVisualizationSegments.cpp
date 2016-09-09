@@ -200,7 +200,7 @@ void DialogVisualizationSegments::playRough(){
 
     int firstIndexSeg = 0; // Just to figure out which is the first fixation id
     if (fixAllM.n_rows > 0){
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= startIndex);
+        uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_END) >= startIndex);
         if (!fixIndex.is_empty()){
             firstIndexSeg = fixIndex(0);
         }
@@ -248,7 +248,7 @@ void DialogVisualizationSegments::playRough(){
 
          // Option 1 checked: Paint fixation numbers
         if ( ui->cbFixations->isChecked()){
-            uvec fixIndex =  arma::find(fixAllM.col(0) <= i);
+            uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_START) <= i);
             aux = fixAllM.rows(fixIndex);
             fixIndex =  arma::find(aux.col(1) >= i);
 
@@ -370,7 +370,7 @@ void DialogVisualizationSegments::playSmooth(){
 
         // Option 2 paint fixation number: Paint fixations option checked:
         if ( ui->cbFixations->isChecked()){
-            uvec fixIndex =  arma::find(fixAllM.col(0) <= i);
+            uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_START) <= i);
             aux = fixAllM.rows(fixIndex);
             fixIndex =  arma::find(aux.col(1) >= i);
             if (fixIndex.n_rows != 0){   // If there is a fixation between the values, paint it!
@@ -523,7 +523,7 @@ void DialogVisualizationSegments::paintFixations(){
 
     int auxIndex = 0;
     if (fixAllM.n_rows > 0){
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= startIndex);
+        uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_END) >= startIndex);
 
         if (!fixIndex.is_empty()){
             auxIndex = fixIndex(0);
@@ -534,16 +534,16 @@ void DialogVisualizationSegments::paintFixations(){
     }
 
     for (uword i = auxIndex; i < fixAllM.n_rows  ; i++){
-        if ((fixAllM(i,0) >= startIndex && fixAllM(i,0) <=  stopIndex ) ||(fixAllM(i,0) <= startIndex && fixAllM(i,1) >= startIndex )){
+        if ((fixAllM(i,FIXCOL_START) >= startIndex && fixAllM(i,FIXCOL_START) <=  stopIndex ) ||(fixAllM(i,FIXCOL_START) <= startIndex && fixAllM(i,FIXCOL_END) >= startIndex )){
 
-            if (fixAllM(i,0) <= startIndex && fixAllM(i,1) >= startIndex ) // If it's a fixation that didn't end in the previous segment
+            if (fixAllM(i,FIXCOL_START) <= startIndex && fixAllM(i,FIXCOL_END) >= startIndex ) // If it's a fixation that didn't end in the previous segment
                 posStart = -1;
             else
-                posStart = (fixAllM(i,0) - startIndex ) * (1/increment);
+                posStart = (fixAllM(i,FIXCOL_START) - startIndex ) * (1/increment);
 
-            posEnd = ((fixAllM(i,1) - startIndex ) * (1/increment)) - posStart;
+            posEnd = ((fixAllM(i,FIXCOL_END) - startIndex ) * (1/increment)) - posStart;
 
-            if (fixAllM(i,5) == Consts::SMOOTHP_YES){
+            if (fixAllM(i,FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES){
                 painter.setBrush(QBrush("#ffbc00"));
             }else{
                 painter.setBrush(QBrush("#1ac500"));
@@ -556,7 +556,7 @@ void DialogVisualizationSegments::paintFixations(){
 
             counter ++; // Next fixation
 
-        }else if (fixAllM(i,1) >= stopIndex){
+        }else if (fixAllM(i,FIXCOL_END) >= stopIndex){
             break;
         }
     }

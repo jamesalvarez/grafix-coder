@@ -48,7 +48,7 @@ void DialogStatistics::computeStatistics(){
         // mean Variance
         o.str("");
 
-        mat variances = fixAllM.col(5);
+        mat variances = fixAllM.col(FIXCOL_RMS);
         uvec aboveOrEqualToZeroRMS = arma::find(variances > 0);
         variances = variances.elem(aboveOrEqualToZeroRMS);
 
@@ -65,49 +65,19 @@ void DialogStatistics::computeStatistics(){
 
         // Mean
         o.str("");
-        o << mean(mean(autoFixAllM.col(2)));
+        o << mean(mean(autoFixAllM.col(FIXCOL_DURATION)));
         ui->l_mean_a->setText(o.str().c_str());
 
         // std
         o.str("");
-        o << stddev(autoFixAllM.col(2));
+        o << stddev(autoFixAllM.col(FIXCOL_DURATION));
         ui->l_std_a->setText(o.str().c_str());
 
         // mean Variance
         o.str("");
-        o << mean(mean(autoFixAllM.col(5)));
+        o << mean(mean(autoFixAllM.col(FIXCOL_RMS)));
         ui->l_variance_a->setText(o.str().c_str());
     }
-
-   /** if (fixAllM.n_rows > 0 && autoFixAllM.n_rows > 0){  // Comparison between automatic/manual
-
-        // HOw many fixations were correctly detected?
-        int numberCorrect = 0;
-        for (int i = 0; i < autoFixAllM.n_rows; ++i){
-
-            fixIndex =  arma::find(fixAllM.col(0) == autoFixAllM(i,0));
-            if (!fixIndex.is_empty()){
-                aux = fixAllM.rows(fixIndex);
-                fixIndex =  arma::find(fixAllM.col(1) == autoFixAllM(i,1));
-                if (!fixIndex.is_empty()){
-                    numberCorrect = numberCorrect + 1;
-                }
-
-            }
-
-        }
-
-        o.str("");
-        o << numberCorrect;
-        ui->l_N_correctFix->setText(o.str().c_str());
-
-        o.str("");
-        o << numberCorrect/autoFixAllM.n_rows * 100 ;
-        ui->l_percent_correctFix->setText(o.str().c_str());
-
-
-
-    } **/
 
 }
 

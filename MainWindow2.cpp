@@ -298,7 +298,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             if(this->_selectedFixationEnd  && fixStopPos > _fixStartPos)
             {
                 if (fixAllM.n_rows > (_selectedFixationRow + 1) &&
-                    fixAllM.at(_selectedFixationRow + 1, 0) < fixStopPos)
+                    fixAllM.at(_selectedFixationRow + 1, FIXCOL_START) < fixStopPos)
                 {
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
                 }
@@ -311,13 +311,13 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             else if (_selectedFixationEnd == false && fixStopPos < _fixStartPos)
             {
                 if (_selectedFixationRow > 0 &&
-                    fixAllM.at(_selectedFixationRow - 1, 1) > fixStopPos)
+                    fixAllM.at(_selectedFixationRow - 1, FIXCOL_END) > fixStopPos)
                 {
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
                 }
                 else
                 {
-                    fixAllM.at(_selectedFixationRow,0) = fixStopPos;
+                    fixAllM.at(_selectedFixationRow,FIXCOL_START) = fixStopPos;
                     GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel, _copyEyes);
                 }
             }
@@ -348,12 +348,12 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             int current_pos = _displayStartIndex + (posX * _displayIncrement);
             uword closest_fixation = 0;
             bool select_end = false;
-            int closest_value = fixAllM.at(0,0);
+            int closest_value = fixAllM.at(0,FIXCOL_START);
 
             for (uword fix_row = 0; fix_row < fixAllM.n_rows; ++fix_row)
             {
-                int from = fixAllM.at(fix_row,0);
-                int to = fixAllM.at(fix_row,1);
+                int from = fixAllM.at(fix_row,FIXCOL_START);
+                int to = fixAllM.at(fix_row,FIXCOL_END);
                 if (std::abs(from - current_pos) < std::abs(closest_value - current_pos))
                 {
                     closest_value = from;
@@ -374,12 +374,12 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             _selectedFixationRow = closest_fixation;
             _selectedFixationEnd = select_end;
 
-            _fixStartPos = _selectedFixationEnd ? this->fixAllM.at(_selectedFixationRow, 0) :
-                                                  this->fixAllM.at(_selectedFixationRow, 1);
+            _fixStartPos = _selectedFixationEnd ? this->fixAllM.at(_selectedFixationRow, FIXCOL_START) :
+                                                  this->fixAllM.at(_selectedFixationRow, FIXCOL_END);
 
-            paintCurrentFixation(this->fixAllM.at(_selectedFixationRow, 0), this->fixAllM.at(_selectedFixationRow, 1));
-            ui->lFrom->setText(QString::number(this->fixAllM.at(_selectedFixationRow, 0)));
-            ui->lTo->setText(QString::number(this->fixAllM.at(_selectedFixationRow, 1)));
+            paintCurrentFixation(this->fixAllM.at(_selectedFixationRow, FIXCOL_START), this->fixAllM.at(_selectedFixationRow, FIXCOL_END));
+            ui->lFrom->setText(QString::number(this->fixAllM.at(_selectedFixationRow, FIXCOL_START)));
+            ui->lTo->setText(QString::number(this->fixAllM.at(_selectedFixationRow, FIXCOL_END)));
         }
         else
         {
@@ -642,7 +642,7 @@ bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant)
 
     // If fixAllM has only 6 columns, we add another one for the smooth pursuit.
     if (fixAllM.n_cols == 6){
-        mat a = zeros<mat>(fixAllM.n_rows,1);
+        mat a = zeros<mat>(fixAllM.n_rows,FIXCOL_END);
         fixAllM = join_rows(fixAllM, a);
     }else if (fixAllM.n_cols == 10){  // Pre previous version of the application included more info.
         fixAllM = join_rows(fixAllM.cols(0,5),fixAllM.col(9));
@@ -944,10 +944,10 @@ void MainWindow2::paintFixations()
     for (uword i = 0; i < fixAllM.n_rows  ; i++) {
 
         // Fixations that start anywhere in this segment
-        bool fixationStartsInSegment = (fixAllM(i,0) >= _displayStartIndex && fixAllM(i,0) <=  _displayStopIndex );
+        bool fixationStartsInSegment = (fixAllM(i,FIXCOL_START) >= _displayStartIndex && fixAllM(i,FIXCOL_START) <=  _displayStopIndex );
 
         // Fixations that start before the segment begins, and end in this one.
-        bool fixationStartsBeforeSegment = (fixAllM(i,0) <= _displayStartIndex && fixAllM(i,1) >= _displayStartIndex );
+        bool fixationStartsBeforeSegment = (fixAllM(i,FIXCOL_START) <= _displayStartIndex && fixAllM(i,FIXCOL_END) >= _displayStartIndex );
 
         bool displayFixation = fixationStartsInSegment || fixationStartsBeforeSegment;
 
@@ -964,11 +964,11 @@ void MainWindow2::paintFixations()
             if (fixationStartsBeforeSegment )
                 posStart = -1;
             else
-                posStart = (fixAllM(i,0) - _displayStartIndex ) * (1/_displayIncrement);
+                posStart = (fixAllM(i,FIXCOL_START) - _displayStartIndex ) * (1/_displayIncrement);
 
-            posEnd = ((fixAllM(i,1) - _displayStartIndex ) * (1/_displayIncrement)) - posStart;
+            posEnd = ((fixAllM(i,FIXCOL_END) - _displayStartIndex ) * (1/_displayIncrement)) - posStart;
 
-            if (fixAllM(i,5) == Consts::SMOOTHP_YES){
+            if (fixAllM(i,FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES){
                 painter.setBrush(QBrush("#a32e0c"));
             }else{
                 painter.setBrush(QBrush("#1ac500"));
@@ -1001,7 +1001,7 @@ void MainWindow2::paintFixations()
    // Just to optimize the code
    uword auxIndex = 0;
    if (autoFixAllM.n_rows > 0){
-       uvec fixIndex =  arma::find(autoFixAllM.col(1) >= _displayStartIndex);
+       uvec fixIndex =  arma::find(autoFixAllM.col(FIXCOL_END) >= _displayStartIndex);
        if (!fixIndex.empty()){
            auxIndex = fixIndex(0);
        }
@@ -1009,16 +1009,16 @@ void MainWindow2::paintFixations()
 
    for (uword i = auxIndex; i < autoFixAllM.n_rows  ; i++){
 
-       if ((autoFixAllM(i,0) >= _displayStartIndex && autoFixAllM(i,0) <=  _displayStopIndex ) ||(autoFixAllM(i,0) <= _displayStartIndex && autoFixAllM(i,1) >= _displayStartIndex )){
+       if ((autoFixAllM(i,FIXCOL_START) >= _displayStartIndex && autoFixAllM(i,FIXCOL_START) <=  _displayStopIndex ) ||(autoFixAllM(i,FIXCOL_START) <= _displayStartIndex && autoFixAllM(i,FIXCOL_END) >= _displayStartIndex )){
 
-           if (autoFixAllM(i,0) <= _displayStartIndex && autoFixAllM(i,1) >= _displayStartIndex ) // If it's a fixation that didn't end in the previous segment
+           if (autoFixAllM(i,FIXCOL_START) <= _displayStartIndex && autoFixAllM(i,FIXCOL_END) >= _displayStartIndex ) // If it's a fixation that didn't end in the previous segment
                posStart = -1;
            else
-               posStart = (autoFixAllM(i,0) - _displayStartIndex ) * (1/_displayIncrement);
+               posStart = (autoFixAllM(i,FIXCOL_START) - _displayStartIndex ) * (1/_displayIncrement);
 
-           posEnd = ((autoFixAllM(i,1) - _displayStartIndex ) * (1/_displayIncrement)) - posStart;
+           posEnd = ((autoFixAllM(i,FIXCOL_END) - _displayStartIndex ) * (1/_displayIncrement)) - posStart;
 
-           if (autoFixAllM(i,5) == Consts::SMOOTHP_YES){
+           if (autoFixAllM(i,FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES){
                painter.setBrush(QBrush("#a32e0c"));
            }else{
                painter.setBrush(QBrush("#ff8e00"));
@@ -1030,7 +1030,7 @@ void MainWindow2::paintFixations()
 
            counter ++; // Next fixation
 
-       }else if (autoFixAllM(i,1) >= _displayStopIndex){
+       }else if (autoFixAllM(i,FIXCOL_END) >= _displayStopIndex){
            break;
        }
    }

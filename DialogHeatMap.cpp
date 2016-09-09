@@ -164,7 +164,7 @@ void DialogHeatMap::paintHeatMap(mat* p_fixations){
 
     // Create Intensity map
     for(int j = 1, c = (*p_fixations).n_rows; j < c; ++j) {
-        double dm =  (*p_fixations)(j,2) * 150 / 500; // Vary the diameter it has to be a number from 30 to 150
+        double dm =  (*p_fixations)(j,FIXCOL_DURATION) * 150 / 500; // Vary the diameter it has to be a number from 30 to 150
         //int alpha = dm;
         if (dm < 0){
             dm = 0;
@@ -178,13 +178,13 @@ void DialogHeatMap::paintHeatMap(mat* p_fixations){
 
         QPen g_pen(QColor(0, 0, 0, 0));
         g_pen.setWidth(0);
-        QRadialGradient grad((*p_fixations)(j,3) *ui->lPanel_heatmap->width() , (*p_fixations)(j,4)*ui->lPanel_heatmap->height(), dm/2); // Create Gradient
+        QRadialGradient grad((*p_fixations)(j,FIXCOL_AVERAGEX) *ui->lPanel_heatmap->width() , (*p_fixations)(j,FIXCOL_AVERAGEY)*ui->lPanel_heatmap->height(), dm/2); // Create Gradient
         grad.setColorAt(0, QColor(255, 0, 0, dm)); // Black, varying alpha
         grad.setColorAt(1, QColor(0, 0, 0, 0)); // Black, completely transparent
         QBrush g_brush(grad); // Gradient QBrush
         painter.setPen(g_pen);
         painter.setBrush(g_brush);
-        painter.drawEllipse((*p_fixations)(j,3) *ui->lPanel_heatmap->width() -dm/2,  (*p_fixations)(j,4)*ui->lPanel_heatmap->height()-dm/2, dm, dm); // Draw circle
+        painter.drawEllipse((*p_fixations)(j,FIXCOL_AVERAGEX) *ui->lPanel_heatmap->width() -dm/2,  (*p_fixations)(j,FIXCOL_AVERAGEY)*ui->lPanel_heatmap->height()-dm/2, dm, dm); // Draw circle
 
     }
 
@@ -192,7 +192,7 @@ void DialogHeatMap::paintHeatMap(mat* p_fixations){
         QPen g_pen(QColor(255, 255, 255, 255));
         g_pen.setWidth(0);
         painter.setPen(g_pen);
-        painter.drawEllipse((*p_fixations)(j,3) *ui->lPanel_heatmap->width() -10,  (*p_fixations)(j,4)*ui->lPanel_heatmap->height()-10, 20, 20); // Draw circle
+        painter.drawEllipse((*p_fixations)(j,FIXCOL_AVERAGEX) *ui->lPanel_heatmap->width() -10,  (*p_fixations)(j,FIXCOL_AVERAGEY)*ui->lPanel_heatmap->height()-10, 20, 20); // Draw circle
 
     }
 
@@ -213,9 +213,9 @@ void DialogHeatMap::deleteHeatMap(){
   **/
 
 void DialogHeatMap::fncPress_bCalculateHeatMap(){
-    uvec fixIndex =  arma::find((*p_fixAllM).col(0) <= (SegmentsM)(currentSegment-1,2));
+    uvec fixIndex =  arma::find((*p_fixAllM).col(FIXCOL_START) <= (SegmentsM)(currentSegment-1,2));
     mat aux = (*p_fixAllM).rows(fixIndex);
-    fixIndex =  arma::find(aux.col(0) >= (SegmentsM)(currentSegment-1,1));
+    fixIndex =  arma::find(aux.col(FIXCOL_START) >= (SegmentsM)(currentSegment-1,1));
     aux = aux.rows(fixIndex);
     paintHeatMap(&aux);
 }

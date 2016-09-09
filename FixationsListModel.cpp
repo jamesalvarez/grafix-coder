@@ -1,4 +1,5 @@
 #include "FixationsListModel.h"
+#include "MyConstants.h"
 
 FixationsListModel::FixationsListModel()
 {
@@ -28,16 +29,16 @@ QVariant FixationsListModel::data(const QModelIndex &index, int role) const {
 
     switch(index.column()) {
         case 0:
-            value = fixations.at(row,0);
+            value = fixations.at(row,FIXCOL_START);
         break;
         case 1:
-            value = fixations.at(row,1);
+            value = fixations.at(row,FIXCOL_END);
         break;
         case 2:
-            value = fixations.at(row,2);
+            value = fixations.at(row,FIXCOL_DURATION);
         break;
         case 3:
-            value = fixations.at(row,5);
+            value = fixations.at(row,FIXCOL_RMS);
         break;
         default:
             value = -1;

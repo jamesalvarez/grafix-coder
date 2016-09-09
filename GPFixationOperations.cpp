@@ -15,8 +15,8 @@ void GPFixationOperations::DeleteRow(mat *matrix, uword index)
 }
 
 void GPFixationOperations::fncEditFixation(const mat &roughM, mat *fix_row, int from, int to, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
-    fix_row->at(0,0) = from;
-    fix_row->at(0,1) = to;
+    fix_row->at(0,FIXCOL_START) = from;
+    fix_row->at(0,FIXCOL_END) = to;
     fncRecalculateFixationValues(roughM, fix_row, 0, expWidth, expHeight, degPerPixel, copy_eyes);
 }
 
@@ -38,8 +38,8 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
     for (uword fix_row = 0; fix_row<n_fix_rows; ++fix_row)
     {
         //is this fixation over the range?
-        int current_from = fixAllM->at(fix_row,0);
-        int current_to   = fixAllM->at(fix_row,1);
+        int current_from = fixAllM->at(fix_row,FIXCOL_START);
+        int current_to   = fixAllM->at(fix_row,FIXCOL_END);
 
         if (from > current_from && from > current_to)
         {
@@ -56,7 +56,7 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
             //start of period intersects fixation
             cut_at_from = true;
             before_from_index = fix_row;
-            fixAllM->at(fix_row,1) = from; //replace end
+            fixAllM->at(fix_row,FIXCOL_END) = from; //replace end
 
         }
 
@@ -65,7 +65,7 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
             //end of period intersects a fixation
             cut_at_to = true;
             after_to_index = fix_row;
-            fixAllM->at(fix_row,0) = to;
+            fixAllM->at(fix_row,FIXCOL_START) = to;
         }
     }
 
@@ -78,8 +78,8 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
     for (uword auto_row = 0; auto_row<n_auto_rows; ++auto_row)
     {
         //is this fixation over the range?
-        int current_from = autoAllM.at(auto_row,0);
-        int current_to   = autoAllM.at(auto_row,1);
+        int current_from = autoAllM.at(auto_row,FIXCOL_START);
+        int current_to   = autoAllM.at(auto_row,FIXCOL_END);
         bool created_fix_at_from = false;
 
         if (from > current_from && from < current_to)
@@ -88,15 +88,15 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
             if (cut_at_from)
             {
                 //we cut here so join up.
-                fixAllM->at(before_from_index, 1) = current_to;
+                fixAllM->at(before_from_index, FIXCOL_END) = current_to;
             }
             else
             {
                 //no cut so start fixation here
                 before_from_index++;
                 fixAllM->insert_rows(before_from_index,1,true);
-                fixAllM->at(before_from_index,0) = from;
-                fixAllM->at(before_from_index,1) = current_to;
+                fixAllM->at(before_from_index,FIXCOL_START) = from;
+                fixAllM->at(before_from_index,FIXCOL_END) = current_to;
                 created_fix_at_from = true;
             }
         }
@@ -107,20 +107,20 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
             if (cut_at_to)
             {
                 //we cut here so join up.
-                fixAllM->at(before_from_index+1, 0) = current_from;
+                fixAllM->at(before_from_index+1, FIXCOL_START) = current_from;
             }
             else if (created_fix_at_from)
             {
                 //period is within a fixation
-                fixAllM->at(before_from_index,1) = to;
+                fixAllM->at(before_from_index,FIXCOL_END) = to;
             }
             else
             {
                 //no cut so start fixation here
                 before_from_index++;
                 fixAllM->insert_rows(before_from_index,1,true);
-                fixAllM->at(before_from_index,0) = current_from;
-                fixAllM->at(before_from_index,1) = to;
+                fixAllM->at(before_from_index,FIXCOL_START) = current_from;
+                fixAllM->at(before_from_index,FIXCOL_END) = to;
             }
         }
 
@@ -129,8 +129,8 @@ void GPFixationOperations::fncResetFixation(mat *fixAllM, const mat &autoAllM, c
             //in area
             before_from_index++;
             fixAllM->insert_rows(before_from_index,1,true);
-            fixAllM->at(before_from_index,0) = current_from;
-            fixAllM->at(before_from_index,1) = current_to;
+            fixAllM->at(before_from_index,FIXCOL_START) = current_from;
+            fixAllM->at(before_from_index,FIXCOL_END) = current_to;
         }
     }
 
@@ -144,7 +144,7 @@ mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int
 
         int auxIndex = 0;
         if (fixAllM.n_rows > 0){
-            uvec fixIndex =  arma::find(fixAllM.col(1) >= startIndexSegment);
+            uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_END) >= startIndexSegment);
             if (!fixIndex.empty()){
                 auxIndex = fixIndex(0);
             }
@@ -161,20 +161,20 @@ mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int
 
 
         if (fixAllM.n_rows == 1){
-            if (fixAllM(0,0) > to ){
+            if (fixAllM(0,FIXCOL_START) > to ){
                 firstElem = 0;
-            }else if (fixAllM(0,1) < from ){
+            }else if (fixAllM(0,FIXCOL_END) < from ){
                 firstElem = 1;
             }
         }else if (fixAllM.n_rows != 0){
             for (uword i = (uword)startIndex; i < fixAllM.n_rows  ; i++){
-                if (i == 1 && fixAllM(i-1,0)> to ){
+                if (i == 1 && fixAllM(i-1,FIXCOL_START)> to ){
                     firstElem = 0;
-                }else if (fixAllM(i-1,1) < from && fixAllM(i,0) > to ){ // The space is free
+                }else if (fixAllM(i-1,FIXCOL_END) < from && fixAllM(i,FIXCOL_START) > to ){ // The space is free
                     firstElem = i;
-                }else if(i ==  (fixAllM.n_rows -1 ) && fixAllM(i,1) < from ){
+                }else if(i ==  (fixAllM.n_rows -1 ) && fixAllM(i,FIXCOL_END) < from ){
                     firstElem = fixAllM.n_rows ;
-                }else if (fixAllM(i-1,0) > to){ // Stop execution
+                }else if (fixAllM(i-1,FIXCOL_START) > to){ // Stop execution
                     break;
                 }
 
@@ -238,7 +238,7 @@ mat GPFixationOperations::fncDeleteFixations(mat fixAllM, int hz, int secsSegmen
     if (from >= 0 && fixAllM.n_rows >0) {
         int startIndexSegment = ((segment-1) * secsSegment * hz);
         int auxIndex = 0;
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= startIndexSegment);
+        uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_END) >= startIndexSegment);
         if (!fixIndex.empty()){
             auxIndex = fixIndex(0);
         }
@@ -254,14 +254,14 @@ mat GPFixationOperations::fncDeleteFixations(mat fixAllM, int hz, int secsSegmen
         int lastElem = -2;
 
         for (uword i = (uword)startIndex; i < fixAllM.n_rows  ; i++){
-             if  ( firstElem == -2 && ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from ))){
+             if  ( firstElem == -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_START) <=  to ) ||(fixAllM(i,FIXCOL_START) <= from && fixAllM(i,FIXCOL_END) >= from ))){
                  // We found the first elem to delete
                  firstElem = i-1;
                  lastElem = i+ 1;
-             }else if (firstElem != -2 && ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from ))){
+             }else if (firstElem != -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_START) <=  to ) ||(fixAllM(i,FIXCOL_START) <= from && fixAllM(i,FIXCOL_END) >= from ))){
                 // THere are still elements to delete
                  lastElem = i + 1;
-             }else if(firstElem != -2 && ((fixAllM(i,0) >= from && fixAllM(i,1) >= from))){
+             }else if(firstElem != -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_END) >= from))){
                  break;
              }
         }
@@ -290,7 +290,7 @@ mat GPFixationOperations::fncSmoothPursuitFixation(mat fixAllM, int hz, int secs
     if (from >= 0) {
         int startIndexSegment = ((segment-1) * secsSegment * hz);
         int auxIndex = 0;
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= startIndexSegment);
+        uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_END) >= startIndexSegment);
         if (!fixIndex.empty()){
             auxIndex = fixIndex(0);
         }
@@ -305,19 +305,19 @@ mat GPFixationOperations::fncSmoothPursuitFixation(mat fixAllM, int hz, int secs
         int firstElem = -2;
 
         for (uword i = (uword)startIndex; i < fixAllM.n_rows  ; i++){
-             if  ( firstElem == -2 && ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from ))){
+             if  ( firstElem == -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_START) <=  to ) ||(fixAllM(i,FIXCOL_START) <= from && fixAllM(i,FIXCOL_END) >= from ))){
                  // We found the first elem to delete
-                 if (fixAllM(i,5) == 0)
-                    fixAllM(i,5) = Consts::SMOOTHP_YES;
+                 if (fixAllM(i,FIXCOL_SMOOTH_PURSUIT) == 0)
+                    fixAllM(i,FIXCOL_SMOOTH_PURSUIT) = Consts::SMOOTHP_YES;
                  else
-                     fixAllM(i,5) = Consts::SMOOTHP_NO;
-             }else if (firstElem != -2 && ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from ))){
+                     fixAllM(i,FIXCOL_SMOOTH_PURSUIT) = Consts::SMOOTHP_NO;
+             }else if (firstElem != -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_START) <=  to ) ||(fixAllM(i,FIXCOL_START) <= from && fixAllM(i,FIXCOL_END) >= from ))){
                 // THere are still elements to delete
-                 if (fixAllM(i,5) == 0)
-                    fixAllM(i,5) = Consts::SMOOTHP_YES;
+                 if (fixAllM(i,FIXCOL_SMOOTH_PURSUIT) == 0)
+                    fixAllM(i,FIXCOL_SMOOTH_PURSUIT) = Consts::SMOOTHP_YES;
                  else
-                     fixAllM(i,5) = Consts::SMOOTHP_NO;
-             }else if(firstElem != -2 && ((fixAllM(i,0) >= from && fixAllM(i,1) >= from))){
+                     fixAllM(i,FIXCOL_SMOOTH_PURSUIT) = Consts::SMOOTHP_NO;
+             }else if(firstElem != -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_END) >= from))){
                  break;
              }
         }
@@ -334,7 +334,7 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
     if (from >= 0) {
         int startIndexSegment = ((segment-1) * secsSegment * hz);
         int auxIndex = 0;
-        uvec fixIndex =  arma::find(fixAllM.col(1) >= startIndexSegment);
+        uvec fixIndex =  arma::find(fixAllM.col(FIXCOL_END) >= startIndexSegment);
         if (!fixIndex.empty()){
             auxIndex = fixIndex(0);
         }
@@ -351,14 +351,14 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
 
         for (uword i = (uword)startIndex; i < fixAllM.n_rows  ; i++){
 
-             if  ( firstElem == -2 && ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from ))){
+             if  ( firstElem == -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_START) <=  to ) ||(fixAllM(i,FIXCOL_START) <= from && fixAllM(i,FIXCOL_END) >= from ))){
                  // We found the first elem to delete
                  firstElem = i-1;
                  lastElem = i+ 1;
-             }else if (firstElem != -2 && ((fixAllM(i,0) >= from && fixAllM(i,0) <=  to ) ||(fixAllM(i,0) <= from && fixAllM(i,1) >= from ))){
+             }else if (firstElem != -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_START) <=  to ) ||(fixAllM(i,FIXCOL_START) <= from && fixAllM(i,FIXCOL_END) >= from ))){
                 // THere are still elements to delete
                  lastElem = i + 1;
-             }else if(firstElem != -2 && ((fixAllM(i,0) >= from && fixAllM(i,1) >= from))){
+             }else if(firstElem != -2 && ((fixAllM(i,FIXCOL_START) >= from && fixAllM(i,FIXCOL_END) >= from))){
                  break;
              }
         }
@@ -425,15 +425,15 @@ void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *
 {
     // For each fixation, recalculate all the values
     // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smoothPursuit, PupilDilation];
-    double dur = ((roughM((*fixAllM)(row,1),0) - roughM(0,0)) ) - ((roughM((*fixAllM)(row,0),0) - roughM(0,0)) );
+    double dur = ((roughM((*fixAllM)(row,FIXCOL_END),0) - roughM(0,0)) ) - ((roughM((*fixAllM)(row,FIXCOL_START),0) - roughM(0,0)) );
 
     // Only use the points where eyes were detected:
     mat roughCutM;
     if (roughM.n_cols == 8){
-        roughCutM = roughM.submat((*fixAllM)(row,0),2,(*fixAllM)(row,1),7);
+        roughCutM = roughM.submat((*fixAllM)(row,FIXCOL_START),2,(*fixAllM)(row,FIXCOL_END),7);
         GPMatrixFunctions::fncRemoveUndetectedValuesRough(&roughCutM);
     }else{
-         roughCutM= roughM.submat((*fixAllM)(row,0),2,(*fixAllM)(row,1),5);
+         roughCutM= roughM.submat((*fixAllM)(row,FIXCOL_START),2,(*fixAllM)(row,FIXCOL_END),5);
          GPMatrixFunctions::fncRemoveUndetectedValuesRough(&roughCutM);
     }
     double averageX = mean((roughCutM.col(0) + roughCutM.col(2))/2);
@@ -444,11 +444,11 @@ void GPFixationOperations::fncRecalculateFixationValues(const mat &roughM, mat *
         pupilDilation = (mean(roughCutM.col(4)) + mean(roughCutM.col(5)))/2;
     }
 
-    (*fixAllM)(row,2) = dur;
-    (*fixAllM)(row,3) = averageX;
-    (*fixAllM)(row,4) = averageY;
-    (*fixAllM)(row,5) = variance;
-    (*fixAllM)(row,7) = pupilDilation;
+    (*fixAllM)(row,FIXCOL_DURATION) = dur;
+    (*fixAllM)(row,FIXCOL_AVERAGEX) = averageX;
+    (*fixAllM)(row,FIXCOL_AVERAGEY) = averageY;
+    (*fixAllM)(row,FIXCOL_RMS) = variance;
+    (*fixAllM)(row,FIXCOL_PUPIL) = pupilDilation;
 }
 // This method recalculates all the values for the fixations that are already detected.
 // It is useful if we want to import fixations that were not created with GraFIX

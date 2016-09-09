@@ -341,17 +341,17 @@ void DialogTestSmoothParameters::paintFixations()
     int displayStopIndex = _roughM.n_rows;
     for (uword i = auxIndex; i < _fixAllM.n_rows  ; i++)
     {
-        if ((_fixAllM(i,0) >= displayStartIndex && _fixAllM(i,0) <=  displayStopIndex ) ||(_fixAllM(i,0) <= displayStartIndex && _fixAllM(i,1) >= displayStartIndex )){
+        if ((_fixAllM(i,FIXCOL_START) >= displayStartIndex && _fixAllM(i,FIXCOL_START) <=  displayStopIndex ) ||(_fixAllM(i,FIXCOL_START) <= displayStartIndex && _fixAllM(i,FIXCOL_END) >= displayStartIndex )){
 
             // DRAW FIXATION
-            if (_fixAllM(i,0) <= displayStartIndex && _fixAllM(i,1) >= displayStartIndex ) // If it's a fixation that didn't end in the previous segment
+            if (_fixAllM(i,FIXCOL_START) <= displayStartIndex && _fixAllM(i,FIXCOL_END) >= displayStartIndex ) // If it's a fixation that didn't end in the previous segment
                 posStart = -1;
             else
-                posStart = (_fixAllM(i,0) - displayStartIndex ) * (1/_displayIncrement);
+                posStart = (_fixAllM(i,FIXCOL_START) - displayStartIndex ) * (1/_displayIncrement);
 
-            posEnd = ((_fixAllM(i,1) - displayStartIndex ) * (1/_displayIncrement)) - posStart;
+            posEnd = ((_fixAllM(i,FIXCOL_END) - displayStartIndex ) * (1/_displayIncrement)) - posStart;
 
-            if (_fixAllM(i,5) == Consts::SMOOTHP_YES){
+            if (_fixAllM(i,FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES){
                 painter.setBrush(QBrush("#a32e0c"));
             }else{
                 painter.setBrush(QBrush("#1ac500"));
@@ -375,10 +375,10 @@ void DialogTestSmoothParameters::paintFixations()
             if (i>0)
             {
                 //positions in degrees
-                double avXp = _fixAllM.at(i-1,3) * _expWidth * _degreePerPixel;
-                double avYp = _fixAllM.at(i-1,4) * _expHeight * _degreePerPixel;
-                double avX = _fixAllM.at(i,3) * _expWidth * _degreePerPixel;
-                double avY = _fixAllM.at(i,4) * _expHeight * _degreePerPixel;
+                double avXp = _fixAllM.at(i-1,FIXCOL_AVERAGEX) * _expWidth * _degreePerPixel;
+                double avYp = _fixAllM.at(i-1,FIXCOL_AVERAGEY) * _expHeight * _degreePerPixel;
+                double avX = _fixAllM.at(i,FIXCOL_AVERAGEX) * _expWidth * _degreePerPixel;
+                double avY = _fixAllM.at(i,FIXCOL_AVERAGEY) * _expHeight * _degreePerPixel;
 
                 //distance
                 double distance = sqrt(
@@ -393,7 +393,7 @@ void DialogTestSmoothParameters::paintFixations()
 
             counter ++; // Next fixation
 
-        }else if (_fixAllM(i,1) >= displayStopIndex){
+        }else if (_fixAllM(i,FIXCOL_END) >= displayStopIndex){
             break;
         }
     }
