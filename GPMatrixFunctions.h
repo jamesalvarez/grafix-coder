@@ -72,9 +72,9 @@ public:
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
 
     //file operations
-    static bool saveFile(mat &matrix, QString fileName);
+    static bool saveFile(mat &matrix, QString fileName, QString headerString = "");
     static bool readFile(mat &matrix, QString fileName);
-    static bool saveFileSafe(mat &matrix, QString fileName);
+    static bool saveFileSafe(mat &matrix, QString fileName, QString headerString = "");
     static bool readFileSafe(mat &matrix, QString fileName);
     static int  fncGetMatrixColsFromFile(QString fullpath);
     static bool exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QString filename, GrafixSettingsLoader &settingsLoader);

@@ -171,7 +171,7 @@ public:
     static const QString SETTING_EXPORT_FIXATION_DURATION;
     static const QString SETTING_EXPORT_FIXATION_X_AVERAGE;
     static const QString SETTING_EXPORT_FIXATION_Y_AVERAGE;
-    static const QString SETTING_EXPORT_FIXATION_DISTANCE;
+    static const QString SETTING_EXPORT_FIXATION_RMS;
     static const QString SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT;
     static const QString SETTING_EXPORT_SACCADE_NUMBER;
     static const QString SETTING_EXPORT_SACCADE_DURATION;

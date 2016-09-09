@@ -12,6 +12,7 @@ DialogExport::DialogExport(QWidget *parent) :
     connect( ui->b_export, SIGNAL( clicked() ), this, SLOT( fncPress_bExport() ) );
     connect( ui->b_cancel, SIGNAL( clicked() ), this, SLOT( fncPress_bCancel() ) );
     connect( ui->b_export_all, SIGNAL( clicked() ), this, SLOT( fncPress_bExportAll()));
+    connect( ui->b_select_all, SIGNAL( clicked() ), this, SLOT( fncPress_bSelectAll()));
 
     this->_checkboxes = QVector<QCheckBox*>() << ui->cb_xLeftRough <<
         ui->cb_yLeftRough << ui->cb_xRightRough <<
@@ -92,7 +93,7 @@ QString DialogExport::getSettingForCheckBox(QCheckBox* checkBox) {
     if (checkBox == ui->cb_yAverage)
         return Consts::SETTING_EXPORT_FIXATION_Y_AVERAGE;
     if (checkBox == ui->cb_euclideanDis)
-        return Consts::SETTING_EXPORT_FIXATION_DISTANCE;
+        return Consts::SETTING_EXPORT_FIXATION_RMS;
     if (checkBox == ui->cb_sacNumber)
         return Consts::SETTING_EXPORT_SACCADE_NUMBER;
     if (checkBox == ui->cb_sacDuration)
@@ -111,7 +112,7 @@ QString DialogExport::getSettingForCheckBox(QCheckBox* checkBox) {
 
 }
 
-void DialogExport::fncPress_bExport(){
+void DialogExport::fncPress_bExport() {
 
     GrafixSettingsLoader settingsLoader(*(this->_participant->GetProject()));
 
@@ -131,4 +132,10 @@ void DialogExport::fncPress_bExport(){
     GPMatrixFunctions::exportFile(roughM, smoothM, fixAllM, filename, settingsLoader);
 
     this->close();
+}
+
+void DialogExport::fncPress_bSelectAll() {
+    for (int i = 0; i < _checkboxes.size(); ++i) {
+        _checkboxes[i]->setChecked(true);
+    }
 }

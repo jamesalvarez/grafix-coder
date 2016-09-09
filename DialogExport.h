@@ -46,10 +46,10 @@ private:
     QVector<QCheckBox*> _checkboxes;
 
 public slots:
-     void fncPress_bExport();
-     void fncPress_bExportAll();
-     void fncPress_bCancel();
-
+    void fncPress_bExport();
+    void fncPress_bExportAll();
+    void fncPress_bCancel();
+    void fncPress_bSelectAll();
 };
 
 #endif // EXPORTDIALOG_H

@@ -1341,12 +1341,12 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
  }
 
- bool GPMatrixFunctions::saveFileSafe(mat &matrix, QString fileName)
+ bool GPMatrixFunctions::saveFileSafe(mat &matrix, QString fileName, QString headerString)
  {
      try
      {
          qDebug() << "Saving matrix: " << fileName;
-         return saveFile(matrix,fileName);
+         return saveFile(matrix, fileName, headerString);
      }
      catch(...)
      {
@@ -1372,12 +1372,17 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
      return result;
  }*/
 
-bool GPMatrixFunctions::saveFile(mat &matrix, QString fileName)
+bool GPMatrixFunctions::saveFile(mat &matrix, QString fileName, QString headerString)
 {
     std::string filename = fileName.toStdString();
     std::ofstream stream(filename.c_str(),std::ios::binary);
 
     stream << std::fixed;
+
+    if (headerString.length() > 0) {
+        stream << headerString.toStdString() << endl;
+    }
+
 
     uword nRows = matrix.n_rows;
     uword nCols = matrix.n_cols;
@@ -1571,23 +1576,31 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
     // Collect data to export in matrix
     mat exportM = roughM.col(0);
 
+    QString headerString = "timestamp,";
+
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_LEFT_X_ROUGH).toBool()){    // X left rough
         exportM = join_rows(exportM, roughM.col(2));
+        headerString += "rough_left_x,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_LEFT_Y_ROUGH).toBool()){    // Y left rough
         exportM = join_rows(exportM, roughM.col(3));
+        headerString += "rough_left_y,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_RIGHT_X_ROUGH).toBool()){    // x right rough
         exportM = join_rows(exportM, roughM.col(4));
+        headerString += "rough_right_x,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_RIGHT_Y_ROUGH).toBool()){    // Y right rough
         exportM = join_rows(exportM, roughM.col(5));
+        headerString += "rough_right_y,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_LEFT_PUPIL).toBool()){    // Pupil dilation left
         exportM = join_rows(exportM, roughM.col(6));
+        headerString += "pupil_left,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_RIGHT_PUPIL).toBool()){    // Pupil dilation right
         exportM = join_rows(exportM, roughM.col(7));
+        headerString += "pupil_right,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_X_SMOOTH).toBool()){    // Flitered X
         if (smoothM.n_rows == exportM.n_rows) {
@@ -1595,6 +1608,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         } else {
             exportM.insert_cols(exportM.n_cols, 1, true);
         }
+        headerString += "smooth_x,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_Y_SMOOTH).toBool()){    // Flitered Y
         if (smoothM.n_rows == exportM.n_rows) {
@@ -1602,6 +1616,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         } else {
             exportM.insert_cols(exportM.n_cols, 1, true);
         }
+        headerString += "smooth_y,";
     }
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_VELOCITY).toBool()) {
         if (smoothM.n_rows == exportM.n_rows && smoothM.n_cols >= 4) {
@@ -1609,6 +1624,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         } else {
             exportM.insert_cols(exportM.n_cols, 1, true);
         }
+        headerString += "smooth_velocity,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_NUMBER).toBool()){    // Fixation number!
@@ -1620,6 +1636,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(i+1);
         }
+        headerString += "fixation_number,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_DURATION).toBool()){    // Fixation duration!
@@ -1629,6 +1646,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_DURATION));
         }
+        headerString += "fixation_duration,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_X_AVERAGE).toBool()){    // Average X
@@ -1638,6 +1656,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_AVERAGEX));
         }
+        headerString += "fixation_x,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_Y_AVERAGE).toBool()){    // Average y
@@ -1647,15 +1666,17 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_AVERAGEY));
         }
+        headerString += "fixation_y,";
     }
 
-    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_DISTANCE).toBool()){    // RMS
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_RMS).toBool()){    // RMS
         int new_col_index = exportM.n_cols;
         exportM.insert_cols(new_col_index,1,true);
 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_RMS));
         }
+        headerString += "fixation_rmd,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT).toBool()){    // Is smooth pursuit?
@@ -1665,6 +1686,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i,FIXCOL_START), fixAllM(i,FIXCOL_END)).col(new_col_index).fill(fixAllM(i,FIXCOL_SMOOTH_PURSUIT));
         }
+        headerString += "fixation_smooth_pursuit,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_NUMBER).toBool()){    // Saccade number!
@@ -1674,6 +1696,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
             exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(i + 1);
         }
+        headerString += "sacade_number,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_DURATION).toBool()){
@@ -1683,6 +1706,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
             exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,2));
         }
+        headerString += "saccade_duration,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_DISTANCE).toBool()){
@@ -1692,6 +1716,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
             exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,3));
         }
+        headerString += "saccade_distance,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE).toBool()){
@@ -1701,6 +1726,7 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
             exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,4));
         }
+        headerString += "saccade_velocity_average,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_VELOCITY_PEAK).toBool()){    // Saccade Amplitude
@@ -1710,9 +1736,15 @@ bool GPMatrixFunctions::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QStr
         for (uword i = 0; i < saccadesM.n_rows ; i ++) {
             exportM.rows(saccadesM(i,0), saccadesM(i,1)).col(new_col_index).fill(saccadesM(i,5));
         }
+        headerString += "saccade_velocity_peak,";
     }
 
-    return GPMatrixFunctions::saveFileSafe(exportM,filename);
+    // Remove last comma
+    if (headerString.length() > 0) {
+        headerString = headerString.left(headerString.length() - 1);
+    }
+
+    return GPMatrixFunctions::saveFileSafe(exportM, filename, headerString);
 }
 
 
