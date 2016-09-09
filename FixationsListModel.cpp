@@ -9,10 +9,10 @@ FixationsListModel::FixationsListModel()
 
 }
 
-int FixationsListModel::rowCount(const QModelIndex &parent) const {
+int FixationsListModel::rowCount(const QModelIndex &) const {
     return (int)fixations.n_rows;
 }
-int FixationsListModel::columnCount(const QModelIndex &parent) const {
+int FixationsListModel::columnCount(const QModelIndex &) const {
     return 4;
 }
 QVariant FixationsListModel::data(const QModelIndex &index, int role) const {
