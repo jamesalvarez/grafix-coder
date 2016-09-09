@@ -526,7 +526,7 @@ void Raw3D::sizer(Raw3D* src) {
 void Raw3D::wipecopy(Raw3D& src) {
 int k,kmax;
 
-    if(&src==NULL)return;
+    //if(src==NULL)return;
 	if(src.zsize==0) return;		// ignore empty inputs.
     	if(src.getZsize() != zsize || src.getYsize() != z[0].getYsize() ||
 		src.getXsize() != getXsize()) {

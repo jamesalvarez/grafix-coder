@@ -771,7 +771,7 @@ template<typename T,typename A>
 typename Array_2D<T,A>::reference
 Array_2D<T,A>::at(const size_type x,const size_type y){
 
-  if ((x>=x_dim)||(y>=y_dim)){
+  if ((x>=(size_type)x_dim)||(y>=(size_type)y_dim)){
 #ifdef ARRAY_EXCEPTION
     if (x>=x_dim) {
       throw std::out_of_range("Out of range X");
@@ -959,11 +959,11 @@ void Array_2D<T,A>::from_DOM_element(const QDomElement& element){
 
 
 
-
+/*
 template<typename T,typename A>
 Array_3D<T,A>::Array_3D(const A& a)
   :x_dim(0),y_dim(0),z_dim(0),storage(){}
-
+*/
 
 template<typename T,typename A>
 Array_3D<T,A>::Array_3D(const size_type nx,

@@ -220,7 +220,7 @@ void DialogVisualizationSegments::playRough(){
             break;
 
         //switch to next fragment if playing through
-        if ((i - startIndex) >= (secsFragment * hz))
+        if ((i - startIndex) >= (uword)(secsFragment * hz))
         {
             if (currentFragment != nFragments)
             {
@@ -358,7 +358,7 @@ void DialogVisualizationSegments::playSmooth(){
         if (ui->cbPupilDilation->isChecked() && roughM.n_cols == 8){
             if (roughM(i,6) > 0){
                 myPen.setWidth(roughM(i ,6) * 10);
-            }else if (roughM(i,7 > 0)){
+            }else if (roughM(i,7) > 0){
                 myPen.setWidth(roughM(i ,7) * 10);
             }
         }

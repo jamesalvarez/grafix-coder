@@ -9,7 +9,8 @@ TEMPLATE = app
 
 QT += core gui widgets printsupport multimediawidgets opengl
 
-QMAKE_CXXFLAGS += -Wno-unused-local-typedefs -larmadillo
+QMAKE_CXXFLAGS += -Wno-unused-local-typedefs -Wno-unnamed-type-template-args
+QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-local-typedefs -Wno-unnamed-type-template-args
 
 #osx deployment target
 macx: QMAKE_CFLAGS += -mmacosx-version-min=10.6

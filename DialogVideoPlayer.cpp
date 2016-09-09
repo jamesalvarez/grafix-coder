@@ -83,7 +83,9 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
 
 void DialogVideoPlayer::resizeEvent (QResizeEvent *event)
 {
+    QDialog::resizeEvent(event);
     fncCalculateAspectRatios();
+
 }
 
 void DialogVideoPlayer::fncCalculateAspectRatios()
@@ -124,6 +126,7 @@ void DialogVideoPlayer::fncCalculateAspectRatios()
 
 void DialogVideoPlayer::closeEvent(QCloseEvent *event)
 {
+    QDialog::closeEvent(event);
     mediaPlayer->stop();
 }
 

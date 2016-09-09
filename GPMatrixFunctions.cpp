@@ -515,6 +515,8 @@ void GPMatrixFunctions::smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSet
             SmoothM->at(i,3) = -1;
         }
     }
+
+    fncCalculateVelocity(*SmoothM, settings);
  }
 
 
@@ -1125,9 +1127,8 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
 
     double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-    int hz = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
-    bool copy_eyes = settingsLoader.LoadSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE).toBool();
-    double hzXdeg = hz * degreesPerPixel;
+
+
 
     //clear saccades matrix
     saccadesM.reset();

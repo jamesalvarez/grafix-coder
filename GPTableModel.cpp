@@ -112,6 +112,8 @@ QVariant GPTabelModel::data(const QModelIndex &index, int role) const
                         return "Up to date.";
                 }
             }
+            case FC_EXPORT:
+                break;
             }
         }
     }
@@ -145,6 +147,8 @@ QVariant GPTabelModel::headerData(int section, Qt::Orientation orientation, int 
                     return "Last interpolated";
                 case FC_ESTIMATE_FIX:
                     return "Last estimated";
+                case FC_EXPORT:
+                    break;
                 }
             default:
                 return QVariant();

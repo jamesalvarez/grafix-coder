@@ -233,7 +233,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
     int mousedIndex = _displayStartIndex + (posX * _displayIncrement);
 
     if (mousedIndex < 0) mousedIndex = 0;
-    if (mousedIndex >= smoothM.n_rows) mousedIndex = smoothM.n_rows - 1;
+    if ((uword)mousedIndex >= smoothM.n_rows) mousedIndex = smoothM.n_rows - 1;
 
     if (event->type() == QEvent::MouseMove) {
 

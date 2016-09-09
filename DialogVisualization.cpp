@@ -232,7 +232,7 @@ void DialogVisualization::playSmooth(){
         if (ui->cbPupilDilation->isChecked() && (*p_roughM).n_cols == 8){
             if ((*p_roughM)(i,6) > 0){
                 myPen.setWidth((*p_roughM)(i ,6) * 10);
-            }else if ((*p_roughM)(i,7 > 0)){
+            } else if ((*p_roughM)(i,7) > 0){
                 myPen.setWidth((*p_roughM)(i ,7) * 10);
             }
         }
@@ -330,7 +330,7 @@ void DialogVisualization::playRoughAndSmooth(){
         if (ui->cbPupilDilation->isChecked() && (*p_roughM).n_cols == 8){
             if ((*p_roughM)(i,6) > 0){
                 myPen.setWidth((*p_roughM)(i ,6) * 10);
-            }else if ((*p_roughM)(i,7 > 0)){
+            }else if ((*p_roughM)(i,7) > 0){
                 myPen.setWidth((*p_roughM)(i ,7) * 10);
             }
         }
