@@ -94,7 +94,7 @@ private:
     bool _files_stop_flag;
     int _files_next_position;
     int _currentAction; // Create/ delete/ merge
-    int _fixInAction;  // If there is a fixation creation/ merge/ delete happenning it's on.
+    int _mouseAction;  // If there is a fixation creation/ merge/ delete happenning it's on.
     int _fixStartPos;
     uword _selectedFixationRow;
     bool _selectedFixationEnd;

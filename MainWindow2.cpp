@@ -30,7 +30,7 @@ MainWindow2::MainWindow2(QWidget *parent) :
     this->_previousFragment = 0;
     this->_secsFragment = Consts::DEFAULT_SETTING_SECS_FRAGMENT;
     this->_currentAction = Consts::AC_NOACTION; // create/ merge/ delete fixation
-    this->_fixInAction = Consts::FIX_OFF;   // If we are painting a fixation or not
+    this->_mouseAction = Consts::FIX_OFF;   // If we are painting a fixation or not
     this->_configuration_changed = true;
     this->_last_selected_configuration = Consts::ACTIVE_CONFIGURATION();
     this->_hold_changes = false;
@@ -211,156 +211,141 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
 {
     if (!obj->isWindowType()) return false;
 
-    int posX = -1;
-
-    if (event->type() == QEvent::MouseMove ||
+    bool isMouseEvent = (event->type() == QEvent::MouseMove ||
         event->type() == QEvent::MouseButtonPress ||
-        event->type() == QEvent::MouseButtonRelease)
-    {
-        // When we move the mouse and we are executing an action, we paint the fixation!
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-        QPoint mouse_pos = this->p_over_display_label->mapFromGlobal(mouseEvent->pos());
+        event->type() == QEvent::MouseButtonRelease);
 
-        posX = mouse_pos.x() <= 0 ? 0 : mouse_pos.x();
+    if (!isMouseEvent) return false;
+
+    QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+    QPoint mouse_pos = this->p_over_display_label->mapFromGlobal(mouseEvent->pos());
+
+    int posX = mouse_pos.x();
+
+    bool mouseIsOnPanels = posX >= 0 && posX < ui->lPanelFixations->width();
+
+
+    if (!mouseIsOnPanels && _mouseAction == Consts::FIX_OFF) {
+        paintExperimentalSegments(); //erase the line
+        return false;
     }
 
-    if (event->type() == QEvent::MouseMove)
-    {
+    int mousedIndex = _displayStartIndex + (posX * _displayIncrement);
+
+    if (mousedIndex < 0) mousedIndex = 0;
+    if (mousedIndex >= smoothM.n_rows) mousedIndex = smoothM.n_rows - 1;
+
+    if (event->type() == QEvent::MouseMove) {
+
+        // Repaint the over display
         paintExperimentalSegments();
 
-        // If the cursor is in the central area we draw a line
-        if (posX >= 0 && posX <=ui->lPanelFixations->width() )
-        {
-            QPixmap pixmap = *this->p_over_display_label->pixmap();
-            QPainter painter(&pixmap);
-            QPen myPen(Qt::green, 1, Qt::SolidLine);
-            painter.drawLine(posX,0,posX,pixmap.height());
-            this->p_over_display_label->setPixmap(pixmap);
-            painter.end();
-        } else {
-            this->p_over_display_label->clear();
-        }
+        QPixmap pixmap = *this->p_over_display_label->pixmap();
+        QPainter painter(&pixmap);
+        QPen myPen(Qt::green, 1, Qt::SolidLine);
+        painter.drawLine(posX,0,posX,pixmap.height());
+        this->p_over_display_label->setPixmap(pixmap);
+        painter.end();
 
-        // Convert the posX value to the real one in the file:
-        int file_posX = _displayStartIndex + (posX * _displayIncrement);
-
-        if (_fixInAction == Consts::FIX_OFF)
-        {
+        if (_mouseAction == Consts::FIX_OFF) {
             // Paint the  FRom/to labels
             ui->lFrom->clear();
-            ui->lFrom->setText(QString::number(file_posX));
-        }
-        else
-        {
+            ui->lFrom->setText(QString::number(mousedIndex));
+        } else if (_currentAction == Consts::AC_DRAG_ENDS) {
             paintFixations();
-            if (_currentAction == Consts::AC_DRAG_ENDS)
+            if (_selectedFixationEnd && mousedIndex > _fixStartPos)
             {
-                if (_selectedFixationEnd && file_posX > _fixStartPos)
-                {
-                   paintCurrentFixation(_fixStartPos, file_posX);
-                   ui->lFrom->setText(QString::number(_fixStartPos));
-                   ui->lTo->setText(QString::number(file_posX));
-                }
-                else if (_selectedFixationEnd == false && file_posX < _fixStartPos)
-                {
-                    paintCurrentFixation(file_posX, _fixStartPos);
-                    ui->lTo->setText(QString::number(_fixStartPos));
-                    ui->lFrom->setText(QString::number(file_posX));
-                }
+               paintCurrentFixation(_fixStartPos, mousedIndex);
+               ui->lFrom->setText(QString::number(_fixStartPos));
+               ui->lTo->setText(QString::number(mousedIndex));
             }
-            else
+            else if (_selectedFixationEnd == false && mousedIndex < _fixStartPos)
             {
-                // If we are manipulating a fixation
-
-                if (_fixStartPos >= file_posX)
-                {
-                    // If "to" is smaller than "from", do nothing
-                    file_posX = 0;
-                }
-                else
-                {
-                    // "from" is bigger than "to". Paint rectangle
-                   paintCurrentFixation(_fixStartPos, file_posX);
-                }
-
-                ui->lTo->setText(QString::number(file_posX));
+                paintCurrentFixation(mousedIndex, _fixStartPos);
+                ui->lTo->setText(QString::number(_fixStartPos));
+                ui->lFrom->setText(QString::number(mousedIndex));
             }
+        } else {
+
+            // If we are manipulating a fixation
+            if (_fixStartPos >= mousedIndex) {
+                // If "to" is smaller than "from", do nothing
+                mousedIndex = 0;
+            } else {
+               paintCurrentFixation(_fixStartPos, mousedIndex);
+            }
+
+            ui->lTo->setText(QString::number(mousedIndex));
         }
-    }
+    } else if (event->type() == QEvent::MouseButtonRelease) {
+        if (_mouseAction == Consts::FIX_OFF) return false;
 
-    if (event->type() == QEvent::MouseButtonRelease)
-    {
-        if (_fixInAction == Consts::FIX_OFF) return false;
-        _fixInAction = Consts::FIX_OFF;
-        int fixStopPos = _displayStartIndex + (posX * _displayIncrement);
-        if (this->_currentAction == Consts::AC_DRAG_ENDS)
-        {
-            if(this->_selectedFixationEnd  && fixStopPos > _fixStartPos)
-            {
+        _mouseAction = Consts::FIX_OFF;
+
+        if (_currentAction == Consts::AC_DRAG_ENDS) {
+            if(this->_selectedFixationEnd  && mousedIndex > _fixStartPos) {
                 if (fixAllM.n_rows > (_selectedFixationRow + 1) &&
-                    fixAllM.at(_selectedFixationRow + 1, FIXCOL_START) < fixStopPos)
-                {
+                    fixAllM(_selectedFixationRow + 1, FIXCOL_START) < mousedIndex) {
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
-                }
-                else
-                {
-                    fixAllM.at(_selectedFixationRow,1) = fixStopPos;
-                    GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel, _copyEyes);
+                } else {
+                    mat fixation;
+                    GPMatrixFunctions::fncCalculateFixation(roughM,
+                                                            fixAllM(_selectedFixationRow, FIXCOL_START),
+                                                            mousedIndex, _copyEyes, _expWidth,
+                                                            _expHeight, _degPerPixel, fixation);
+                    fixAllM.row(_selectedFixationRow) = fixation;
                 }
             }
-            else if (_selectedFixationEnd == false && fixStopPos < _fixStartPos)
-            {
+            else if (_selectedFixationEnd == false && mousedIndex < _fixStartPos) {
                 if (_selectedFixationRow > 0 &&
-                    fixAllM.at(_selectedFixationRow - 1, FIXCOL_END) > fixStopPos)
-                {
+                    fixAllM(_selectedFixationRow - 1, FIXCOL_END) > mousedIndex) {
+
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
-                }
-                else
-                {
-                    fixAllM.at(_selectedFixationRow,FIXCOL_START) = fixStopPos;
-                    GPFixationOperations::fncRecalculateFixationValues(roughM,&fixAllM, _selectedFixationRow,_expWidth,_expHeight,_degPerPixel, _copyEyes);
+                } else {
+                    mat fixation;
+                    qDebug() << "AAAA";
+                    GPMatrixFunctions::fncCalculateFixation(roughM,
+                                                            mousedIndex, fixAllM(_selectedFixationRow, FIXCOL_END),
+                                                            _copyEyes, _expWidth, _expHeight,
+                                                            _degPerPixel, fixation);
+                    qDebug() << "BBBB";
+                    fixAllM.row(_selectedFixationRow) = fixation;
+                    qDebug() << "CCCC";
                 }
             }
-
-            // Save file
-            if (!fixAllM.is_empty() && p_active_participant != NULL)
-                GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
-
-            // Paint fixations again
-            paintFixations();
-        }
-        else
-        {
+        } else {
              // function for create/ merge/ delete depending in the action.
-             fncManipulateFix(_fixStartPos, fixStopPos);
-
+             fncManipulateFix(_fixStartPos, mousedIndex);
         }
+
+        // Save file
+        if (!fixAllM.is_empty() && p_active_participant != NULL)
+            GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+
+        // Paint fixations again
+        paintFixations();
+
         ui->lTo->setText("0");
         _fixStartPos = -1;
-    }
+    } else if (event->type() == QEvent::MouseButtonPress) {
 
-    if (event->type() == QEvent::MouseButtonPress)
-    {
 
-        if (this->_currentAction == Consts::AC_DRAG_ENDS)
-        {
+
+        if (this->_currentAction == Consts::AC_DRAG_ENDS) {
             //find closest beginning or end of fixation
-            int current_pos = _displayStartIndex + (posX * _displayIncrement);
             uword closest_fixation = 0;
             bool select_end = false;
             int closest_value = fixAllM.at(0,FIXCOL_START);
 
-            for (uword fix_row = 0; fix_row < fixAllM.n_rows; ++fix_row)
-            {
+            for (uword fix_row = 0; fix_row < fixAllM.n_rows; ++fix_row) {
                 int from = fixAllM.at(fix_row,FIXCOL_START);
                 int to = fixAllM.at(fix_row,FIXCOL_END);
-                if (std::abs(from - current_pos) < std::abs(closest_value - current_pos))
-                {
+                if (std::abs(from - mousedIndex) < std::abs(closest_value - mousedIndex)) {
                     closest_value = from;
                     closest_fixation = fix_row;
                     select_end = false;
                 }
-                if (std::abs(to - current_pos) < std::abs(closest_value - current_pos))
+                if (std::abs(to - mousedIndex) < std::abs(closest_value - mousedIndex))
                 {
                     closest_value = to;
                     closest_fixation = fix_row;
@@ -368,9 +353,8 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                 }
             }
 
-            if (closest_value - current_pos > 5) return false;
+            if (closest_value - mousedIndex > 5) return false;
 
-            _fixInAction = Consts::FIX_ON;
             _selectedFixationRow = closest_fixation;
             _selectedFixationEnd = select_end;
 
@@ -380,14 +364,12 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             paintCurrentFixation(this->fixAllM.at(_selectedFixationRow, FIXCOL_START), this->fixAllM.at(_selectedFixationRow, FIXCOL_END));
             ui->lFrom->setText(QString::number(this->fixAllM.at(_selectedFixationRow, FIXCOL_START)));
             ui->lTo->setText(QString::number(this->fixAllM.at(_selectedFixationRow, FIXCOL_END)));
-        }
-        else
-        {
+        } else {
            // store start value
-            _fixInAction = Consts::FIX_ON;
-           _fixStartPos = _displayStartIndex + (posX * _displayIncrement);
-           //statusBar()->showMessage(QString("Mouse clicked on ") + obj->objectName());
+           _fixStartPos = mousedIndex;
         }
+
+        _mouseAction = Consts::FIX_ON;
     }
     return false;
 }
@@ -605,19 +587,12 @@ void MainWindow2::fncManipulateFix(int from, int to)
                 fixAllM = GPFixationOperations::fncSmoothPursuitFixation(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
                 break;
             case Consts::AC_RESET_TO_AUTO:
-                GPFixationOperations::fncResetFixation(p_fixAllM,autoFixAllM,roughM,from,to,_expWidth,_expHeight,_degPerPixel, _copyEyes);
+                GPFixationOperations::fncResetFixation(*p_fixAllM,autoFixAllM,roughM,from,to,_expWidth,_expHeight,_degPerPixel, _copyEyes);
                 break;
             //case Consts::AC_DRAG_ENDS:
             //    GPFixationOperations::fncResizeFixation(this->p_fixAllM, from, to);
             //    break;
         }
-
-        // Save file
-        if (!fixAllM.is_empty() && p_active_participant != NULL)
-            GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
-
-        // Paint fixations again
-        paintFixations();
     }
 }
 
@@ -1393,6 +1368,13 @@ void MainWindow2::fncPress_bExecuteManual(int from, int to)
 {
     // Ececute the action manually rather than with the mouse click
     fncManipulateFix(from, to);
+
+    // Save file
+    if (!fixAllM.is_empty() && p_active_participant != NULL)
+        GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+
+    // Paint fixations again
+    paintFixations();
 }
 
 void MainWindow2::fncPress_bZoomin()
@@ -1518,7 +1500,7 @@ void MainWindow2::fncPress_subMenuRecalculateFixations()
 {
     // It recalcules all the values for the fixations
     fncWaitForLoad();
-    GPFixationOperations::fncRecalculateFixations(roughM, &fixAllM, _expWidth, _expHeight, _degPerPixel, _copyEyes);
+    GPFixationOperations::fncRecalculateFixations(roughM, fixAllM, _expWidth, _expHeight, _degPerPixel, _copyEyes);
 
     if (!fixAllM.is_empty())
         GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));

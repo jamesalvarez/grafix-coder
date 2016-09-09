@@ -892,6 +892,8 @@ double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int ex
  * Calculate RMS, but rough matrix must have all missing data removed
  */
 double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel) {
+    debugPrintMatrix(preparedRoughM);
+
     if (preparedRoughM.n_rows < 2 )
         return -1;
     // Calculate mean euclidean distance.
@@ -905,7 +907,7 @@ double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int
     x1 = preparedRoughM.at(0,1) * xMultiplier;
     y1 = preparedRoughM.at(0,2) * yMultiplier;
 
-    //debugPrintMatrix(preparedRoughM);
+
 
     for (uword j = 1; j < preparedRoughM.n_rows; ++j) {
         x2 = preparedRoughM.at(j,1) * xMultiplier;
@@ -921,7 +923,7 @@ double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int
         y1 = y2;
     }
 
-    //debugPrintMatrix(squaredDistances);
+    debugPrintMatrix(squaredDistances);
 
     double rms = sqrt(mean(mean(squaredDistances)));
 
@@ -1014,8 +1016,8 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
              double xDist = x_1back - x_cur;
              double yDist = y_1back - y_cur;
              double amplitude = sqrt(((xDist * xDist) + (yDist * yDist))) * degreesPerPixel;
-             double time = time_cur - time_1back;
-             double velocity = amplitude / time;
+             double time = time_cur - time_1back; //time in ms
+             double velocity = (1000 * amplitude) / time;
 
              // Velocity
              smoothM.at(i,4) = velocity;
@@ -1027,6 +1029,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
 
          x_1back = x_cur;
          y_1back = y_cur;
+         time_1back = time_cur;
      }
 
      qDebug() << "Finished calculating velocity";
@@ -1046,7 +1049,7 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
      fixAllM.reset();
 
      int indexStartFix = -1;
-     for(uword i = 0; i < smoothM.n_rows-1; i ++){
+     for(uword i = 0; i < smoothM.n_rows; i ++){
 
          bool inFixation = smoothM.at(i,5) == 0 && smoothM.at(i,2) > -1 && smoothM.at(i,3) > -1;
 
@@ -1057,33 +1060,19 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
          } else { //the velocity between this and the previous sample was above threshold
              if (indexStartFix != -1) { //the previous sample was the end of the fixation
 
-
-                 //duration is in ms calculated from timestamps
                  int indexEndFix = i - 1;
-                 //qDebug() << " found fixation: " << indexStartFix << " to " << indexEndFix;
-                 double dur = ((roughM.at(indexEndFix,0) - roughM.at(indexStartFix,0)));
-
-                 mat roughFixationM = roughM.rows(indexStartFix,indexEndFix);
-
-                 mat preparedRoughM;
-                 excludeMissingDataRoughMatrix(preparedRoughM, roughFixationM, copy_eyes);
-
-
-                 double averageX = mean(preparedRoughM.col(1));
-                 double averageY = mean(preparedRoughM.col(2));
-                 double variance = calculateRMSRaw(preparedRoughM, expWidth, expHeight, degreePerPixel);
-                 double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationM.col(4)) + mean(roughFixationM.col(5)))/2 : 0;
-
-                 //qDebug() << averageX << averageY << variance << pupilDilation;
 
                  mat newRow;
-                 newRow << indexStartFix << indexEndFix << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
+                 fncCalculateFixation(roughM,
+                                      indexStartFix,
+                                      indexEndFix,
+                                      copy_eyes,
+                                      expWidth,
+                                      expHeight,
+                                      degreePerPixel,
+                                      newRow);
 
-                 if (fixAllM.n_rows == 0){
-                     fixAllM = newRow;
-                 }else {
-                     fixAllM = join_cols(fixAllM, newRow);
-                 }
+                 fixAllM = (fixAllM.n_rows == 0) ? newRow : join_cols(fixAllM, newRow);
 
                  indexStartFix = -1;
 
@@ -1094,6 +1083,29 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
      qDebug() << "Finished calculating fixations";
      //debugPrintMatrix(fixAllM);
  }
+
+void GPMatrixFunctions::fncCalculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation) {
+
+    outFixation.reset();
+
+    mat roughFixationM = roughM.rows(startIndex,endIndex);
+
+    mat preparedRoughM;
+    excludeMissingDataRoughMatrix(preparedRoughM, roughFixationM, copy_eyes);
+
+    bool validData = preparedRoughM.n_cols > 2;
+
+    //debugPrintMatrix(preparedRoughM);
+
+    //duration is in ms calculated from timestamps
+    double dur = ((roughM.at(endIndex,0) - roughM.at(startIndex,0)));
+    double averageX = validData ? mean(preparedRoughM.col(1)) : -1;
+    double averageY = validData ? mean(preparedRoughM.col(2)) : -1;
+    double variance = validData ? calculateRMSRaw(preparedRoughM, expWidth, expHeight, degPerPixel) : -1;
+    double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationM.col(4)) + mean(roughFixationM.col(5)))/2 : 0;
+
+    outFixation << startIndex << endIndex << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
+}
 
 void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
     qDebug() << "Matrix with cols: " << matrix.n_cols << " and rows: " << matrix.n_rows;

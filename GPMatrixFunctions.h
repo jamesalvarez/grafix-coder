@@ -19,10 +19,11 @@
 #include "Trilateral/Trilateral2003.h"
 
 using namespace arma;
+
 class GrafixParticipant;
 class GrafixProject;
 class GrafixSettingsLoader;
-//class GrafixConfiguration;
+
 
 class GPMatrixProgressBar
 {
@@ -85,6 +86,8 @@ public:
     static double calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel);
     static void fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader);
     static void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
+
+    static void fncCalculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation);
 
     static void debugPrintMatrix(mat &matrix);
     static void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader);
