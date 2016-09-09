@@ -914,8 +914,8 @@ double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int
         xDiff = x1 - x2;
         yDiff = y1 - y2;
 
-        double distance = ((xDiff * xDiff) + (yDiff * yDiff));
-        squaredDistances(j - 1) = distance * distance;
+        double distanceSquared = ((xDiff * xDiff) + (yDiff * yDiff)) //squared and rooted cancel eachother out;
+        squaredDistances(j - 1) = distanceSquared;
 
         x1 = x2;
         y1 = y2;
@@ -982,9 +982,9 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
 
      double velocityThreshold= settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
      double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-     int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
+     //int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 
-     double hzXdeg = hz * degreesPerPixel;
+     //double hzXdeg = hz * degreesPerPixel;
 
 
 
@@ -1000,20 +1000,22 @@ double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
 
      double x_1back = smoothM(0,2);
      double y_1back = smoothM(0,3);
-
+     double time_1back = smoothM(0,0);
 
      for (uword i = 1; i < smoothM.n_rows; ++i) {
 
          double x_cur = smoothM(i,2);
          double y_cur = smoothM(i,3);
+         double time_cur = smoothM(i, 0);
 
          if (x_1back > -1 && x_cur > -1 && y_1back > -1 && y_cur > -1) {
 
              // Calculate amplitude and velocity
              double xDist = x_1back - x_cur;
              double yDist = y_1back - y_cur;
-             double amplitude = sqrt(((xDist * xDist) + (yDist * yDist)) / 2);
-             double velocity = amplitude * hzXdeg;
+             double amplitude = sqrt(((xDist * xDist) + (yDist * yDist))) * degreesPerPixel;
+             double time = time_cur - time_1back;
+             double velocity = amplitude / time;
 
              // Velocity
              smoothM.at(i,4) = velocity;
@@ -1143,7 +1145,7 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
         //calculate average and peak velocity
 
         double averageVelocity = 0;
-        int nSamples = 0;
+        int nVelocities = 0;
         
         double peakVelocity = -1;
         
@@ -1155,18 +1157,18 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
                 double xDiff = smoothM(j, 2) - smoothM(j+1, 2);
                 double yDiff = smoothM(j, 3) - smoothM(j+1, 3);
 
-                double sampleAmplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+                double sampleAmplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff)) * degreesPerPixel;
                 double sampleDuration = ((smoothM.at(j+1,0) - smoothM.at(j,0)));
-                double sampleVelocity = sampleAmplitude / sampleDuration;
+                double sampleVelocity = (sampleAmplitude / sampleDuration);
 
-                nSamples++;
+                nVelocities++;
                 peakVelocity = qMax(peakVelocity, sampleVelocity);
                 averageVelocity += sampleVelocity;
             }
         }
 
-        if (nSamples > 0) {
-            averageVelocity = averageVelocity / nSamples;
+        if (nVelocities > 0) {
+            averageVelocity = averageVelocity / nVelocities;
         } else {
             averageVelocity = -1;
         }
