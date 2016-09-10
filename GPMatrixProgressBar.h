@@ -6,8 +6,7 @@
 #include <QtWidgets/QDialog>
 #include <QProgressDialog>
 
-class GPMatrixProgressBar
-{
+class GPMatrixProgressBar {
 
 public:
     GPMatrixProgressBar(QWidget* parent);

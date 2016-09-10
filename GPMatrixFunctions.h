@@ -20,51 +20,49 @@ class GrafixProject;
 class GrafixSettingsLoader;
 
 
+namespace GPMatrixFunctions {
+
+    //Smoothing
+    void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
+    void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
 
 
-class GPMatrixFunctions
-{
-private:
-
-public:
-    GPMatrixFunctions();
-
-    static void interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar);
-    static void prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes);
-    static void excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes);
-    static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
-    static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
-
-    static void fast_LBF(Array_2D<double> &image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double> *filtered_X);
-
-    static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar);
-    static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
+    //Interpolating
+    void interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar);
 
 
-    //FicDurOperations
-    static double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
-    static double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);
-    static double calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel);
-    static void fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader);
-    static void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
+    //Fixations
+    void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar);
+    void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
+    void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
+    void fncCalculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation);
 
-    static void fncCalculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation);
 
-    static void debugPrintMatrix(mat &matrix);
-    static void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader);
+    //Saccades
+    void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader);
 
-    static void fncRemoveUndetectedValuesRough(mat *p_a);
-    static void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
-    static void fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);
-    static void fncMergeDisplacementThreshold(mat &roughM,  mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader);
-    static void fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
 
-private:
+    //Post-hoc
+    void fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);
+    void fncMergeDisplacementThreshold(mat &roughM,  mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader);
+    void fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
 
-    //Used by smoothRoughMatrix to smooth a section of raw matrix
-    static void smoothSegment(mat &cutM, mat &smoothedM, bool copy_eyes);
-    static mat smoothSegment(mat &cutM, bool copy_eyes, int expWidth, int expHeight);
-};
+
+    // Utilities
+    void prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes);
+    void excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes);
+    void debugPrintMatrix(mat &matrix);
+    void fncRemoveUndetectedValuesRough(mat *p_a);
+    void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
+
+
+    // Calculations
+    double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
+    double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);
+    double calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel);
+    void fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader);
+
+}
 
 
 

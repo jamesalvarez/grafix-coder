@@ -1,0 +1,24 @@
+--style=java
+
+# Indent using 4 spaces per indent. Don't use tab -s4
+--indent=spaces=4
+
+--indent-namespaces
+
+# Indent 'switch' blocks so that the 'case X:' statement are
+# indented in the switch block. -S
+--indent-switches
+
+# Indent multi-line preprocessor definitions ending with a backslash -w
+--indent-preprocessor
+
+
+# Insert space padding around operators. -p
+--pad-oper
+
+
+# Converts tabs into spaces in the non-indentation part of the line -c
+--convert-tabs
+
+# Do not retain a backup of the origional file
+--suffix=none

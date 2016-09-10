@@ -146,3 +146,6 @@ win64: DEPENDPATH += $$PWD/../armadillo-7.200.2/examples/lib_win64
 win64: LIBS += -L$$PWD/../armadillo-7.200.2/examples/lib_win64/ -lblas_win64_MT
 
 win64: LIBS += -L$$PWD/../armadillo-7.200.2/examples/lib_win64/ -llapack_win64_MT
+
+DISTFILES += \
+    Style.astylerc
