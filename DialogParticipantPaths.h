@@ -24,9 +24,6 @@ private:
     GrafixParticipant *_participant;
     void accept();
 
-    int fncGetMatrixColsFromFile(QString fullpath);
-    double string_to_double_fast(const unsigned char *p, unsigned int &move_on);
-
 public slots:
 
     void fncPress_buttonOpenRough();

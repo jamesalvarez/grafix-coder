@@ -53,7 +53,7 @@ void DialogSmoothXY::fncPress_bAccept(){
                                               this->p_smoothM,
                                               &gpProgress);
 
-    if (GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
+    if (GPMatrixFiles::saveFileSafe((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
         _participant->SetParticipantSetting(Consts::PSETTING_SMOOTHED_DATE, QDateTime::currentDateTime());
     else
     {

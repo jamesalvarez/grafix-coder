@@ -56,8 +56,8 @@ void DialogEstimateFixations::fncPress_bAccept(){
                                          settingsLoader,
                                          gpProgress);
 
-    if (GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)) &
-        GPMatrixFunctions::saveFile((*p_autoFixAllM), _participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL)))
+    if (GPMatrixFiles::saveFileSafe((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)) &
+        GPMatrixFiles::saveFileSafe((*p_autoFixAllM), _participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL)))
     {
 
         _participant->SetParticipantSetting(Consts::PSETTING_ESTIMATED_FIX_DATE, QDateTime::currentDateTime());

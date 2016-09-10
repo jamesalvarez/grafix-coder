@@ -16,9 +16,9 @@ DialogPlot::~DialogPlot()
 void DialogPlot::loadSpikeData(const GrafixParticipant *p)
 {
     p_participant = p;
-    GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    GPMatrixFiles::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     mat _dataM;
-    GPMatrixFunctions::readFileSafe(_dataM,p_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe(_dataM,p_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
 
     int n_fixations = (int)_fixAllM.n_rows;
 
@@ -78,7 +78,7 @@ void DialogPlot::loadSpikeData(const GrafixParticipant *p)
 void DialogPlot::loadRMSData(const GrafixParticipant *p)
 {
     p_participant = p;
-    GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    GPMatrixFiles::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
     int n_fixations = (int)_fixAllM.n_rows;
 
@@ -109,7 +109,7 @@ void DialogPlot::loadRMSData(const GrafixParticipant *p)
 void DialogPlot::loadDurData(const GrafixParticipant *p)
 {
     p_participant = p;
-    GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    GPMatrixFiles::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
     int n_fixations = (int)_fixAllM.n_rows;
 
@@ -153,7 +153,7 @@ void DialogPlot::loadDurData(const GrafixParticipant *p)
 void DialogPlot::loadVelData(const GrafixParticipant *p)
 {
     p_participant = p;
-    GPMatrixFunctions::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe(_fixAllM,p_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
 
     uword n_fixations = _fixAllM.n_rows;
 

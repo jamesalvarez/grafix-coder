@@ -6,12 +6,12 @@
 #include "GPGeneralStaticLibrary.h"
 #include "GrafixSettingsLoader.h"
 #include "GPMatrixProgressBar.h"
+#include "GPMatrixFiles.h"
 
 #include "armadillo"
 
 #define NO_XML
 #include "TRUNCATED_KERNEL_BF/include/fast_lbf.h"
-#include "Trilateral/Trilateral2003.h"
 
 using namespace arma;
 
@@ -25,33 +25,21 @@ class GrafixSettingsLoader;
 class GPMatrixFunctions
 {
 private:
-    static bool             _want_to_close;
+
 public:
     GPMatrixFunctions();
 
     static void interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar);
     static void prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes);
     static void excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes);
-    static void smoothRoughMatrix(const mat &RoughM, mat &SmoothM, QString settingsPath, GPMatrixProgressBar &gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
     static void smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM);
 
     static void fast_LBF(Array_2D<double> &image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double> *filtered_X);
 
-    //These are a bit too slow at the moment but could be rewritten
-    static void smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM, GPMatrixProgressBar *gpProgressBar);
-    static void smoothRoughMatrixTrilateral(const mat &RoughM, GrafixSettingsLoader &settingsLoader, mat *SmoothM);
-
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar);
     static void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
 
-    //file operations
-    static bool saveFile(mat &matrix, QString fileName, QString headerString = "");
-    static bool readFile(mat &matrix, QString fileName);
-    static bool saveFileSafe(mat &matrix, QString fileName, QString headerString = "");
-    static bool readFileSafe(mat &matrix, QString fileName);
-    static int  fncGetMatrixColsFromFile(QString fullpath);
-    static bool exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QString filename, GrafixSettingsLoader &settingsLoader);
 
     //FicDurOperations
     static double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
@@ -72,6 +60,7 @@ public:
     static void fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
 
 private:
+
     //Used by smoothRoughMatrix to smooth a section of raw matrix
     static void smoothSegment(mat &cutM, mat &smoothedM, bool copy_eyes);
     static mat smoothSegment(mat &cutM, bool copy_eyes, int expWidth, int expHeight);

@@ -50,7 +50,7 @@ void DialogInterpolation::fncPress_bAccept(){
 
     }
 
-    if (!p_smoothM->is_empty() && GPMatrixFunctions::saveFile((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
+    if (!p_smoothM->is_empty() && GPMatrixFiles::saveFileSafe((*p_smoothM), _participant->GetMatrixPath(Consts::MATRIX_SMOOTH)))
         _participant->SetParticipantSetting(Consts::PSETTING_INTERPOLATED_DATE,QDateTime::currentDateTime());
     else
     {

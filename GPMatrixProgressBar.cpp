@@ -1,8 +1,5 @@
 #include "GPMatrixProgressBar.h"
 
-GPMatrixFunctions::GPMatrixFunctions()
-{
-}
 
 GPMatrixProgressBar::GPMatrixProgressBar(QWidget* parent)
 {

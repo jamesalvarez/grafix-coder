@@ -129,7 +129,7 @@ void DialogExport::fncPress_bExport() {
         filename += ".csv";
     }
 
-    GPMatrixFunctions::exportFile(roughM, smoothM, fixAllM, filename, settingsLoader);
+    GPMatrixFiles::exportFile(roughM, smoothM, fixAllM, filename, settingsLoader);
 
     this->close();
 }

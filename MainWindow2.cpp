@@ -320,7 +320,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
 
         // Save file
         if (!fixAllM.is_empty() && p_active_participant != NULL)
-            GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+            GPMatrixFiles::saveFileSafe(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
         // Paint fixations again
         paintFixations();
@@ -604,15 +604,15 @@ void MainWindow2::fncManipulateFix(int from, int to)
 bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant)
 {
     if (_files_stop_flag) return false;
-    GPMatrixFunctions::readFileSafe(roughM,participant->GetMatrixPath(Consts::MATRIX_ROUGH));
+    GPMatrixFiles::readFileSafe(roughM,participant->GetMatrixPath(Consts::MATRIX_ROUGH));
     if (_files_stop_flag) return false;
-    GPMatrixFunctions::readFileSafe(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
     if (_files_stop_flag) return false;
-    GPMatrixFunctions::readFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    GPMatrixFiles::readFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     if (_files_stop_flag) return false;
-    GPMatrixFunctions::readFileSafe(autoFixAllM,participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+    GPMatrixFiles::readFileSafe(autoFixAllM,participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
     if (_files_stop_flag) return false;
-    GPMatrixFunctions::readFileSafe(experimentalSegmentsM,participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
+    GPMatrixFiles::readFileSafe(experimentalSegmentsM,participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
     if (_files_stop_flag) return false;
 
     // If fixAllM has only 6 columns, we add another one for the smooth pursuit.
@@ -630,11 +630,11 @@ bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant)
 
 void MainWindow2::fncSaveAllFiles(GrafixParticipant *participant)
 {
-    if (!roughM.is_empty()) GPMatrixFunctions::saveFile(roughM,participant->GetMatrixPath(Consts::MATRIX_ROUGH));
-    if (!smoothM.is_empty()) GPMatrixFunctions::saveFile(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
-    if (!fixAllM.is_empty()) GPMatrixFunctions::saveFile(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
-    if (!autoFixAllM.is_empty()) GPMatrixFunctions::saveFile(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
-    if (!experimentalSegmentsM.is_empty()) GPMatrixFunctions::saveFile(experimentalSegmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
+    if (!roughM.is_empty()) GPMatrixFiles::saveFileSafe(roughM,participant->GetMatrixPath(Consts::MATRIX_ROUGH));
+    if (!smoothM.is_empty()) GPMatrixFiles::saveFileSafe(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    if (!fixAllM.is_empty()) GPMatrixFiles::saveFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    if (!autoFixAllM.is_empty()) GPMatrixFiles::saveFileSafe(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+    if (!experimentalSegmentsM.is_empty()) GPMatrixFiles::saveFileSafe(experimentalSegmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
 }
 
 
@@ -1182,7 +1182,7 @@ void MainWindow2::fncPress_bInterpolate()
     w.exec();
 
     //reload incase batch processed
-    GPMatrixFunctions::readFileSafe((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
 
     paintSmoothData();
     paintVelocity();
@@ -1196,7 +1196,7 @@ void MainWindow2::fncPress_bSmooth()
     win.exec();
 
     //reload incase batch processed
-    GPMatrixFunctions::readFileSafe((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
 
     paintSmoothData();
     paintVelocity();
@@ -1210,16 +1210,16 @@ void MainWindow2::fncPress_bEstimateFixations()
     efd.exec();
 
     //reload incase batch processed
-    GPMatrixFunctions::readFileSafe((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
-    GPMatrixFunctions::readFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
-    GPMatrixFunctions::readFileSafe((*p_autoFixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+    GPMatrixFiles::readFileSafe((*p_smoothM), p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+    GPMatrixFiles::readFileSafe((*p_autoFixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
 
     if (!p_autoFixAllM->is_empty())
     {
         fixAllM = autoFixAllM;
         GPMatrixFunctions::fncReturnFixationinSegments( p_fixAllM, p_experimentalSegmentsM);
-        if (!p_autoFixAllM->is_empty()) GPMatrixFunctions::saveFileSafe((*p_autoFixAllM),p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
-        if (!p_fixAllM->is_empty()) GPMatrixFunctions::saveFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+        if (!p_autoFixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_autoFixAllM),p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+        if (!p_fixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     }
 
     paintAll();
@@ -1349,7 +1349,7 @@ void MainWindow2::fncPress_bExecuteManual(int from, int to)
 
     // Save file
     if (!fixAllM.is_empty() && p_active_participant != NULL)
-        GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+        GPMatrixFiles::saveFileSafe(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
     // Paint fixations again
     paintFixations();
@@ -1481,7 +1481,7 @@ void MainWindow2::fncPress_subMenuRecalculateFixations()
     GPFixationOperations::fncRecalculateFixations(roughM, fixAllM, _expWidth, _expHeight, _degPerPixel, _copyEyes);
 
     if (!fixAllM.is_empty())
-        GPMatrixFunctions::saveFile(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
+        GPMatrixFiles::saveFileSafe(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
     this->paintFixations(); //redraw list
 }
@@ -1496,7 +1496,7 @@ void MainWindow2::fncPress_subMenuCalculateSmooth()
     w.exec();
 
     //load smooth data in case it was changed during batch processing
-    GPMatrixFunctions::readFileSafe(smoothM, p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
+    GPMatrixFiles::readFileSafe(smoothM, p_active_participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
 
     paintSmoothData();
     paintVelocity();

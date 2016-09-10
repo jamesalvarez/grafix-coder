@@ -198,7 +198,7 @@ QString GrafixParticipant::OpenAndCopyCSVFile(Consts::MATRIX_TYPE type, QWidget*
         {
         case Consts::MATRIX_ROUGH:
             {
-                int n_cols = GPMatrixFunctions::fncGetMatrixColsFromFile(fileName);
+                int n_cols = GPMatrixFiles::getFileColumnCount(fileName);
                 if (n_cols == 6 || n_cols == 8 )
                     file_is_ok = true;
                 else
