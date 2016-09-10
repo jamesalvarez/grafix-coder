@@ -6,7 +6,7 @@
 #include <QList>
 #include <QVariant>
 
-
+// Indexes for correct columns in fixation matrix
 #define FIXCOL_START 0
 #define FIXCOL_END 1
 #define FIXCOL_DURATION 2
@@ -15,6 +15,16 @@
 #define FIXCOL_RMS 5
 #define FIXCOL_SMOOTH_PURSUIT 6
 #define FIXCOL_PUPIL 7
+
+// Indexes for correct columns in saccade matrix
+#define SACCOL_START 0
+#define SACCOL_END 1
+#define SACCOL_DURATION 2
+#define SACCOL_DISTANCE 3
+#define SACCOL_VEL_AVG 4
+#define SACCOL_VEL_PEAK 5
+
+
 
 typedef struct config {
     QString first;

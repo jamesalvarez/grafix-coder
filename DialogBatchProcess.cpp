@@ -127,7 +127,7 @@ void DialogBatchProcess::accept()
                             //if there is a segments files only save the segment fixations
                             if (GPMatrixFiles::readFileSafe(SegmentsM, p->GetMatrixPath(Consts::MATRIX_SEGMENTS)))
                             {
-                                GPMatrixFunctions::fncReturnFixationinSegments( &AutoFixAllM, &SegmentsM);
+                                GPMatrixFunctions::returnFixationinSegments( &AutoFixAllM, &SegmentsM);
                             }
                             GPMatrixFiles::saveFileSafe(AutoFixAllM, p->GetMatrixPath(Consts::MATRIX_FIXALL));
                             p->SetParticipantSetting(Consts::PSETTING_ESTIMATED_FIX_DATE, QDateTime::currentDateTime());

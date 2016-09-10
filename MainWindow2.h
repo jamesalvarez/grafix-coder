@@ -81,7 +81,6 @@ private:
     uword _displayStartIndex;
     uword _displayStopIndex;
     double _displayIncrement;
-    int _previousFragment;
     int _currentFragment;
     int _nFragments;
     double _degPerPixel;

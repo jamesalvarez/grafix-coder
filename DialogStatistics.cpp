@@ -18,8 +18,8 @@ void DialogStatistics::loadData(mat* p_fixAllM_in, mat* p_autoFixAllM_in, mat* p
     autoFixAllM = (*p_autoFixAllM_in);
 
     // Remove fixations that are not in the segments
-    GPMatrixFunctions::fncReturnFixationinSegments( &fixAllM, p_experimentalSegmentsM);
-    GPMatrixFunctions::fncReturnFixationinSegments( &autoFixAllM, p_experimentalSegmentsM);;
+    GPMatrixFunctions::returnFixationinSegments( &fixAllM, p_experimentalSegmentsM);
+    GPMatrixFunctions::returnFixationinSegments( &autoFixAllM, p_experimentalSegmentsM);;
 
     computeStatistics();
 

@@ -2,6 +2,8 @@
 
 #include "GPFixationOperations.h"
 
+using namespace GPFixationOperations;
+
 void GPFixationOperations::DeleteRow(mat *matrix, uword index) {
     if(matrix->n_rows > 1) {
         matrix->shed_row(index);
@@ -11,7 +13,7 @@ void GPFixationOperations::DeleteRow(mat *matrix, uword index) {
 }
 
 void GPFixationOperations::fncEditFixation(const mat &roughM, mat &fix_row, int from, int to, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
-    GPMatrixFunctions::fncCalculateFixation(roughM, from, to, copy_eyes, expWidth, expHeight, degPerPixel, fix_row);
+    GPMatrixFunctions::calculateFixation(roughM, from, to, copy_eyes, expWidth, expHeight, degPerPixel, fix_row);
 }
 
 void GPFixationOperations::fncResetFixation(mat &fixAllM, const mat &autoAllM, const mat &roughM, int from, int to, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
@@ -161,7 +163,7 @@ mat GPFixationOperations::fncCreateFixation(mat fixAllM, mat roughM, int hz, int
         } else { // Modify the matrix
             // Create row: newRow = [firstFix, lastFix, duration, averageX, averageY, variance, smooth pursuit, PupilDilation];
             mat fixation;
-            GPMatrixFunctions::fncCalculateFixation(roughM, from, to, copy_eyes, expWidth, expHeight, degPerPixel, fixation);
+            GPMatrixFunctions::calculateFixation(roughM, from, to, copy_eyes, expWidth, expHeight, degPerPixel, fixation);
 
             // Insert row.
             if (fixAllM.n_rows == 0) {
@@ -319,7 +321,7 @@ mat GPFixationOperations::fncMergeFixations(mat fixAllM, mat roughM, int hz, int
             stopIndex =  fixAllM(lastElem - 1, 1);
 
             mat fixation;
-            GPMatrixFunctions::fncCalculateFixation(roughM, startIndex, stopIndex, copy_eyes, expWidth, expHeight, degPerPixel, fixation);
+            GPMatrixFunctions::calculateFixation(roughM, startIndex, stopIndex, copy_eyes, expWidth, expHeight, degPerPixel, fixation);
 
 
             if (firstElem == -1 && lastElem == (int)fixAllM.n_rows) {
@@ -358,7 +360,7 @@ void GPFixationOperations::fncRecalculateFixations(const mat &roughM, mat &fixAl
         int startIndex = fixAllM(i, FIXCOL_START);
         int endIndex = fixAllM(i, FIXCOL_END);
         mat fixation;
-        GPMatrixFunctions::fncCalculateFixation(roughM, startIndex, endIndex, copy_eyes, expWidth, expHeight, degPerPixel, fixation);
+        GPMatrixFunctions::calculateFixation(roughM, startIndex, endIndex, copy_eyes, expWidth, expHeight, degPerPixel, fixation);
         fixAllM.row(i) = fixation;
     }
 }

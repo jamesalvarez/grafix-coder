@@ -10,8 +10,7 @@
 
 #include "armadillo"
 
-#define NO_XML
-#include "TRUNCATED_KERNEL_BF/include/fast_lbf.h"
+
 
 using namespace arma;
 
@@ -34,33 +33,25 @@ namespace GPMatrixFunctions {
     //Fixations
     void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar);
     void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
-    void fncCalculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
-    void fncCalculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation);
+    void calculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
+    void calculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation);
 
 
     //Saccades
-    void fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader);
+    void calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM);
 
 
     //Post-hoc
-    void fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);
-    void fncMergeDisplacementThreshold(mat &roughM,  mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader);
-    void fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
+    void posthocRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur);
+    void posthocMergeDisplacementThreshold(mat &roughM,  mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader);
+    void posthocRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance);
 
 
     // Utilities
     void prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes);
     void excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes);
+    void returnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
     void debugPrintMatrix(mat &matrix);
-    void fncRemoveUndetectedValuesRough(mat *p_a);
-    void fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM);
-
-
-    // Calculations
-    double fncCalculateEuclideanDistanceSmooth(mat *p_aux);
-    double fncCalculateRMSRough(mat &p_aux, int expWidth, int expHeight, double degree_per_pixel, bool copy_eyes);
-    double calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel);
-    void fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader);
 
 }
 

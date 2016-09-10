@@ -1,4 +1,6 @@
 #include "GPMatrixFunctions.h"
+#define NO_XML
+#include "TRUNCATED_KERNEL_BF/include/fast_lbf.h"
 
 using namespace GPMatrixFunctions;
 
@@ -6,142 +8,14 @@ namespace GPMatrixFunctions {
     void smoothSegment(mat &cutM, mat &smoothedM, bool copy_eyes);
     mat smoothSegment(mat &cutM, bool copy_eyes, int expWidth, int expHeight);
     void fast_LBF(Array_2D<double> &image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double> *filtered_X);
+    double calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel);
+    void calculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader);
 }
 
-void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar) {
-    gpProgressBar.beginProcessing("Estimating Fixations", 100);
-    estimateFixations(RoughM, SmoothM, AutoFixAllM, settingsLoader);
-    gpProgressBar.endProcessing();
-}
 
-/*
- * Main function called by UI to estimate fixations automatically (applying post-hoc corrections).
- */
-void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader) {
-    if (SmoothM.is_empty()) return;// If the data is not smoothed we don't allow to estimate fixations.
-
-    qDebug() << "Calculating velocity...";
-    GPMatrixFunctions::fncCalculateVelocity(SmoothM, settingsLoader);
-
-    // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM
-    qDebug() << "Calculating fixations...";
-    GPMatrixFunctions::fncCalculateFixations(AutoFixAllM, RoughM, SmoothM, settingsLoader);
-
-    //we cannot work with less than one fixation
-    if(AutoFixAllM.n_rows < 1) return;
-
-
-    // **** POST-HOC VALIDATION **** (The order is important!)
-
-    // Add columns for the flags in the smooth data if needed
-    if (SmoothM.n_cols < 10) {
-        mat aux = zeros(SmoothM.n_rows, 10);
-        aux.cols(0, 3) = SmoothM.cols(0, 3);
-        SmoothM = aux;
-    } else {
-        SmoothM.cols(7, 9).fill(0); // Restart
-    }
-
-    //TODO Check if fixations found or next part crasheds
-
-    bool cb_displacement = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool();
-    bool cb_velocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG).toBool();
-    bool cb_minFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG).toBool();
-    double sliderVelocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL).toDouble();
-    double sliderMinFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toDouble();
-
-    // Merge all fixations with a displacement lower than the displacement threshold
-    if (cb_displacement) {
-        debugPrintMatrix(AutoFixAllM);
-        qDebug() << "Merging...";
-        GPMatrixFunctions::fncMergeDisplacementThreshold(RoughM, SmoothM, AutoFixAllM,  settingsLoader);
-        debugPrintMatrix(AutoFixAllM);
-    }
-
-
-    // Remove all fixations below the minimun variance
-    if (cb_velocityVariance) {
-        qDebug() << "Removing high variance...";
-        GPMatrixFunctions::fncRemoveHighVarianceFixations( &SmoothM,  &AutoFixAllM, sliderVelocityVariance);
-    }
-
-
-    // Remove all the fixations below the minimun fixation
-    if (cb_minFixation) {
-        qDebug() << "Removing minimum length...";
-        GPMatrixFunctions::fncRemoveMinFixations(&AutoFixAllM, &SmoothM, sliderMinFixation);
-    }
-
-
-    //debugPrintMatrix(AutoFixAllM);
-}
-
-/*
- * Marks all out of range and one eye missing data as missing + combines eyes
- */
-void GPMatrixFunctions::prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes) {
-
-    //copy time stamp
-    preparedRoughM = zeros(RoughM.n_rows, 3);
-    preparedRoughM.col(0) = RoughM.col(0);
-
-    if(RoughM.is_empty()) {
-        return;
-    }
-
-    for (uword i = 0; i < RoughM.n_rows; ++i) {
-        bool leftXMissing = (RoughM(i, 2) < 0 || RoughM(i, 2) > 1);
-        bool leftYMissing = (RoughM(i, 3) < 0 || RoughM(i, 3) > 1);
-        bool rightXMissing = (RoughM(i, 4) < 0 || RoughM(i, 4) > 1);
-        bool rightYMissing = (RoughM(i, 5) < 0 || RoughM(i, 5) > 1);
-
-        bool leftMissing = leftXMissing || leftYMissing;
-        bool rightMissing = rightXMissing || rightYMissing;
-
-        bool missing = copy_eyes ? (leftMissing && rightMissing) : (leftMissing || rightMissing);
-
-        // make everything missing if it is
-        if (missing) {
-            preparedRoughM(i, 1) = -1;
-            preparedRoughM(i, 2) = -1;
-        } else {
-            preparedRoughM(i, 1) = (RoughM(i, 2) + RoughM(i, 4)) / 2;
-            preparedRoughM(i, 2) = (RoughM(i, 3) + RoughM(i, 5)) / 2;
-
-            //copy eyes if necessary
-            if (copy_eyes) {
-                if (leftMissing && !rightMissing) {
-                    preparedRoughM(i, 1) = RoughM(i, 4);
-                    preparedRoughM(i, 2) = RoughM(i, 5);
-                } else if (rightMissing && !leftMissing) {
-                    preparedRoughM(i, 1) = RoughM(i, 2);
-                    preparedRoughM(i, 2) = RoughM(i, 3);
-                }
-            }
-        }
-    }
-}
-
-/*
- * Returns only non missing rows of rough data.  (Also prepares the matrix via prepareRoughMatrix)
- */
-void GPMatrixFunctions::excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes) {
-
-    cutRoughM.reset();
-
-    mat preparedRoughMatrix;
-
-    prepareRoughMatrix(preparedRoughMatrix, RoughM, copy_eyes);
-
-    for (uword i = 0; i < RoughM.n_rows; ++i) {
-        bool missing = (preparedRoughMatrix(i, 1) == -1 || preparedRoughMatrix(i, 2) == -1);
-        if (!missing) {
-            cutRoughM = join_cols(cutRoughM, preparedRoughMatrix.row(i));
-        }
-    }
-
-}
-
+/***************************
+ *      SMOOTHING
+ ***************************/
 
 void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const QString path, const GrafixConfiguration &configuration, mat *SmoothM, GPMatrixProgressBar *gpProgressBar) {
     gpProgressBar->beginProcessing("Smoothing Data...", 50);
@@ -269,184 +143,7 @@ void GPMatrixFunctions::smoothRoughMatrixFBF(const mat &RoughM, const QString pa
         }
     }
 
-    fncCalculateVelocity(*SmoothM, settings);
-}
-
-
-
-void GPMatrixFunctions::fast_LBF(Array_2D<double>& image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double>* filtered_X) {
-    typedef Array_2D<double> image_type;
-
-    try {
-        Image_filter::fast_LBF(image_X, image_X, sigma_s, Xsigma_r, b, filtered_X, filtered_X);
-    } catch(const std::runtime_error& re) {
-        // speciffic handling for runtime_error
-        DialogGrafixError::LogNewError(0, "Runtime error: " + QString(re.what()));;
-    } catch(const std::exception& ex) {
-        // speciffic handling for all exceptions extending std::exception, except
-        // std::runtime_error which is handled explicitly
-        DialogGrafixError::LogNewError(0, "Error occurred: " + QString(ex.what()) +
-                                       " with array size: " + QString::number(image_X.x_size()) +
-                                       " splitting file and retrying...");
-        //split file, process and patch with seam (that is double sigma s length)
-        int mid_point = image_X.x_size() / 2;
-
-        int x1_size = mid_point;
-        int x2_size = image_X.x_size() - mid_point;
-        int seam_size = sigma_s * 2;
-
-        image_type image_X_1(x1_size, 1);
-        image_type image_X_2(x2_size, 1);
-        image_type image_X_seam(seam_size, 1);
-
-        image_type filt_X_1(x1_size, 1);
-        image_type filt_X_2(x2_size, 1);
-        image_type filt_X_seam(seam_size, 1);
-
-        for (int i = 0; i < x1_size; ++i) {
-            image_X_1(i, 0) = image_X(i, 0);
-        }
-        for (int i = 0; i < x2_size; ++i) {
-            image_X_2(i, 0) = image_X(mid_point + i, 0);
-        }
-        for (int i = 0; i < seam_size; ++i) {
-            image_X_seam(i, 0) = image_X(mid_point - (seam_size / 2), 0);
-        }
-
-        fast_LBF(image_X_1, sigma_s, Xsigma_r, false, &filt_X_1);
-        fast_LBF(image_X_2, sigma_s, Xsigma_r, false, &filt_X_2);
-        fast_LBF(image_X_seam, sigma_s, Xsigma_r, false, &filt_X_seam);
-
-        //now to put back together again
-        for (int i = 0; i < x1_size; ++i) {
-            (*filtered_X)(i, 0) = filt_X_1(i, 0);
-        }
-        for (int i = 0; i < x2_size; ++i) {
-            (*filtered_X)(mid_point + i, 0) = filt_X_2(i, 0);
-        }
-        for (int i = 0; i < seam_size; ++i) {
-            (*filtered_X)(mid_point - (seam_size / 2), 0) = filt_X_seam(i, 0);
-        }
-
-
-    } catch(...) {
-        DialogGrafixError::LogNewError(0, "Unknown Error: Parameters - too small?");
-    }
-}
-
-void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar) {
-    // Here we interpolate the smoothed data and create an extra column
-    // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
-
-    qDebug() << "Interpolating...";
-
-    if (SmoothM.is_empty())
-        return;
-
-    gpProgressBar.beginProcessing("Interpolating Data", 100);
-
-
-    double hz                   = settingsLoader.LoadSetting(Consts::SETTING_HZ).toDouble();
-    double interpolationLatency = settingsLoader.LoadSetting(Consts::SETTING_INTERP_LATENCY).toDouble();
-    double maxDisplacementInterpolation = settingsLoader.LoadSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
-    int    maxSamplesInterpolation            = interpolationLatency * hz / 1000;
-    double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-
-    qDebug() << "Samples threshold: " << maxSamplesInterpolation << " Displacement: " << maxDisplacementInterpolation;
-
-    // Reset previous interpolation results
-    if (SmoothM.n_cols > 7) {
-        for(uword i = 0; i < SmoothM.n_rows; ++i) {
-            if (SmoothM(i, 6) == 1) {
-                SmoothM(i, 2) = -1;
-                SmoothM(i, 3) = -1;
-            }
-        }
-    }
-
-
-    // Remove previous interpolation data and create the new columns
-    mat aux = zeros(SmoothM.n_rows, 11);
-    aux.cols(0, 3) = SmoothM.cols(0, 3);
-    SmoothM = aux;
-
-    // Iterate through the samples, detecting missing points.
-    for(uword i = 0; i < SmoothM.n_rows; ++i) {
-
-        // Sample is not missing
-        if ( SmoothM(i, 2) >= 0 && SmoothM(i, 3) >= 0) continue;
-
-
-
-        // Skip if first sample is missing
-        if (i == 0) continue;
-
-        // Find the previous non-missing data
-        int indexPrevData = -1;
-        for (int j = i - 1; j > 0 ; --j) {
-            if ( SmoothM(j, 2) >= 0 && SmoothM(j, 3) >= 0) {
-                indexPrevData = j;
-                break;
-            }
-        }
-
-
-
-        // If no previous data is detected, then cannot interpolate
-        if (indexPrevData == -1) continue;
-
-        qDebug() << endl << "sample missing at: " << i;
-        qDebug() << " indexPrevData: " << indexPrevData;
-
-        // Find the point where the data is back:
-        int indexDataBack = -1;
-        for (uword j = i; j < SmoothM.n_rows; ++j) {
-            if (SmoothM(j, 2) > 0 && SmoothM(j, 3) > 0) {
-                indexDataBack = j ;
-                break;
-            }
-        }
-
-        qDebug() << " indexDataBack: " << indexDataBack;
-
-        // If the data doesn't come back then cannot interpolate
-        if (indexDataBack == -1) break;
-
-        int gapLength = indexDataBack - indexPrevData;
-
-        // Skip main search to this point
-        i = indexDataBack;
-
-        if (gapLength > maxSamplesInterpolation) {
-            qDebug() << " gap length: " << gapLength << " cannot interpolate as over samples threshold ";
-            continue;
-        }
-
-        //Check the displacement distance
-        double xDiff = SmoothM(indexDataBack, 2) - SmoothM(indexPrevData, 2);
-        double yDiff = SmoothM(indexDataBack, 3) - SmoothM(indexPrevData, 3);
-        double displacement = degreesPerPixel * sqrt((xDiff * xDiff) + (yDiff * yDiff));
-
-        if (displacement > maxDisplacementInterpolation) {
-            qDebug() << " displacement: " << displacement << " cannot interpolate: over distance threshold ";
-            continue;
-        }
-
-        qDebug() << "interpolating...";
-
-        // Jumps in signal for each sample to interpolate linearly
-        double xInterval = xDiff / gapLength;
-        double yInterval = yDiff / gapLength;
-
-        for(int j = indexPrevData + 1; j < indexDataBack; j++) {
-            SmoothM(j, 2) = SmoothM(j - 1, 2) + xInterval;
-            SmoothM(j, 3) = SmoothM(j - 1, 3) + yInterval;
-            SmoothM(j, 6) = 1;
-        }
-
-
-    }
-    gpProgressBar.endProcessing();
+    calculateVelocity(*SmoothM, settings);
 }
 
 // Smoothing algorithm
@@ -617,168 +314,258 @@ mat GPMatrixFunctions::smoothSegment(mat &cutM, bool copy_eyes, int expWidth, in
 
 }
 
+void GPMatrixFunctions::fast_LBF(Array_2D<double>& image_X, double sigma_s, double Xsigma_r, bool b, Array_2D<double>* filtered_X) {
+    typedef Array_2D<double> image_type;
 
-// Root mean square (RMS)
-// Will treat missing data as if its not there
-double GPMatrixFunctions::fncCalculateRMSRough(mat &RoughM, int expWidth, int expHeight, double degPerPixel, bool copy_eyes) {
+    try {
+        Image_filter::fast_LBF(image_X, image_X, sigma_s, Xsigma_r, b, filtered_X, filtered_X);
+    } catch(const std::runtime_error& re) {
+        // speciffic handling for runtime_error
+        DialogGrafixError::LogNewError(0, "Runtime error: " + QString(re.what()));;
+    } catch(const std::exception& ex) {
+        // speciffic handling for all exceptions extending std::exception, except
+        // std::runtime_error which is handled explicitly
+        DialogGrafixError::LogNewError(0, "Error occurred: " + QString(ex.what()) +
+                                       " with array size: " + QString::number(image_X.x_size()) +
+                                       " splitting file and retrying...");
+        //split file, process and patch with seam (that is double sigma s length)
+        int mid_point = image_X.x_size() / 2;
 
-    if (RoughM.n_rows < 2 )
-        return -1;
+        int x1_size = mid_point;
+        int x2_size = image_X.x_size() - mid_point;
+        int seam_size = sigma_s * 2;
 
-    mat preparedRoughM;
-    prepareRoughMatrix(preparedRoughM, RoughM, copy_eyes);
-    return calculateRMSRaw(preparedRoughM, expWidth, expHeight, degPerPixel);
-}
+        image_type image_X_1(x1_size, 1);
+        image_type image_X_2(x2_size, 1);
+        image_type image_X_seam(seam_size, 1);
 
-/*
- * Calculate RMS, but rough matrix must have all missing data removed
- */
-double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel) {
-    debugPrintMatrix(preparedRoughM);
+        image_type filt_X_1(x1_size, 1);
+        image_type filt_X_2(x2_size, 1);
+        image_type filt_X_seam(seam_size, 1);
 
-    if (preparedRoughM.n_rows < 2 )
-        return -1;
-    // Calculate mean euclidean distance.
-    mat squaredDistances = zeros(preparedRoughM.n_rows - 1);
-
-    double x1, y1, x2, y2, xDiff, yDiff;
-
-    double xMultiplier = expWidth * degPerPixel;
-    double yMultiplier = expHeight * degPerPixel;
-
-    x1 = preparedRoughM.at(0, 1) * xMultiplier;
-    y1 = preparedRoughM.at(0, 2) * yMultiplier;
-
-
-
-    for (uword j = 1; j < preparedRoughM.n_rows; ++j) {
-        x2 = preparedRoughM.at(j, 1) * xMultiplier;
-        y2 = preparedRoughM.at(j, 2) * yMultiplier;
-
-        xDiff = x1 - x2;
-        yDiff = y1 - y2;
-
-        double distanceSquared = ((xDiff * xDiff) + (yDiff * yDiff)); //squared and rooted cancel eachother out;
-        squaredDistances(j - 1) = distanceSquared;
-
-        x1 = x2;
-        y1 = y2;
-    }
-
-    debugPrintMatrix(squaredDistances);
-
-    double rms = sqrt(mean(mean(squaredDistances)));
-
-    //qDebug() << " rms " << rms;
-    return rms;
-}
-/*
- * Returns the mean euclidean distance from average of all points in passed array
- */
-double GPMatrixFunctions::fncCalculateEuclideanDistanceSmooth(mat *p_a) {
-
-    double xAvg = mean(p_a->col(0)); // x
-    double yAvg = mean(p_a->col(1)); // y
-
-    // Calculate mean euclidean distance.
-    mat b = zeros(p_a->n_rows);
-    for (uword j = 0; j < p_a->n_rows ; ++j) {
-        double xDiffFromAvg = p_a->at(j, 0) - xAvg;
-        double yDiffFromAvg = p_a->at(j, 1) - yAvg;
-        b(j) = sqrt(((xDiffFromAvg * xDiffFromAvg) + ( yDiffFromAvg * yDiffFromAvg)) / 2);
-    }
-    return (mean(mean(b)));
-}
-
-void GPMatrixFunctions::fncRemoveUndetectedValuesRough(mat *p_a) { // Removes the rows where any of the eyes were detected
-    // Remove the rows where there was no valid data.
-    // When there are no values for one eye, copy the values from the other eye.
-    // Calculate X and Y initial averages. Exclude when the eyes were not detected
-    for (uword i = 0; i < p_a->n_rows; ++i) { // Eyes were not detected
-        if (p_a->at(i, 0) != -1 && p_a->at(i, 2) == -1 ) { // Left eyes were detected but not right
-            p_a->at(i, 2) = p_a->at(i, 0);
-            p_a->at(i, 3) = p_a->at(i, 1);
-        } else if(p_a->at(i, 0) == -1 && p_a->at(i, 2) != -1) { // Right eyes were detected, not left
-            p_a->at(i, 0) = p_a->at(i, 2);
-            p_a->at(i, 1) = p_a->at(i, 3);
+        for (int i = 0; i < x1_size; ++i) {
+            image_X_1(i, 0) = image_X(i, 0);
         }
-    }
+        for (int i = 0; i < x2_size; ++i) {
+            image_X_2(i, 0) = image_X(mid_point + i, 0);
+        }
+        for (int i = 0; i < seam_size; ++i) {
+            image_X_seam(i, 0) = image_X(mid_point - (seam_size / 2), 0);
+        }
 
-    // Only use the points where eyes were detected:
-    uvec fixIndex =  arma::find(p_a->col(0) != -1);
-    if (!fixIndex.is_empty()) {
-        (*p_a) = p_a->rows(fixIndex);
-    }
+        fast_LBF(image_X_1, sigma_s, Xsigma_r, false, &filt_X_1);
+        fast_LBF(image_X_2, sigma_s, Xsigma_r, false, &filt_X_2);
+        fast_LBF(image_X_seam, sigma_s, Xsigma_r, false, &filt_X_seam);
 
-    if (p_a->n_rows == 0)
-        (*p_a) = zeros(1, 4);
+        //now to put back together again
+        for (int i = 0; i < x1_size; ++i) {
+            (*filtered_X)(i, 0) = filt_X_1(i, 0);
+        }
+        for (int i = 0; i < x2_size; ++i) {
+            (*filtered_X)(mid_point + i, 0) = filt_X_2(i, 0);
+        }
+        for (int i = 0; i < seam_size; ++i) {
+            (*filtered_X)(mid_point - (seam_size / 2), 0) = filt_X_seam(i, 0);
+        }
+
+
+    } catch(...) {
+        DialogGrafixError::LogNewError(0, "Unknown Error: Parameters - too small?");
+    }
 }
 
+/***************************
+ *      INTERPOLATING
+ ***************************/
 
-/*
- *                                   Calculate Velocity
- * Takes 0 - 3 indexed columns of smooth matrix and returns 11 column matrix calculates velocity (col 4)
- * and whether it is a saccade (col 5). -1 s are put if any missing data either side.
- */
-void GPMatrixFunctions::fncCalculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader) {
-    if (smoothM.n_cols < 4) {
+void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader settingsLoader, GPMatrixProgressBar &gpProgressBar) {
+    // Here we interpolate the smoothed data and create an extra column
+    // Smooth = [time,0,x,y,velocity,saccadeFlag(0,1), interpolationFlag]
+
+    qDebug() << "Interpolating...";
+
+    if (SmoothM.is_empty())
         return;
-    }
 
-    double velocityThreshold = settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
+    gpProgressBar.beginProcessing("Interpolating Data", 100);
+
+
+    double hz                   = settingsLoader.LoadSetting(Consts::SETTING_HZ).toDouble();
+    double interpolationLatency = settingsLoader.LoadSetting(Consts::SETTING_INTERP_LATENCY).toDouble();
+    double maxDisplacementInterpolation = settingsLoader.LoadSetting(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT).toDouble();
+    int    maxSamplesInterpolation            = interpolationLatency * hz / 1000;
     double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-    //int hz                  = settingsLoader.LoadSetting(Consts::SETTING_HZ).toInt();
 
-    //double hzXdeg = hz * degreesPerPixel;
+    qDebug() << "Samples threshold: " << maxSamplesInterpolation << " Displacement: " << maxDisplacementInterpolation;
 
-
-
-    // If SmoothM has less than 5 columns, create an 10 column version and copy over the first 4 columns.
-    if (smoothM.n_cols < 5) {
-        mat aux = zeros(smoothM.n_rows, 10);
-        aux.cols(0, 3) = smoothM.cols(0, 3);
-        smoothM = aux;
+    // Reset previous interpolation results
+    if (SmoothM.n_cols > 7) {
+        for(uword i = 0; i < SmoothM.n_rows; ++i) {
+            if (SmoothM(i, 6) == 1) {
+                SmoothM(i, 2) = -1;
+                SmoothM(i, 3) = -1;
+            }
+        }
     }
 
-    // Iterate through each data point, add velocity at row 4, and whether it is saccade at row 5
+
+    // Remove previous interpolation data and create the new columns
+    mat aux = zeros(SmoothM.n_rows, 11);
+    aux.cols(0, 3) = SmoothM.cols(0, 3);
+    SmoothM = aux;
+
+    // Iterate through the samples, detecting missing points.
+    for(uword i = 0; i < SmoothM.n_rows; ++i) {
+
+        // Sample is not missing
+        if ( SmoothM(i, 2) >= 0 && SmoothM(i, 3) >= 0) continue;
 
 
-    double x_1back = smoothM(0, 2);
-    double y_1back = smoothM(0, 3);
-    double time_1back = smoothM(0, 0);
 
-    for (uword i = 1; i < smoothM.n_rows; ++i) {
+        // Skip if first sample is missing
+        if (i == 0) continue;
 
-        double x_cur = smoothM(i, 2);
-        double y_cur = smoothM(i, 3);
-        double time_cur = smoothM(i, 0);
-
-        if (x_1back > -1 && x_cur > -1 && y_1back > -1 && y_cur > -1) {
-
-            // Calculate amplitude and velocity
-            double xDist = x_1back - x_cur;
-            double yDist = y_1back - y_cur;
-            double amplitude = sqrt(((xDist * xDist) + (yDist * yDist))) * degreesPerPixel;
-            double time = time_cur - time_1back; //time in ms
-            double velocity = (1000 * amplitude) / time;
-
-            // Velocity
-            smoothM.at(i, 4) = velocity;
-            smoothM.at(i, 5) = (velocity >= velocityThreshold ) ? 1 : 0;
-        } else {
-            smoothM.at(i, 4) = -1;
-            smoothM.at(i, 5) = -1;
+        // Find the previous non-missing data
+        int indexPrevData = -1;
+        for (int j = i - 1; j > 0 ; --j) {
+            if ( SmoothM(j, 2) >= 0 && SmoothM(j, 3) >= 0) {
+                indexPrevData = j;
+                break;
+            }
         }
 
-        x_1back = x_cur;
-        y_1back = y_cur;
-        time_1back = time_cur;
-    }
 
-    qDebug() << "Finished calculating velocity";
+
+        // If no previous data is detected, then cannot interpolate
+        if (indexPrevData == -1) continue;
+
+        qDebug() << endl << "sample missing at: " << i;
+        qDebug() << " indexPrevData: " << indexPrevData;
+
+        // Find the point where the data is back:
+        int indexDataBack = -1;
+        for (uword j = i; j < SmoothM.n_rows; ++j) {
+            if (SmoothM(j, 2) > 0 && SmoothM(j, 3) > 0) {
+                indexDataBack = j ;
+                break;
+            }
+        }
+
+        qDebug() << " indexDataBack: " << indexDataBack;
+
+        // If the data doesn't come back then cannot interpolate
+        if (indexDataBack == -1) break;
+
+        int gapLength = indexDataBack - indexPrevData;
+
+        // Skip main search to this point
+        i = indexDataBack;
+
+        if (gapLength > maxSamplesInterpolation) {
+            qDebug() << " gap length: " << gapLength << " cannot interpolate as over samples threshold ";
+            continue;
+        }
+
+        //Check the displacement distance
+        double xDiff = SmoothM(indexDataBack, 2) - SmoothM(indexPrevData, 2);
+        double yDiff = SmoothM(indexDataBack, 3) - SmoothM(indexPrevData, 3);
+        double displacement = degreesPerPixel * sqrt((xDiff * xDiff) + (yDiff * yDiff));
+
+        if (displacement > maxDisplacementInterpolation) {
+            qDebug() << " displacement: " << displacement << " cannot interpolate: over distance threshold ";
+            continue;
+        }
+
+        qDebug() << "interpolating...";
+
+        // Jumps in signal for each sample to interpolate linearly
+        double xInterval = xDiff / gapLength;
+        double yInterval = yDiff / gapLength;
+
+        for(int j = indexPrevData + 1; j < indexDataBack; j++) {
+            SmoothM(j, 2) = SmoothM(j - 1, 2) + xInterval;
+            SmoothM(j, 3) = SmoothM(j - 1, 3) + yInterval;
+            SmoothM(j, 6) = 1;
+        }
+
+
+    }
+    gpProgressBar.endProcessing();
 }
 
-void GPMatrixFunctions::fncCalculateFixations(mat &fixAllM, mat &roughM, mat &smoothM, GrafixSettingsLoader settingsLoader) {
+/***************************
+ *      FIXATIONS
+ ***************************/
+
+void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader, GPMatrixProgressBar &gpProgressBar) {
+    gpProgressBar.beginProcessing("Estimating Fixations", 100);
+    estimateFixations(RoughM, SmoothM, AutoFixAllM, settingsLoader);
+    gpProgressBar.endProcessing();
+}
+
+/*
+ * Main function called by UI to estimate fixations automatically (applying post-hoc corrections).
+ */
+void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAllM, GrafixSettingsLoader &settingsLoader) {
+    if (SmoothM.is_empty()) return;// If the data is not smoothed we don't allow to estimate fixations.
+
+    qDebug() << "Calculating velocity...";
+    GPMatrixFunctions::calculateVelocity(SmoothM, settingsLoader);
+
+    // Calculate Fixations mat *p_fixAllM, mat *p_roughM, mat *p_smoothM
+    qDebug() << "Calculating fixations...";
+    GPMatrixFunctions::calculateFixations(AutoFixAllM, RoughM, SmoothM, settingsLoader);
+
+    //we cannot work with less than one fixation
+    if(AutoFixAllM.n_rows < 1) return;
+
+
+    // **** POST-HOC VALIDATION **** (The order is important!)
+
+    // Add columns for the flags in the smooth data if needed
+    if (SmoothM.n_cols < 10) {
+        mat aux = zeros(SmoothM.n_rows, 10);
+        aux.cols(0, 3) = SmoothM.cols(0, 3);
+        SmoothM = aux;
+    } else {
+        SmoothM.cols(7, 9).fill(0); // Restart
+    }
+
+    //TODO Check if fixations found or next part crasheds
+
+    bool cb_displacement = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG).toBool();
+    bool cb_velocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG).toBool();
+    bool cb_minFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG).toBool();
+    double sliderVelocityVariance = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL).toDouble();
+    double sliderMinFixation = settingsLoader.LoadSetting(Consts::SETTING_POSTHOC_MIN_DURATION_VAL).toDouble();
+
+    // Merge all fixations with a displacement lower than the displacement threshold
+    if (cb_displacement) {
+        debugPrintMatrix(AutoFixAllM);
+        qDebug() << "Merging...";
+        GPMatrixFunctions::posthocMergeDisplacementThreshold(RoughM, SmoothM, AutoFixAllM,  settingsLoader);
+        debugPrintMatrix(AutoFixAllM);
+    }
+
+
+    // Remove all fixations below the minimun variance
+    if (cb_velocityVariance) {
+        qDebug() << "Removing high variance...";
+        GPMatrixFunctions::posthocRemoveHighVarianceFixations( &SmoothM,  &AutoFixAllM, sliderVelocityVariance);
+    }
+
+
+    // Remove all the fixations below the minimun fixation
+    if (cb_minFixation) {
+        qDebug() << "Removing minimum length...";
+        GPMatrixFunctions::posthocRemoveMinFixations(&AutoFixAllM, &SmoothM, sliderMinFixation);
+    }
+
+
+    //debugPrintMatrix(AutoFixAllM);
+}
+
+void GPMatrixFunctions::calculateFixations(mat &fixAllM, mat &roughM, mat &smoothM, GrafixSettingsLoader settingsLoader) {
 
 
 
@@ -805,7 +592,7 @@ void GPMatrixFunctions::fncCalculateFixations(mat &fixAllM, mat &roughM, mat &sm
                 int indexEndFix = i - 1;
 
                 mat newRow;
-                fncCalculateFixation(roughM,
+                calculateFixation(roughM,
                                      indexStartFix,
                                      indexEndFix,
                                      copy_eyes,
@@ -826,7 +613,7 @@ void GPMatrixFunctions::fncCalculateFixations(mat &fixAllM, mat &roughM, mat &sm
     //debugPrintMatrix(fixAllM);
 }
 
-void GPMatrixFunctions::fncCalculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation) {
+void GPMatrixFunctions::calculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation) {
 
     outFixation.reset();
 
@@ -849,26 +636,11 @@ void GPMatrixFunctions::fncCalculateFixation(const mat &roughM, int startIndex, 
     outFixation << startIndex << endIndex << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
 }
 
-void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
-    qDebug() << "Matrix with cols: " << matrix.n_cols << " and rows: " << matrix.n_rows;
-    if (matrix.n_rows > 0) {
-        for(uword j = 0; j < matrix.n_rows; ++j) {
-            QString rowPrint = "";
-            for(uword k = 0; k < matrix.n_cols; ++k) {
-                rowPrint += " " + QString::number(matrix.at(j, k));
-            }
-            qDebug() << rowPrint;
-        }
-    }
-}
+/***************************
+ *      SACCADES
+ ***************************/
 
-void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &smoothM, GrafixSettingsLoader settingsLoader) {
-
-
-
-    double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
-
-
+void GPMatrixFunctions::calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM) {
 
     //clear saccades matrix
     saccadesM.reset();
@@ -876,16 +648,12 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
     if (fixAllM.n_rows < 2) return;
 
     for (uword indexFixation = 1; indexFixation < fixAllM.n_rows ; indexFixation++) {
-        double startOfSaccade = fixAllM.at(indexFixation - 1, 1); //end of previous fixation
-        double endOfSaccade = fixAllM.at(indexFixation, 0); // beginning of next fixation
-
-
+        double startOfSaccade = fixAllM.at(indexFixation - 1, FIXCOL_END); //end of previous fixation
+        double endOfSaccade = fixAllM.at(indexFixation, FIXCOL_START); // beginning of next fixation
 
         if (startOfSaccade >= endOfSaccade) {
-            qDebug() << "what? ";
             continue;
         }
-
 
         double duration = ((smoothM.at(endOfSaccade, 0) - smoothM.at(startOfSaccade, 0)));
 
@@ -893,7 +661,7 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
         double xDiff = smoothM.at(startOfSaccade, 2) - smoothM.at(endOfSaccade, 2);
         double yDiff = smoothM.at(startOfSaccade, 3) - smoothM.at(endOfSaccade, 3);
 
-        double amplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+        double amplitudePixels = sqrt((xDiff * xDiff) + (yDiff * yDiff));
 
         //calculate average and peak velocity
 
@@ -902,18 +670,11 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
 
         double peakVelocity = -1;
 
-        for (uword j = startOfSaccade; j < (endOfSaccade - 1) ; j++) {
+        for (uword j = startOfSaccade; j < endOfSaccade; j++) {
 
+            double sampleVelocity = smoothM(j + 1, 4);
             //check not missing
-            if (smoothM(j, 2) > -1 && smoothM(j + 1, 2) > -1) {
-
-                double xDiff = smoothM(j, 2) - smoothM(j + 1, 2);
-                double yDiff = smoothM(j, 3) - smoothM(j + 1, 3);
-
-                double sampleAmplitude = sqrt((xDiff * xDiff) + (yDiff * yDiff)) * degreesPerPixel;
-                double sampleDuration = ((smoothM.at(j + 1, 0) - smoothM.at(j, 0)));
-                double sampleVelocity = (sampleAmplitude / sampleDuration);
-
+            if (sampleVelocity > -1) {
                 nVelocities++;
                 peakVelocity = qMax(peakVelocity, sampleVelocity);
                 averageVelocity += sampleVelocity;
@@ -927,7 +688,7 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
         }
 
         mat row;
-        row << startOfSaccade << endOfSaccade << duration << amplitude << averageVelocity << peakVelocity << endr;
+        row << startOfSaccade << endOfSaccade << duration << amplitudePixels << averageVelocity << peakVelocity << endr;
 
         if (saccadesM.n_rows == 0) {
             saccadesM = row;
@@ -937,34 +698,11 @@ void GPMatrixFunctions::fncCalculateSaccades(mat &saccadesM, mat &fixAllM, mat &
     }
 }
 
-void GPMatrixFunctions::fncReturnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM) {
-    mat fixations;
+/***************************
+ *      POST-HOCS
+ ***************************/
 
-    if (!p_segmentsM->is_empty()) { // If there are experimental segments
-        int fixIndex = 0;
-
-        // order the segments
-        uvec indices = sort_index(p_segmentsM->cols(1, 1));
-
-        mat a = p_segmentsM->rows(indices);
-
-        for (uword i = 0; i < a.n_rows; ++i) { // Find fixations for each fragment and copy them in a matrix
-            int start = a(i, 1);
-            int end = a(i, 2);
-            // Go through the whole fixations matrix
-            for (uword j = fixIndex; j < p_fixAllM->n_rows; ++j) {
-                if ((p_fixAllM->at(j, FIXCOL_START) >= start && p_fixAllM->at(j, FIXCOL_START) <= end ) || (p_fixAllM->at(j, FIXCOL_START) < end && p_fixAllM->at(j, FIXCOL_END) > end)) { // fixations that start  and end in the segment of start in the segment and end in the next
-                    fixations = join_cols(fixations, p_fixAllM->row(j));
-                }
-            }
-
-        }
-    }
-    if (!fixations.is_empty())
-        (*p_fixAllM) = fixations;//POSSIBLE ERROR?
-}
-
-void GPMatrixFunctions::fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur) {
+void GPMatrixFunctions::posthocRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, double minDur) {
 
     if (p_fixAllM->is_empty()) return; //cannot remove no fixations lol
     p_smoothM->col(9).fill(0); // Restart
@@ -991,7 +729,7 @@ void GPMatrixFunctions::fncRemoveMinFixations(mat *p_fixAllM, mat *p_smoothM, do
 /*
  * This merges fixations that are within 50ms of eachother, and have a displacement of less than the user setting
  */
-void GPMatrixFunctions::fncMergeDisplacementThreshold(mat &roughM, mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader) {
+void GPMatrixFunctions::posthocMergeDisplacementThreshold(mat &roughM, mat &smoothM, mat &fixAllM, GrafixSettingsLoader settingsLoader) {
     if (fixAllM.n_rows < 3 || smoothM.n_cols < 7) return;
 
     //int invalidSamples      = MyConstants::INVALID_SAMPLES;
@@ -1064,7 +802,7 @@ void GPMatrixFunctions::fncMergeDisplacementThreshold(mat &roughM, mat &smoothM,
     qDebug() << "Merged.";
 }
 
-void GPMatrixFunctions::fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance) {
+void GPMatrixFunctions::posthocRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fixAllM, double variance) {
 
     if (p_fixAllM->n_rows < 1) return;
     p_smoothM->col(8).fill(0); // Restart
@@ -1084,6 +822,230 @@ void GPMatrixFunctions::fncRemoveHighVarianceFixations(mat *p_smoothM, mat *p_fi
     }
 
 }
+
+/***************************
+ *      CALCULATIONS
+ ***************************/
+
+
+
+/*
+ * Calculate RMS, but rough matrix must have all missing data removed. Returns -1 if cannot calculate.
+ * Use excludeMissingDataRoughMatrix to prepare.
+ */
+double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel) {
+    debugPrintMatrix(preparedRoughM);
+
+    if (preparedRoughM.n_rows < 2 )
+        return -1;
+    // Calculate mean euclidean distance.
+    mat squaredDistances = zeros(preparedRoughM.n_rows - 1);
+
+    double x1, y1, x2, y2, xDiff, yDiff;
+
+    double xMultiplier = expWidth * degPerPixel;
+    double yMultiplier = expHeight * degPerPixel;
+
+    x1 = preparedRoughM.at(0, 1) * xMultiplier;
+    y1 = preparedRoughM.at(0, 2) * yMultiplier;
+
+
+
+    for (uword j = 1; j < preparedRoughM.n_rows; ++j) {
+        x2 = preparedRoughM.at(j, 1) * xMultiplier;
+        y2 = preparedRoughM.at(j, 2) * yMultiplier;
+
+        xDiff = x1 - x2;
+        yDiff = y1 - y2;
+
+        double distanceSquared = ((xDiff * xDiff) + (yDiff * yDiff)); //squared and rooted cancel eachother out;
+        squaredDistances(j - 1) = distanceSquared;
+
+        x1 = x2;
+        y1 = y2;
+    }
+
+    debugPrintMatrix(squaredDistances);
+
+    double rms = sqrt(mean(mean(squaredDistances)));
+
+    //qDebug() << " rms " << rms;
+    return rms;
+}
+
+
+/*
+ *                                   Calculate Velocity
+ * Takes 0 - 3 indexed columns of smooth matrix and returns 11 column matrix calculates velocity (col 4)
+ * and whether it is a saccade (col 5). -1 s are put if any missing data either side.
+ */
+void GPMatrixFunctions::calculateVelocity(mat &smoothM, GrafixSettingsLoader settingsLoader) {
+    if (smoothM.n_cols < 4) return;
+
+    double velocityThreshold = settingsLoader.LoadSetting(Consts::SETTING_VELOCITY_THRESHOLD).toDouble();
+    double degreesPerPixel   = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+
+
+    // If SmoothM has less than 5 columns, create an 10 column version and copy over the first 4 columns.
+    if (smoothM.n_cols < 5) {
+        mat aux = zeros(smoothM.n_rows, 10);
+        aux.cols(0, 3) = smoothM.cols(0, 3);
+        smoothM = aux;
+    }
+
+    // Iterate through each data point, add velocity at row 4, and whether it is saccade at row 5
+
+    double x_1back = smoothM(0, 2);
+    double y_1back = smoothM(0, 3);
+    double time_1back = smoothM(0, 0);
+
+    for (uword i = 1; i < smoothM.n_rows; ++i) {
+
+        double x_cur = smoothM(i, 2);
+        double y_cur = smoothM(i, 3);
+        double time_cur = smoothM(i, 0);
+
+        if (x_1back > -1 && x_cur > -1 && y_1back > -1 && y_cur > -1) {
+
+            // Calculate amplitude and velocity
+            double xDist = x_1back - x_cur;
+            double yDist = y_1back - y_cur;
+            double amplitude = sqrt(((xDist * xDist) + (yDist * yDist))) * degreesPerPixel;
+            double time = time_cur - time_1back; //time in ms
+            double velocity = (1000 * amplitude) / time;
+
+            // Velocity
+            smoothM.at(i, 4) = velocity;
+            smoothM.at(i, 5) = (velocity >= velocityThreshold ) ? 1 : 0;
+        } else {
+            smoothM.at(i, 4) = -1;
+            smoothM.at(i, 5) = -1;
+        }
+
+        x_1back = x_cur;
+        y_1back = y_cur;
+        time_1back = time_cur;
+    }
+
+    qDebug() << "Finished calculating velocity";
+}
+
+/***************************
+ *      UTILITIES
+ ***************************/
+
+/*
+ * Marks all out of range and one eye missing data as missing + combines eyes
+ */
+void GPMatrixFunctions::prepareRoughMatrix(mat &preparedRoughM, const mat &RoughM, bool copy_eyes) {
+
+    //copy time stamp
+    preparedRoughM = zeros(RoughM.n_rows, 3);
+    preparedRoughM.col(0) = RoughM.col(0);
+
+    if(RoughM.is_empty()) {
+        return;
+    }
+
+    for (uword i = 0; i < RoughM.n_rows; ++i) {
+        bool leftXMissing = (RoughM(i, 2) < 0 || RoughM(i, 2) > 1);
+        bool leftYMissing = (RoughM(i, 3) < 0 || RoughM(i, 3) > 1);
+        bool rightXMissing = (RoughM(i, 4) < 0 || RoughM(i, 4) > 1);
+        bool rightYMissing = (RoughM(i, 5) < 0 || RoughM(i, 5) > 1);
+
+        bool leftMissing = leftXMissing || leftYMissing;
+        bool rightMissing = rightXMissing || rightYMissing;
+
+        bool missing = copy_eyes ? (leftMissing && rightMissing) : (leftMissing || rightMissing);
+
+        // make everything missing if it is
+        if (missing) {
+            preparedRoughM(i, 1) = -1;
+            preparedRoughM(i, 2) = -1;
+        } else {
+            preparedRoughM(i, 1) = (RoughM(i, 2) + RoughM(i, 4)) / 2;
+            preparedRoughM(i, 2) = (RoughM(i, 3) + RoughM(i, 5)) / 2;
+
+            //copy eyes if necessary
+            if (copy_eyes) {
+                if (leftMissing && !rightMissing) {
+                    preparedRoughM(i, 1) = RoughM(i, 4);
+                    preparedRoughM(i, 2) = RoughM(i, 5);
+                } else if (rightMissing && !leftMissing) {
+                    preparedRoughM(i, 1) = RoughM(i, 2);
+                    preparedRoughM(i, 2) = RoughM(i, 3);
+                }
+            }
+        }
+    }
+}
+
+/*
+ * Returns only non missing rows of rough data.  (Also prepares the matrix via prepareRoughMatrix)
+ */
+void GPMatrixFunctions::excludeMissingDataRoughMatrix(mat &cutRoughM, const mat &RoughM, bool copy_eyes) {
+
+    cutRoughM.reset();
+
+    mat preparedRoughMatrix;
+
+    prepareRoughMatrix(preparedRoughMatrix, RoughM, copy_eyes);
+
+    for (uword i = 0; i < RoughM.n_rows; ++i) {
+        bool missing = (preparedRoughMatrix(i, 1) == -1 || preparedRoughMatrix(i, 2) == -1);
+        if (!missing) {
+            cutRoughM = join_cols(cutRoughM, preparedRoughMatrix.row(i));
+        }
+    }
+
+}
+
+
+void GPMatrixFunctions::debugPrintMatrix(mat &matrix) {
+    qDebug() << "Matrix with cols: " << matrix.n_cols << " and rows: " << matrix.n_rows;
+    if (matrix.n_rows > 0) {
+        for(uword j = 0; j < matrix.n_rows; ++j) {
+            QString rowPrint = "";
+            for(uword k = 0; k < matrix.n_cols; ++k) {
+                rowPrint += " " + QString::number(matrix.at(j, k));
+            }
+            qDebug() << rowPrint;
+        }
+    }
+}
+
+
+
+void GPMatrixFunctions::returnFixationinSegments(mat *p_fixAllM, mat *p_segmentsM) {
+    mat fixations;
+
+    if (!p_segmentsM->is_empty()) { // If there are experimental segments
+        int fixIndex = 0;
+
+        // order the segments
+        uvec indices = sort_index(p_segmentsM->cols(1, 1));
+
+        mat a = p_segmentsM->rows(indices);
+
+        for (uword i = 0; i < a.n_rows; ++i) { // Find fixations for each fragment and copy them in a matrix
+            int start = a(i, 1);
+            int end = a(i, 2);
+            // Go through the whole fixations matrix
+            for (uword j = fixIndex; j < p_fixAllM->n_rows; ++j) {
+                if ((p_fixAllM->at(j, FIXCOL_START) >= start && p_fixAllM->at(j, FIXCOL_START) <= end ) || (p_fixAllM->at(j, FIXCOL_START) < end && p_fixAllM->at(j, FIXCOL_END) > end)) { // fixations that start  and end in the segment of start in the segment and end in the next
+                    fixations = join_cols(fixations, p_fixAllM->row(j));
+                }
+            }
+
+        }
+    }
+    if (!fixations.is_empty())
+        (*p_fixAllM) = fixations;//POSSIBLE ERROR?
+}
+
+
+
+
 
 
 

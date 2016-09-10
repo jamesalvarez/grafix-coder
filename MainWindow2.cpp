@@ -2,13 +2,11 @@
 #include "MainWindow2.h"
 #include "ui_mainwindow2.h"
 
-MainWindow2::MainWindow2(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow2)
-{
+MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow2) {
+
     ui->setupUi(this);
 
-    //this->setWindowFlags(this->windowFlags() | Qt::WindowMinMaxButtonsHint);
+
     //default initialise parameters
     this->_index_active_participant = 0;
     this->p_active_participant = NULL;
@@ -27,13 +25,13 @@ MainWindow2::MainWindow2(QWidget *parent) :
     this->_hz = Consts::DEFAULT_SETTING_HZ;
     this->_nFragments = 0;
     this->_maxPupilDilation = 5;
-    this->_previousFragment = 0;
     this->_secsFragment = Consts::DEFAULT_SETTING_SECS_FRAGMENT;
     this->_currentAction = Consts::AC_NOACTION; // create/ merge/ delete fixation
     this->_mouseAction = Consts::FIX_OFF;   // If we are painting a fixation or not
     this->_configuration_changed = true;
     this->_last_selected_configuration = Consts::ACTIVE_CONFIGURATION();
     this->_hold_changes = false;
+
     // Menu events
     connect( ui->actionConfiguration, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuDialogConfig() ) );
     connect( ui->actionNew_Open, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuProjectOpen() ) );
@@ -45,7 +43,7 @@ MainWindow2::MainWindow2(QWidget *parent) :
     connect( ui->actionShow_Statistics, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuShowStatistics()));
     connect( ui->actionHeat_Map, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuHeatMap()));
     connect( ui->actionShow_Error_Log, SIGNAL(triggered()), this, SLOT(fncPress_subMenuShowErrorLog()));
-    connect( ui->actionAuto_Fixation_Detection, SIGNAL(triggered()), this,SLOT(fncPress_subMenuDetectFixations()));
+    connect( ui->actionAuto_Fixation_Detection, SIGNAL(triggered()), this, SLOT(fncPress_subMenuDetectFixations()));
     connect( ui->actionManual_Fixation_Detection, SIGNAL(triggered()), this, SLOT(fncPress_subMenuManualEditing()));
     connect( ui->actionAdjust_Parameters, SIGNAL( triggered()), this, SLOT(fncPress_subMenuAdjustParameters()));
     connect( ui->actionChange_Configuration, SIGNAL(triggered()), this, SLOT(fncPress_subMenuChangeConfiguration()));
@@ -67,7 +65,7 @@ MainWindow2::MainWindow2(QWidget *parent) :
     connect( ui->lineEditSegment, SIGNAL( returnPressed()), this, SLOT( fncChange_tSegmentNumber()));
     connect( ui->pushButtonParticipantLeft, SIGNAL( clicked() ), this, SLOT( fncPress_bParticipantLeft() ) );
     connect( ui->pushButtonParticipantRight, SIGNAL( clicked() ), this, SLOT( fncPress_bParticipantRight() ) );
-    connect( ui->bNotes,SIGNAL(clicked()), this, SLOT (fncPress_bNotes()));
+    connect( ui->bNotes, SIGNAL(clicked()), this, SLOT (fncPress_bNotes()));
 
     // Automatic fixation buttons:
     //connect( ui->b_acceptEstimation, SIGNAL( clicked() ), this, SLOT( fncPress_bAcceptEstimation() ) );
@@ -161,30 +159,27 @@ MainWindow2::MainWindow2(QWidget *parent) :
 
     //set up fixation table view
     ui->fixationTableView->setSelectionMode(QAbstractItemView::NoSelection);
-    ui->fixationTableView->setColumnWidth(0,40);
-    ui->fixationTableView->setColumnWidth(1,40);
-    ui->fixationTableView->setColumnWidth(2,60);
-    ui->fixationTableView->setColumnWidth(3,60);
+    ui->fixationTableView->setColumnWidth(0, 40);
+    ui->fixationTableView->setColumnWidth(1, 40);
+    ui->fixationTableView->setColumnWidth(2, 60);
+    ui->fixationTableView->setColumnWidth(3, 60);
 }
 
-bool MainWindow2::LoadProject()
-{
+bool MainWindow2::LoadProject() {
     //loads settings (info of previous project
     QSettings settings("options.ini", QSettings::IniFormat);
 
     // If there is not a project opened (in the settings file), we open the openProject dialog.
     while (settings.value(Consts::SETTING_PROJECT).isNull() ||
-            !(_project.LoadProjectSettings(settings.value(Consts::SETTING_PROJECT).toString())))
-    {
+            !(_project.LoadProjectSettings(settings.value(Consts::SETTING_PROJECT).toString()))) {
         QMessageBox msgBox;
         msgBox.setText("No project loaded.");
         msgBox.setInformativeText("It was not possible to load a valid project - please load or create a new one.");
-        msgBox.setStandardButtons(QMessageBox::Ok| QMessageBox::Close);
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Close);
         msgBox.setDefaultButton(QMessageBox::Ok);
-        msgBox.setButtonText(QMessageBox::Close,"Quit GraFIX");
+        msgBox.setButtonText(QMessageBox::Close, "Quit GraFIX");
         int ret = msgBox.exec();
-        if (ret == QMessageBox::Close)
-        {
+        if (ret == QMessageBox::Close) {
             return false;
         }
 
@@ -192,13 +187,12 @@ bool MainWindow2::LoadProject()
         w.exec();
 
         //saves directory of this project
-        settings.setValue(Consts::SETTING_PROJECT,_project.GetFullDirectory());
+        settings.setValue(Consts::SETTING_PROJECT, _project.GetFullDirectory());
 
     }
 
     //set current participant
-    if (_project.numParticipants()>0)
-    {
+    if (_project.numParticipants() > 0) {
         qDebug() << "Participants out:" << _project.numParticipants() << "\n";
         fncSetActiveParticipant(0);//TODO: Settings remember last participant
     }
@@ -207,13 +201,12 @@ bool MainWindow2::LoadProject()
     return true;
 }
 
-bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
-{
+bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
     if (!obj->isWindowType()) return false;
 
     bool isMouseEvent = (event->type() == QEvent::MouseMove ||
-        event->type() == QEvent::MouseButtonPress ||
-        event->type() == QEvent::MouseButtonRelease);
+                         event->type() == QEvent::MouseButtonPress ||
+                         event->type() == QEvent::MouseButtonRelease);
 
     if (!isMouseEvent) return false;
 
@@ -243,7 +236,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
         QPixmap pixmap = *this->p_over_display_label->pixmap();
         QPainter painter(&pixmap);
         QPen myPen(Qt::green, 1, Qt::SolidLine);
-        painter.drawLine(posX,0,posX,pixmap.height());
+        painter.drawLine(posX, 0, posX, pixmap.height());
         this->p_over_display_label->setPixmap(pixmap);
         painter.end();
 
@@ -253,14 +246,11 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             ui->lFrom->setText(QString::number(mousedIndex));
         } else if (_currentAction == Consts::AC_DRAG_ENDS) {
             paintFixations();
-            if (_selectedFixationEnd && mousedIndex > _fixStartPos)
-            {
-               paintCurrentFixation(_fixStartPos, mousedIndex);
-               ui->lFrom->setText(QString::number(_fixStartPos));
-               ui->lTo->setText(QString::number(mousedIndex));
-            }
-            else if (_selectedFixationEnd == false && mousedIndex < _fixStartPos)
-            {
+            if (_selectedFixationEnd && mousedIndex > _fixStartPos) {
+                paintCurrentFixation(_fixStartPos, mousedIndex);
+                ui->lFrom->setText(QString::number(_fixStartPos));
+                ui->lTo->setText(QString::number(mousedIndex));
+            } else if (_selectedFixationEnd == false && mousedIndex < _fixStartPos) {
                 paintCurrentFixation(mousedIndex, _fixStartPos);
                 ui->lTo->setText(QString::number(_fixStartPos));
                 ui->lFrom->setText(QString::number(mousedIndex));
@@ -272,7 +262,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
                 // If "to" is smaller than "from", do nothing
                 mousedIndex = 0;
             } else {
-               paintCurrentFixation(_fixStartPos, mousedIndex);
+                paintCurrentFixation(_fixStartPos, mousedIndex);
             }
 
             ui->lTo->setText(QString::number(mousedIndex));
@@ -285,37 +275,36 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
         if (_currentAction == Consts::AC_DRAG_ENDS) {
             if(this->_selectedFixationEnd  && mousedIndex > _fixStartPos) {
                 if (fixAllM.n_rows > (_selectedFixationRow + 1) &&
-                    fixAllM(_selectedFixationRow + 1, FIXCOL_START) < mousedIndex) {
+                        fixAllM(_selectedFixationRow + 1, FIXCOL_START) < mousedIndex) {
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
                 } else {
                     mat fixation;
-                    GPMatrixFunctions::fncCalculateFixation(roughM,
-                                                            fixAllM(_selectedFixationRow, FIXCOL_START),
-                                                            mousedIndex, _copyEyes, _expWidth,
-                                                            _expHeight, _degPerPixel, fixation);
+                    GPMatrixFunctions::calculateFixation(roughM,
+                                                         fixAllM(_selectedFixationRow, FIXCOL_START),
+                                                         mousedIndex, _copyEyes, _expWidth,
+                                                         _expHeight, _degPerPixel, fixation);
                     fixAllM.row(_selectedFixationRow) = fixation;
                 }
-            }
-            else if (_selectedFixationEnd == false && mousedIndex < _fixStartPos) {
+            } else if (_selectedFixationEnd == false && mousedIndex < _fixStartPos) {
                 if (_selectedFixationRow > 0 &&
-                    fixAllM(_selectedFixationRow - 1, FIXCOL_END) > mousedIndex) {
+                        fixAllM(_selectedFixationRow - 1, FIXCOL_END) > mousedIndex) {
 
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
                 } else {
                     mat fixation;
                     qDebug() << "AAAA";
-                    GPMatrixFunctions::fncCalculateFixation(roughM,
-                                                            mousedIndex, fixAllM(_selectedFixationRow, FIXCOL_END),
-                                                            _copyEyes, _expWidth, _expHeight,
-                                                            _degPerPixel, fixation);
+                    GPMatrixFunctions::calculateFixation(roughM,
+                                                         mousedIndex, fixAllM(_selectedFixationRow, FIXCOL_END),
+                                                         _copyEyes, _expWidth, _expHeight,
+                                                         _degPerPixel, fixation);
                     qDebug() << "BBBB";
                     fixAllM.row(_selectedFixationRow) = fixation;
                     qDebug() << "CCCC";
                 }
             }
         } else {
-             // function for create/ merge/ delete depending in the action.
-             fncManipulateFix(_fixStartPos, mousedIndex);
+            // function for create/ merge/ delete depending in the action.
+            fncManipulateFix(_fixStartPos, mousedIndex);
         }
 
         // Save file
@@ -335,18 +324,17 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             //find closest beginning or end of fixation
             uword closest_fixation = 0;
             bool select_end = false;
-            int closest_value = fixAllM.at(0,FIXCOL_START);
+            int closest_value = fixAllM.at(0, FIXCOL_START);
 
             for (uword fix_row = 0; fix_row < fixAllM.n_rows; ++fix_row) {
-                int from = fixAllM.at(fix_row,FIXCOL_START);
-                int to = fixAllM.at(fix_row,FIXCOL_END);
+                int from = fixAllM.at(fix_row, FIXCOL_START);
+                int to = fixAllM.at(fix_row, FIXCOL_END);
                 if (std::abs(from - mousedIndex) < std::abs(closest_value - mousedIndex)) {
                     closest_value = from;
                     closest_fixation = fix_row;
                     select_end = false;
                 }
-                if (std::abs(to - mousedIndex) < std::abs(closest_value - mousedIndex))
-                {
+                if (std::abs(to - mousedIndex) < std::abs(closest_value - mousedIndex)) {
                     closest_value = to;
                     closest_fixation = fix_row;
                     select_end = true;
@@ -359,14 +347,14 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
             _selectedFixationEnd = select_end;
 
             _fixStartPos = _selectedFixationEnd ? this->fixAllM.at(_selectedFixationRow, FIXCOL_START) :
-                                                  this->fixAllM.at(_selectedFixationRow, FIXCOL_END);
+                           this->fixAllM.at(_selectedFixationRow, FIXCOL_END);
 
             paintCurrentFixation(this->fixAllM.at(_selectedFixationRow, FIXCOL_START), this->fixAllM.at(_selectedFixationRow, FIXCOL_END));
             ui->lFrom->setText(QString::number(this->fixAllM.at(_selectedFixationRow, FIXCOL_START)));
             ui->lTo->setText(QString::number(this->fixAllM.at(_selectedFixationRow, FIXCOL_END)));
         } else {
-           // store start value
-           _fixStartPos = mousedIndex;
+            // store start value
+            _fixStartPos = mousedIndex;
         }
 
         _mouseAction = Consts::FIX_ON;
@@ -374,47 +362,44 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event)
     return false;
 }
 
-void MainWindow2::resizeEvent(QResizeEvent* event)
-{
+void MainWindow2::resizeEvent(QResizeEvent* event) {
     Q_UNUSED(event);
-   //QMainWindow2::resizeEvent(event);
-   int w = ui->lPanelMissingData->width();
-   int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
+    //QMainWindow2::resizeEvent(event);
+    int w = ui->lPanelMissingData->width();
+    int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
 
-   QPoint new_pos = ui->lPanelMissingData->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
-   //int y = new_pos.y() - (this->frameGeometry().height() - this->geometry().height());
-   this->p_over_display_label->setGeometry(new_pos.x(),
-                                           new_pos.y(),
-                                           w,
-                                           h);
+    QPoint new_pos = ui->lPanelMissingData->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
+    //int y = new_pos.y() - (this->frameGeometry().height() - this->geometry().height());
+    this->p_over_display_label->setGeometry(new_pos.x(),
+                                            new_pos.y(),
+                                            w,
+                                            h);
 
-   this->p_over_display_label->raise();
+    this->p_over_display_label->raise();
 
-   //Now for zoom buttons
-   int button_size = 20;
-   int spacing = 3;
-   new_pos = ui->lPanelVelocity->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
-   this->p_bZoomout->setGeometry(new_pos.x()+ ui->lPanelVelocity->width() - button_size, new_pos.y(), button_size, button_size);
-   this->p_bZoomout->raise();
-   this->p_bZoomin->setGeometry(new_pos.x()+ ui->lPanelVelocity->width() - spacing - (2 *button_size), new_pos.y(), button_size, button_size);
-   this->p_bZoomin->raise();
-   this->p_lMagnification->setGeometry(new_pos.x()+ ui->lPanelVelocity->width() - (2*spacing) - (7 *button_size), new_pos.y(), button_size*5, button_size);
-   this->p_lMagnification->raise();
-   statusBar()->showMessage("Resized");
-   paintAll();
+    //Now for zoom buttons
+    int button_size = 20;
+    int spacing = 3;
+    new_pos = ui->lPanelVelocity->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
+    this->p_bZoomout->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - button_size, new_pos.y(), button_size, button_size);
+    this->p_bZoomout->raise();
+    this->p_bZoomin->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - spacing - (2 * button_size), new_pos.y(), button_size, button_size);
+    this->p_bZoomin->raise();
+    this->p_lMagnification->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - (2 * spacing) - (7 * button_size), new_pos.y(), button_size * 5, button_size);
+    this->p_lMagnification->raise();
+    statusBar()->showMessage("Resized");
+    paintAll();
 }
 
 
-MainWindow2::~MainWindow2()
-{
+MainWindow2::~MainWindow2() {
     _project.SaveSettings();
     delete this->p_over_display_label;
     delete ui;
 }
 
 
-void MainWindow2::fncWaitForLoad()
-{
+void MainWindow2::fncWaitForLoad() {
     QMessageBox msgBox;
     QString text = "Please wait.";
     this->setCursor(Qt::WaitCursor);
@@ -423,48 +408,41 @@ void MainWindow2::fncWaitForLoad()
     msgBox.setStandardButtons(0);
     msgBox.show();
     qApp->processEvents();
-    while(!_files_future.isFinished() && this->_index_active_participant != this->_files_next_position)
-    {
+    while(!_files_future.isFinished() && this->_index_active_participant != this->_files_next_position) {
         QApplication::processEvents();
     }
     msgBox.close();
     this->setCursor(Qt::ArrowCursor);
 }
 
-void MainWindow2::fncSetActiveParticipant(int position)
-{
+void MainWindow2::fncSetActiveParticipant(int position) {
     //check position is available
     if (!_project.HasParticipant(position)) return;
 
     this->_files_next_position = position;
     ui->statusbar->showMessage("Status: Closing participant...");
     _files_stop_flag = true; //sets flag telling current file loading process to end
-    while(!_files_future.isFinished() && position == _files_next_position)
-    {
+    while(!_files_future.isFinished() && position == _files_next_position) {
         qApp->processEvents();
     }
 
     //check if target position is still this one before setting future
-    if (position == _files_next_position)
-    {
+    if (position == _files_next_position) {
         ui->statusbar->showMessage("Status: Loading...");
         _files_future = QtConcurrent::run(this, &MainWindow2::fncSetActiveParticipantThread, position);
 
-        while(!_files_future.isFinished())
-        {
+        while(!_files_future.isFinished()) {
             QApplication::processEvents();
         }
 
-        if(this->_index_active_participant == position)
-        {
+        if(this->_index_active_participant == position) {
             fncResetDisplayParams();
             paintAll();
         }
     }
 }
 
-void MainWindow2::fncSetActiveParticipantThread(int position)
-{
+void MainWindow2::fncSetActiveParticipantThread(int position) {
     //remember: do not call gui things in non gui thread (some bits dont like it)
     _files_stop_flag = false;
     this->roughM.reset();
@@ -473,15 +451,13 @@ void MainWindow2::fncSetActiveParticipantThread(int position)
     this->experimentalSegmentsM.reset();
     this->autoFixAllM.reset();
 
-    if (fncReadAllFiles(this->_project.GetParticipant(position)))
-    {
+    if (fncReadAllFiles(this->_project.GetParticipant(position))) {
         this->p_active_participant = this->_project.GetParticipant(position);
         this->_index_active_participant = position;
     }
 }
 
-void MainWindow2::fncLoadSettings(GrafixConfiguration configuration)
-{
+void MainWindow2::fncLoadSettings(GrafixConfiguration configuration) {
     // Read the Configuration info from settings.
 
     _expHeight = _project.GetProjectSetting(Consts::SETTING_EXP_HEIGHT, configuration).toInt();
@@ -491,71 +467,67 @@ void MainWindow2::fncLoadSettings(GrafixConfiguration configuration)
     _degPerPixel = _project.GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, configuration).toDouble();
     _copyEyes = _project.GetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE, configuration).toBool();
     ui->sliderSigmaS->setValue(
-                Consts::GetSliderValue(Consts::SETTING_SMOOTHING_SIGMA_S,
-                _project.GetProjectSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_S, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_SMOOTHING_SIGMA_S,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_SMOOTHING_SIGMA_S, configuration).toDouble()));
 
     ui->sliderSigmaR->setValue(
-                Consts::GetSliderValue(Consts::SETTING_SMOOTHING_SIGMA_R,
-                _project.GetProjectSetting(
-                        Consts::SETTING_SMOOTHING_SIGMA_R, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_SMOOTHING_SIGMA_R,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_SMOOTHING_SIGMA_R, configuration).toDouble()));
 
 
     ui->sliderInterpolation->setValue(
-                Consts::GetSliderValue(Consts::SETTING_INTERP_LATENCY,
-                _project.GetProjectSetting(
-                        Consts::SETTING_INTERP_LATENCY, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_INTERP_LATENCY,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_INTERP_LATENCY, configuration).toDouble()));
 
     ui->sliderMinFixation->setValue(
-                Consts::GetSliderValue(Consts::SETTING_POSTHOC_MIN_DURATION_VAL,
-                _project.GetProjectSetting(
-                        Consts::SETTING_POSTHOC_MIN_DURATION_VAL, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_POSTHOC_MIN_DURATION_VAL,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_POSTHOC_MIN_DURATION_VAL, configuration).toDouble()));
 
     ui->sliderVelocity->setValue(
-                Consts::GetSliderValue(Consts::SETTING_VELOCITY_THRESHOLD,
-                _project.GetProjectSetting(
-                        Consts::SETTING_VELOCITY_THRESHOLD, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_VELOCITY_THRESHOLD,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_VELOCITY_THRESHOLD, configuration).toDouble()));
 
     ui->sliderVelocityVariance->setValue(
-                Consts::GetSliderValue(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL,
-                _project.GetProjectSetting(
-                        Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, configuration).toDouble()));
 
     ui->sliderDisplacement->setValue(
-                Consts::GetSliderValue(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL,
-                _project.GetProjectSetting(
-                          Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, configuration).toDouble()));
 
     ui->sliderDisplacInterpolate->setValue(
-                Consts::GetSliderValue(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT,
-                _project.GetProjectSetting(
-                          Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, configuration).toDouble()));
+        Consts::GetSliderValue(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT,
+                               _project.GetProjectSetting(
+                                   Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, configuration).toDouble()));
 
     ui->cb_displacement->setChecked(_project.GetProjectSetting(
                                         Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG, configuration).toBool());
     ui->cb_minFixation->setChecked(_project.GetProjectSetting(
-                                        Consts::SETTING_POSTHOC_MIN_DURATION_FLAG, configuration).toBool());
+                                       Consts::SETTING_POSTHOC_MIN_DURATION_FLAG, configuration).toBool());
     ui->cb_velocityVariance->setChecked(_project.GetProjectSetting(
-                                        Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG, configuration).toBool());
+                                            Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG, configuration).toBool());
 }
 
-void MainWindow2::fncResetDisplayParams()
-{
+void MainWindow2::fncResetDisplayParams() {
     _currentFragment = 1;
-    _previousFragment = 0;
-
     fncSetDisplayParams();
 }
 
-void MainWindow2::fncSetDisplayParams()
-{
+void MainWindow2::fncSetDisplayParams() {
     // Calculate fragments
     _nFragments = floor((double)(roughM.n_rows / ( _secsFragment * _hz))) + 1;
 
     if (_nFragments == 1)
         _displayStartIndex = 0;
     else
-        _displayStartIndex = ((_currentFragment-1) * _secsFragment * _hz);
+        _displayStartIndex = ((_currentFragment - 1) * _secsFragment * _hz);
 
     _displayStopIndex =  _displayStartIndex + (_secsFragment * _hz);
 
@@ -569,14 +541,12 @@ void MainWindow2::fncSetDisplayParams()
 
 
 // function for create/ merge/ delete depending in the selected action.
-void MainWindow2::fncManipulateFix(int from, int to)
-{
-    if (from < to){ // If the end of the fixation is bigger than the start.
-        switch (_currentAction)
-        {
+void MainWindow2::fncManipulateFix(int from, int to) {
+    if (from < to) { // If the end of the fixation is bigger than the start.
+        switch (_currentAction) {
             case Consts::AC_CREATE:
-               fixAllM = GPFixationOperations::fncCreateFixation(fixAllM, roughM,   _hz,  _secsFragment,  _currentFragment, from, to, _expWidth, _expHeight, _degPerPixel, _copyEyes);
-               break;
+                fixAllM = GPFixationOperations::fncCreateFixation(fixAllM, roughM,   _hz,  _secsFragment,  _currentFragment, from, to, _expWidth, _expHeight, _degPerPixel, _copyEyes);
+                break;
             case Consts::AC_DELETE:
                 fixAllM = GPFixationOperations::fncDeleteFixations(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
                 break;
@@ -587,11 +557,11 @@ void MainWindow2::fncManipulateFix(int from, int to)
                 fixAllM = GPFixationOperations::fncSmoothPursuitFixation(fixAllM, _hz,  _secsFragment,  _currentFragment, from,  to);
                 break;
             case Consts::AC_RESET_TO_AUTO:
-                GPFixationOperations::fncResetFixation(*p_fixAllM,autoFixAllM,roughM,from,to,_expWidth,_expHeight,_degPerPixel, _copyEyes);
+                GPFixationOperations::fncResetFixation(*p_fixAllM, autoFixAllM, roughM, from, to, _expWidth, _expHeight, _degPerPixel, _copyEyes);
                 break;
-            //case Consts::AC_DRAG_ENDS:
-            //    GPFixationOperations::fncResizeFixation(this->p_fixAllM, from, to);
-            //    break;
+                //case Consts::AC_DRAG_ENDS:
+                //    GPFixationOperations::fncResizeFixation(this->p_fixAllM, from, to);
+                //    break;
         }
     }
 }
@@ -601,36 +571,34 @@ void MainWindow2::fncManipulateFix(int from, int to)
  *          READ/WRITE FILES METHODS
  */
 
-bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant)
-{
+bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant) {
     if (_files_stop_flag) return false;
-    GPMatrixFiles::readFileSafe(roughM,participant->GetMatrixPath(Consts::MATRIX_ROUGH));
+    GPMatrixFiles::readFileSafe(roughM, participant->GetMatrixPath(Consts::MATRIX_ROUGH));
     if (_files_stop_flag) return false;
     GPMatrixFiles::readFileSafe(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
     if (_files_stop_flag) return false;
     GPMatrixFiles::readFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     if (_files_stop_flag) return false;
-    GPMatrixFiles::readFileSafe(autoFixAllM,participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+    GPMatrixFiles::readFileSafe(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
     if (_files_stop_flag) return false;
-    GPMatrixFiles::readFileSafe(experimentalSegmentsM,participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
+    GPMatrixFiles::readFileSafe(experimentalSegmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
     if (_files_stop_flag) return false;
 
     // If fixAllM has only 6 columns, we add another one for the smooth pursuit.
-    if (fixAllM.n_cols == 6){
-        mat a = zeros<mat>(fixAllM.n_rows,FIXCOL_END);
+    if (fixAllM.n_cols == 6) {
+        mat a = zeros<mat>(fixAllM.n_rows, FIXCOL_END);
         fixAllM = join_rows(fixAllM, a);
-    }else if (fixAllM.n_cols == 10){  // Pre previous version of the application included more info.
-        fixAllM = join_rows(fixAllM.cols(0,5),fixAllM.col(9));
-        fixAllM = join_rows(fixAllM, zeros(fixAllM.n_rows,1)); // Pupil dilation!
+    } else if (fixAllM.n_cols == 10) { // Pre previous version of the application included more info.
+        fixAllM = join_rows(fixAllM.cols(0, 5), fixAllM.col(9));
+        fixAllM = join_rows(fixAllM, zeros(fixAllM.n_rows, 1)); // Pupil dilation!
     }
 
     return true;
 }
 
 
-void MainWindow2::fncSaveAllFiles(GrafixParticipant *participant)
-{
-    if (!roughM.is_empty()) GPMatrixFiles::saveFileSafe(roughM,participant->GetMatrixPath(Consts::MATRIX_ROUGH));
+void MainWindow2::fncSaveAllFiles(GrafixParticipant *participant) {
+    if (!roughM.is_empty()) GPMatrixFiles::saveFileSafe(roughM, participant->GetMatrixPath(Consts::MATRIX_ROUGH));
     if (!smoothM.is_empty()) GPMatrixFiles::saveFileSafe(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
     if (!fixAllM.is_empty()) GPMatrixFiles::saveFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     if (!autoFixAllM.is_empty()) GPMatrixFiles::saveFileSafe(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
@@ -638,8 +606,7 @@ void MainWindow2::fncSaveAllFiles(GrafixParticipant *participant)
 }
 
 
-void MainWindow2::paintAll()
-{
+void MainWindow2::paintAll() {
     paintClear();
     fncSetDisplayParams();
 
@@ -658,27 +625,25 @@ void MainWindow2::paintAll()
 }
 
 
-void MainWindow2::paintExperimentalSegments()
-{
+void MainWindow2::paintExperimentalSegments() {
     // The method paints grey boxes in the areas that don't need to be coded
     //TODO: Expand to all other boxes too
 
     QPixmap pixmap2(this->p_over_display_label->width(), this->p_over_display_label->height());
     pixmap2.fill(Qt::transparent);
     //pixmap2.fill(Qt::white);
-    if (!experimentalSegmentsM.is_empty())
-    {
+    if (!experimentalSegmentsM.is_empty()) {
         QPainter painter(&pixmap2);
 
 
         int pen_correction = painter.pen().width();
 
         painter.setBrush(QBrush(Qt::transparent));
-        painter.drawRect(QRect( 0 ,0,pixmap2.width()-pen_correction, pixmap2.height()-pen_correction));
+        painter.drawRect(QRect( 0 , 0, pixmap2.width() - pen_correction, pixmap2.height() - pen_correction));
         painter.setBrush(QBrush(QColor(192, 192, 192, 127)));
 
         // Order the segments depending on time
-        uvec indices = sort_index(experimentalSegmentsM.cols(1,1));
+        uvec indices = sort_index(experimentalSegmentsM.cols(1, 1));
         mat expSegAux = experimentalSegmentsM.rows(indices);
 
         // find the segments that may be involved in the current fragment
@@ -686,31 +651,31 @@ void MainWindow2::paintExperimentalSegments()
         mat startSAux = expSegAux.rows(fixIndex);
         fixIndex =  arma::find(startSAux.col(1) <= _displayStopIndex);
 
-        if (fixIndex.is_empty()){ // If it's empty that means that there is not segment in this fragment, hence, all is grey
-            painter.drawRect(QRect( 0 ,0,pixmap2.width()-pen_correction, pixmap2.height()-pen_correction));
-        }else{
+        if (fixIndex.is_empty()) { // If it's empty that means that there is not segment in this fragment, hence, all is grey
+            painter.drawRect(QRect( 0 , 0, pixmap2.width() - pen_correction, pixmap2.height() - pen_correction));
+        } else {
 
             startSAux =  startSAux.rows(fixIndex); // in this matrix we have all the segments that start in the current fragment
-            fixIndex = arma::find(expSegAux.col(0) == startSAux(0,0)); // We find the first segment that starts in the current fragment
+            fixIndex = arma::find(expSegAux.col(0) == startSAux(0, 0)); // We find the first segment that starts in the current fragment
 
             bool isNextSegment = false;
-            uword segmentNumber = fixIndex(0,0);
-            while (!isNextSegment && segmentNumber < expSegAux.n_rows){
-                if (fixIndex(0,0) <= 0 || expSegAux(fixIndex(0,0)-1,2) <= _displayStartIndex){ // this is the very first segment or it is the first segment of the fragment
-                    painter.drawRect(QRect( 0 ,0,(expSegAux(0,1)- _displayStartIndex) * (1/_displayIncrement ) - pen_correction, pixmap2.height()-pen_correction));
+            uword segmentNumber = fixIndex(0, 0);
+            while (!isNextSegment && segmentNumber < expSegAux.n_rows) {
+                if (fixIndex(0, 0) <= 0 || expSegAux(fixIndex(0, 0) - 1, 2) <= _displayStartIndex) { // this is the very first segment or it is the first segment of the fragment
+                    painter.drawRect(QRect( 0 , 0, (expSegAux(0, 1) - _displayStartIndex) * (1 / _displayIncrement ) - pen_correction, pixmap2.height() - pen_correction));
 
                 }
-                if (segmentNumber > 0){
-                    if (expSegAux(segmentNumber,1) >=_displayStopIndex){
-                        painter.drawRect(QRect( (expSegAux(segmentNumber-1,2)- _displayStartIndex) * (1/_displayIncrement ) ,0,pixmap2.width() - pen_correction, pixmap2.height() - pen_correction));
-                    }else{
-                        int x1 = (expSegAux(segmentNumber-1,2)- _displayStartIndex) * (1/_displayIncrement );
-                        int x2 = ((expSegAux(segmentNumber,1)- _displayStartIndex) * (1/_displayIncrement )) - x1;
+                if (segmentNumber > 0) {
+                    if (expSegAux(segmentNumber, 1) >= _displayStopIndex) {
+                        painter.drawRect(QRect( (expSegAux(segmentNumber - 1, 2) - _displayStartIndex) * (1 / _displayIncrement ) , 0, pixmap2.width() - pen_correction, pixmap2.height() - pen_correction));
+                    } else {
+                        int x1 = (expSegAux(segmentNumber - 1, 2) - _displayStartIndex) * (1 / _displayIncrement );
+                        int x2 = ((expSegAux(segmentNumber, 1) - _displayStartIndex) * (1 / _displayIncrement )) - x1;
 
-                        painter.drawRect(QRect( x1 ,0,x2 - pen_correction, pixmap2.height() - pen_correction));
+                        painter.drawRect(QRect( x1 , 0, x2 - pen_correction, pixmap2.height() - pen_correction));
                     }
                 }
-                if (expSegAux(segmentNumber,2) >=_displayStopIndex){
+                if (expSegAux(segmentNumber, 2) >= _displayStopIndex) {
                     isNextSegment = true;
                 }
                 segmentNumber = segmentNumber + 1;
@@ -723,61 +688,60 @@ void MainWindow2::paintExperimentalSegments()
 
 }
 
-void MainWindow2::paintRoughData()
-{
+void MainWindow2::paintRoughData() {
     if (roughM.is_empty()) return;
-    QPixmap pixmapMissingData(ui->lPanelMissingData->width()-2,ui->lPanelMissingData->height()-2);
+    QPixmap pixmapMissingData(ui->lPanelMissingData->width() - 2, ui->lPanelMissingData->height() - 2);
     pixmapMissingData.fill(Qt::white);
-    QPixmap pixmap(ui->lPanelRough->width()-2,ui->lPanelRough->height()-2);
+    QPixmap pixmap(ui->lPanelRough->width() - 2, ui->lPanelRough->height() - 2);
     pixmap.fill(Qt::white);
     QPainter painter(&pixmap);
     QPainter painterMissingData(&pixmapMissingData);
 
     QPen myPen(Qt::red, 1.2, Qt::SolidLine);
 
-   // also so el la capacidad del array es menor que stop index
+    // also so el la capacidad del array es menor que stop index
     for (uword i = _displayStartIndex; i < _displayStopIndex; ++i) {
         myPen.setColor(QColor(255, 0, 0, 127));
 
-        if (roughM(i,2 ) != -1){
+        if (roughM(i, 2 ) != -1) {
             painter.setPen(myPen);
-            painter.drawPoint( (i- _displayStartIndex )*(1/_displayIncrement ), roughM(i,2 ) * ui->lPanelRough->height()); // XL
-        }else{ // Missing data
+            painter.drawPoint( (i - _displayStartIndex ) * (1 / _displayIncrement ), roughM(i, 2 ) * ui->lPanelRough->height()); // XL
+        } else { // Missing data
             painterMissingData.setPen(myPen);
-            painterMissingData.drawPoint( (i- _displayStartIndex+1)*(1/_displayIncrement ), 10); // XL
+            painterMissingData.drawPoint( (i - _displayStartIndex + 1) * (1 / _displayIncrement ), 10); // XL
         }
 
         myPen.setColor(QColor(0, 0, 128, 127));
-        if (roughM(i,3 ) != -1){
+        if (roughM(i, 3 ) != -1) {
             painter.setPen(myPen);
-            painter.drawPoint( (i- _displayStartIndex)*(1/_displayIncrement ), roughM(i,3 ) * ui->lPanelRough->height()); // YL
-        }else{ // Missing data
+            painter.drawPoint( (i - _displayStartIndex) * (1 / _displayIncrement ), roughM(i, 3 ) * ui->lPanelRough->height()); // YL
+        } else { // Missing data
             painterMissingData.setPen(myPen);
-            painterMissingData.drawPoint( (i- _displayStartIndex+1)*(1/_displayIncrement ), 20); //XR
+            painterMissingData.drawPoint( (i - _displayStartIndex + 1) * (1 / _displayIncrement ), 20); //XR
         }
 
-       myPen.setColor(QColor(255, 50, 0, 127));
-        if (roughM(i,4 ) != -1){
+        myPen.setColor(QColor(255, 50, 0, 127));
+        if (roughM(i, 4 ) != -1) {
             painter.setPen(myPen);
-            painter.drawPoint( (i- _displayStartIndex)*(1/_displayIncrement ), roughM(i,4 ) * ui->lPanelRough->height()); // XR
-        }else{ // Missing data
+            painter.drawPoint( (i - _displayStartIndex) * (1 / _displayIncrement ), roughM(i, 4 ) * ui->lPanelRough->height()); // XR
+        } else { // Missing data
             painterMissingData.setPen(myPen);
-            painterMissingData.drawPoint( (i- _displayStartIndex+1)*(1/_displayIncrement ), 30); //XR
+            painterMissingData.drawPoint( (i - _displayStartIndex + 1) * (1 / _displayIncrement ), 30); //XR
         }
 
         myPen.setColor(QColor(0, 50, 128, 127));
-        if (roughM(i,5 ) != -1){
+        if (roughM(i, 5 ) != -1) {
             painter.setPen(myPen);
-            painter.drawPoint( (i- _displayStartIndex)*(1/_displayIncrement ), roughM(i,5 ) * ui->lPanelRough->height()); // YR
-        }else{ // Missing data
+            painter.drawPoint( (i - _displayStartIndex) * (1 / _displayIncrement ), roughM(i, 5 ) * ui->lPanelRough->height()); // YR
+        } else { // Missing data
             painterMissingData.setPen(myPen);
-            painterMissingData.drawPoint( (i- _displayStartIndex+1)*(1/_displayIncrement ), 40); //XR
+            painterMissingData.drawPoint( (i - _displayStartIndex + 1) * (1 / _displayIncrement ), 40); //XR
         }
     }
 
 
 
-    painter.setPen(QColor(0,0,0,127));
+    painter.setPen(QColor(0, 0, 0, 127));
     int start_position_secs = _secsFragment * (_currentFragment - 1);
     int end_position_secs = start_position_secs + _secsFragment;
     painter.drawText(QPoint(10, 10),
@@ -785,7 +749,7 @@ void MainWindow2::paintRoughData()
                      QString::number(start_position_secs) +
                      "s - " + QString::number(end_position_secs) +
                      "s");
-    painterMissingData.drawText(QPoint(10,10),"Missing Data:");
+    painterMissingData.drawText(QPoint(10, 10), "Missing Data:");
 
     ui->lPanelRough->setPixmap(pixmap);
     ui->lPanelMissingData->setPixmap(pixmapMissingData);
@@ -794,8 +758,7 @@ void MainWindow2::paintRoughData()
     painterMissingData.end();
 }
 
-void MainWindow2::paintSmoothData()
-{
+void MainWindow2::paintSmoothData() {
 
     //parameters for spacing flags
     int flInterpolate = 15;
@@ -803,15 +766,15 @@ void MainWindow2::paintSmoothData()
     int flminVariance = 55;
     int flminFixations = 75;
 
-    QPixmap pixmap(ui->lPanelSmooth->width()-2,ui->lPanelSmooth->height()-2);
-    QPixmap pixmapFlags(ui->lPanelFlags->width()-2,ui->lPanelFlags->height()-2);
+    QPixmap pixmap(ui->lPanelSmooth->width() - 2, ui->lPanelSmooth->height() - 2);
+    QPixmap pixmapFlags(ui->lPanelFlags->width() - 2, ui->lPanelFlags->height() - 2);
     pixmap.fill(Qt::white);
     pixmapFlags.fill(Qt::white);
 
     QPainter painter(&pixmap);
     QPainter painterFlags(&pixmapFlags);
     QPen myPen(Qt::red, 1, Qt::SolidLine);
-    painter.drawText(QPoint(10,10),"Smoothed Data:");
+    painter.drawText(QPoint(10, 10), "Smoothed Data:");
 
     if (smoothM.n_rows < (_displayStopIndex - 1)) {
         //no smoothM matrix so exit
@@ -828,54 +791,54 @@ void MainWindow2::paintSmoothData()
         myPen.setColor(QColor(255, 0, 0, 127));
         myPen.setWidth(1);
         painter.setPen(myPen);
-        painter.drawPoint((i-_displayStartIndex)*(1/_displayIncrement ), smoothM(i ,2 ) * ui->lPanelRough->height() / _expWidth); // XL
+        painter.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), smoothM(i , 2 ) * ui->lPanelRough->height() / _expWidth); // XL
 
         myPen.setColor(QColor(0, 0, 128, 127));
         painter.setPen(myPen);
-        painter.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), smoothM(i,3 ) * ui->lPanelRough->height() / _expHeight); // YL
+        painter.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), smoothM(i, 3 ) * ui->lPanelRough->height() / _expHeight); // YL
 
         // PAINT FLAGS!
-        if (smoothM.n_cols > 4){
-            if (smoothM(i,6) == 1){ // Paint interpolated data
-                myPen.setColor(QColor(0, 139, 69,127));
+        if (smoothM.n_cols > 4) {
+            if (smoothM(i, 6) == 1) { // Paint interpolated data
+                myPen.setColor(QColor(0, 139, 69, 127));
                 myPen.setWidth(2);
                 painter.setPen(myPen);
-                painter.drawPoint((i-_displayStartIndex)*(1/_displayIncrement ), smoothM(i ,2 ) * ui->lPanelRough->height() / _expWidth); // XL
-                painter.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), smoothM(i,3 ) * ui->lPanelRough->height() / _expHeight); // YL
+                painter.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), smoothM(i , 2 ) * ui->lPanelRough->height() / _expWidth); // XL
+                painter.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), smoothM(i, 3 ) * ui->lPanelRough->height() / _expHeight); // YL
 
                 myPen.setWidth(5);
                 painterFlags.setPen(myPen);
-                painterFlags.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), flInterpolate);
+                painterFlags.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), flInterpolate);
 
             }
-            if (smoothM.n_cols>=  10){  // Paint the rest of the flags
+            if (smoothM.n_cols >=  10) { // Paint the rest of the flags
                 myPen.setWidth(4);
                 painterFlags.setPen(myPen);
-                if (smoothM(i,7) == 1){ // Paint Displacement flag
-                    myPen.setColor(QColor(100, 0, 69,127));
+                if (smoothM(i, 7) == 1) { // Paint Displacement flag
+                    myPen.setColor(QColor(100, 0, 69, 127));
                     painterFlags.setPen(myPen);
-                    painterFlags.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), flDisplacement);
+                    painterFlags.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), flDisplacement);
                 }
-                if (smoothM(i,8) == 1){ // Paint min variance flag
-                    myPen.setColor(QColor(181, 88, 228,127));
+                if (smoothM(i, 8) == 1) { // Paint min variance flag
+                    myPen.setColor(QColor(181, 88, 228, 127));
                     painterFlags.setPen(myPen);
-                    painterFlags.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), flminVariance);
+                    painterFlags.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), flminVariance);
                 }
-                if (smoothM(i,9) == 1){ // Paint Min fixations flag
-                    myPen.setColor(QColor(255, 99, 71,127));
+                if (smoothM(i, 9) == 1) { // Paint Min fixations flag
+                    myPen.setColor(QColor(255, 99, 71, 127));
                     painterFlags.setPen(myPen);
-                    painterFlags.drawPoint((i- _displayStartIndex)*(1/_displayIncrement ), flminFixations);
+                    painterFlags.drawPoint((i - _displayStartIndex) * (1 / _displayIncrement ), flminFixations);
                 }
             }
         }
     }
 
-    myPen.setColor(QColor(128, 128, 128,255));
+    myPen.setColor(QColor(128, 128, 128, 255));
     painterFlags.setPen(myPen);
-    painterFlags.drawText(5,flInterpolate-5," - Interpolation");
-    painterFlags.drawText(5,flDisplacement-5," - Consecutive fixations merged");
-    painterFlags.drawText(5,flminVariance-5, " - High variance removed");
-    painterFlags.drawText(5,flminFixations-5, " - Short fixations removed");
+    painterFlags.drawText(5, flInterpolate - 5, " - Interpolation");
+    painterFlags.drawText(5, flDisplacement - 5, " - Consecutive fixations merged");
+    painterFlags.drawText(5, flminVariance - 5, " - High variance removed");
+    painterFlags.drawText(5, flminFixations - 5, " - Short fixations removed");
 
     ui->lPanelSmooth->setPixmap(pixmap);
     ui->lPanelFlags->setPixmap(pixmapFlags);
@@ -885,8 +848,7 @@ void MainWindow2::paintSmoothData()
 
 }
 
-void MainWindow2::paintFixations()
-{
+void MainWindow2::paintFixations() {
 
     //this paints both the fixations and autofixations
     int fixTPos = 13;
@@ -895,14 +857,14 @@ void MainWindow2::paintFixations()
     int autofixPos = 50;
     int autofixTPos = 48;
 
-    QPixmap pixmap(ui->lPanelFixations->width()-2,ui->lPanelFixations->height()-2);
+    QPixmap pixmap(ui->lPanelFixations->width() - 2, ui->lPanelFixations->height() - 2);
     pixmap.fill(Qt::white);
 
     QPainter painter(&pixmap);
 
     int counter = 0;
 
-    QFont font=painter.font() ;
+    QFont font = painter.font() ;
     font.setPointSize ( 8 );
     painter.setFont(font);
 
@@ -919,10 +881,10 @@ void MainWindow2::paintFixations()
     for (uword i = 0; i < fixAllM.n_rows  ; i++) {
 
         // Fixations that start anywhere in this segment
-        bool fixationStartsInSegment = (fixAllM(i,FIXCOL_START) >= _displayStartIndex && fixAllM(i,FIXCOL_START) <=  _displayStopIndex );
+        bool fixationStartsInSegment = (fixAllM(i, FIXCOL_START) >= _displayStartIndex && fixAllM(i, FIXCOL_START) <=  _displayStopIndex );
 
         // Fixations that start before the segment begins, and end in this one.
-        bool fixationStartsBeforeSegment = (fixAllM(i,FIXCOL_START) <= _displayStartIndex && fixAllM(i,FIXCOL_END) >= _displayStartIndex );
+        bool fixationStartsBeforeSegment = (fixAllM(i, FIXCOL_START) <= _displayStartIndex && fixAllM(i, FIXCOL_END) >= _displayStartIndex );
 
         bool displayFixation = fixationStartsInSegment || fixationStartsBeforeSegment;
 
@@ -939,19 +901,19 @@ void MainWindow2::paintFixations()
             if (fixationStartsBeforeSegment )
                 posStart = -1;
             else
-                posStart = (fixAllM(i,FIXCOL_START) - _displayStartIndex ) * (1/_displayIncrement);
+                posStart = (fixAllM(i, FIXCOL_START) - _displayStartIndex ) * (1 / _displayIncrement);
 
-            posEnd = ((fixAllM(i,FIXCOL_END) - _displayStartIndex ) * (1/_displayIncrement)) - posStart;
+            posEnd = ((fixAllM(i, FIXCOL_END) - _displayStartIndex ) * (1 / _displayIncrement)) - posStart;
 
-            if (fixAllM(i,FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES){
+            if (fixAllM(i, FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES) {
                 painter.setBrush(QBrush("#a32e0c"));
-            }else{
+            } else {
                 painter.setBrush(QBrush("#1ac500"));
             }
-            painter.drawRect(QRect( posStart ,fixPos, posEnd,barHeight));
+            painter.drawRect(QRect( posStart , fixPos, posEnd, barHeight));
             number.str("");
             number << counter;
-            painter.drawText( QPoint(posStart,fixTPos), number.str().c_str() );
+            painter.drawText( QPoint(posStart, fixTPos), number.str().c_str() );
             counter ++; // Next fixation
 
         }
@@ -969,60 +931,59 @@ void MainWindow2::paintFixations()
 
 
     //now paint auto fixations
-   counter = 0;
-   posStart = 0;
-   posEnd = 0;
+    counter = 0;
+    posStart = 0;
+    posEnd = 0;
 
-   // Just to optimize the code
-   uword auxIndex = 0;
-   if (autoFixAllM.n_rows > 0){
-       uvec fixIndex =  arma::find(autoFixAllM.col(FIXCOL_END) >= _displayStartIndex);
-       if (!fixIndex.empty()){
-           auxIndex = fixIndex(0);
-       }
-   }
+    // Just to optimize the code
+    uword auxIndex = 0;
+    if (autoFixAllM.n_rows > 0) {
+        uvec fixIndex =  arma::find(autoFixAllM.col(FIXCOL_END) >= _displayStartIndex);
+        if (!fixIndex.empty()) {
+            auxIndex = fixIndex(0);
+        }
+    }
 
-   for (uword i = auxIndex; i < autoFixAllM.n_rows  ; i++){
+    for (uword i = auxIndex; i < autoFixAllM.n_rows  ; i++) {
 
-       if ((autoFixAllM(i,FIXCOL_START) >= _displayStartIndex && autoFixAllM(i,FIXCOL_START) <=  _displayStopIndex ) ||(autoFixAllM(i,FIXCOL_START) <= _displayStartIndex && autoFixAllM(i,FIXCOL_END) >= _displayStartIndex )){
+        if ((autoFixAllM(i, FIXCOL_START) >= _displayStartIndex && autoFixAllM(i, FIXCOL_START) <=  _displayStopIndex ) || (autoFixAllM(i, FIXCOL_START) <= _displayStartIndex && autoFixAllM(i, FIXCOL_END) >= _displayStartIndex )) {
 
-           if (autoFixAllM(i,FIXCOL_START) <= _displayStartIndex && autoFixAllM(i,FIXCOL_END) >= _displayStartIndex ) // If it's a fixation that didn't end in the previous segment
-               posStart = -1;
-           else
-               posStart = (autoFixAllM(i,FIXCOL_START) - _displayStartIndex ) * (1/_displayIncrement);
+            if (autoFixAllM(i, FIXCOL_START) <= _displayStartIndex && autoFixAllM(i, FIXCOL_END) >= _displayStartIndex ) // If it's a fixation that didn't end in the previous segment
+                posStart = -1;
+            else
+                posStart = (autoFixAllM(i, FIXCOL_START) - _displayStartIndex ) * (1 / _displayIncrement);
 
-           posEnd = ((autoFixAllM(i,FIXCOL_END) - _displayStartIndex ) * (1/_displayIncrement)) - posStart;
+            posEnd = ((autoFixAllM(i, FIXCOL_END) - _displayStartIndex ) * (1 / _displayIncrement)) - posStart;
 
-           if (autoFixAllM(i,FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES){
-               painter.setBrush(QBrush("#a32e0c"));
-           }else{
-               painter.setBrush(QBrush("#ff8e00"));
-           }
-           painter.drawRect(QRect( posStart ,autofixPos, posEnd,barHeight));
-           number.str("");
-           number << counter;
-           painter.drawText( QPoint(posStart,autofixTPos), number.str().c_str() );
+            if (autoFixAllM(i, FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES) {
+                painter.setBrush(QBrush("#a32e0c"));
+            } else {
+                painter.setBrush(QBrush("#ff8e00"));
+            }
+            painter.drawRect(QRect( posStart , autofixPos, posEnd, barHeight));
+            number.str("");
+            number << counter;
+            painter.drawText( QPoint(posStart, autofixTPos), number.str().c_str() );
 
-           counter ++; // Next fixation
+            counter ++; // Next fixation
 
-       }else if (autoFixAllM(i,FIXCOL_END) >= _displayStopIndex){
-           break;
-       }
-   }
+        } else if (autoFixAllM(i, FIXCOL_END) >= _displayStopIndex) {
+            break;
+        }
+    }
 
     ui->lPanelFixations->setPixmap(pixmap);
     painter.end();
 }
 
 
-void MainWindow2::paintVelocity()
-{
+void MainWindow2::paintVelocity() {
 
-    QPixmap pixmap(ui->lPanelVelocity->width()-2,ui->lPanelVelocity->height()-2);
+    QPixmap pixmap(ui->lPanelVelocity->width() - 2, ui->lPanelVelocity->height() - 2);
     pixmap.fill(Qt::white);
 
     QPainter painter(&pixmap);
-    painter.drawText(QPoint(10,10),"Velocity:");
+    painter.drawText(QPoint(10, 10), "Velocity:");
     QPen myPen(Qt::red, 1, Qt::SolidLine);
     myPen.setColor(QColor(255, 0, 0, 127));
     painter.setPen(myPen);
@@ -1031,44 +992,42 @@ void MainWindow2::paintVelocity()
         double prevVelocity = smoothM(0, 4) * this->_velocity_view_zoom;
 
         for (uword i = _displayStartIndex + 1; i < _displayStopIndex; ++i) {
-            double x1 = (i-_displayStartIndex-1)*(1/_displayIncrement );
-            double x2 = (i-_displayStartIndex)*(1/_displayIncrement );
+            double x1 = (i - _displayStartIndex - 1) * (1 / _displayIncrement );
+            double x2 = (i - _displayStartIndex) * (1 / _displayIncrement );
 
             double curVelocity = smoothM(i, 4) * this->_velocity_view_zoom;
 
-            painter.drawLine(QPoint(x1, prevVelocity), QPoint(x2,curVelocity)); // XL
+            painter.drawLine(QPoint(x1, prevVelocity), QPoint(x2, curVelocity)); // XL
             prevVelocity = curVelocity;
         }
 
         //now draw halfway line
         double halfway_pixels = pixmap.height() / 2;
-        painter.setPen(QColor(0,0,0,127));
-        painter.drawLine(QPoint(0,halfway_pixels),
+        painter.setPen(QColor(0, 0, 0, 127));
+        painter.drawLine(QPoint(0, halfway_pixels),
                          QPoint(pixmap.width(), halfway_pixels));
-        painter.drawText(QPoint(10,halfway_pixels),QString::number(halfway_pixels / (this->_velocity_view_zoom)));
+        painter.drawText(QPoint(10, halfway_pixels), QString::number(halfway_pixels / (this->_velocity_view_zoom)));
 
         //and draw velocity threshold line
-        double vel_thresh_line = _project.GetProjectSetting(Consts::SETTING_VELOCITY_THRESHOLD,Consts::ACTIVE_CONFIGURATION()).toDouble() * this->_velocity_view_zoom;
-        painter.setPen(QColor(0,0,255,127));
-        painter.drawLine(QPoint(0,vel_thresh_line),
+        double vel_thresh_line = _project.GetProjectSetting(Consts::SETTING_VELOCITY_THRESHOLD, Consts::ACTIVE_CONFIGURATION()).toDouble() * this->_velocity_view_zoom;
+        painter.setPen(QColor(0, 0, 255, 127));
+        painter.drawLine(QPoint(0, vel_thresh_line),
                          QPoint(pixmap.width(), vel_thresh_line));
-        painter.drawText(QPoint(10,vel_thresh_line),"Velocity Threshold");
+        painter.drawText(QPoint(10, vel_thresh_line), "Velocity Threshold");
     }
 
     ui->lPanelVelocity->setPixmap(pixmap);
     painter.end();
 }
 
-void MainWindow2::paintPupilDilation()
-{
-    QPixmap pixmap(ui->lPanelPupilDilation->width()-2,ui->lPanelPupilDilation->height()-2);
+void MainWindow2::paintPupilDilation() {
+    QPixmap pixmap(ui->lPanelPupilDilation->width() - 2, ui->lPanelPupilDilation->height() - 2);
     pixmap.fill(Qt::white);
     QPainter painter(&pixmap);
-    painter.drawText(QPoint(10,10),"Pupil Dilation:");
+    painter.drawText(QPoint(10, 10), "Pupil Dilation:");
     QPen myPen(Qt::red, 1, Qt::SolidLine);
 
-    if (roughM.n_cols >= 8)
-    {
+    if (roughM.n_cols >= 8) {
         for (uword i = _displayStartIndex; i < _displayStopIndex; ++i) {
 
             myPen.setColor(QColor(255, 0, 0, 127));
@@ -1076,7 +1035,7 @@ void MainWindow2::paintPupilDilation()
             painter.setPen(myPen);
 
             int height = ui->lPanelPupilDilation->height();
-            int x = (i-_displayStartIndex)*(1/_displayIncrement );
+            int x = (i - _displayStartIndex) * (1 / _displayIncrement );
             int y_left = height - (roughM(i, 6) * height / _maxPupilDilation);
             int y_right = height - (roughM(i, 7) * height / _maxPupilDilation);
             painter.drawPoint(x, y_left); // Left dilation
@@ -1092,8 +1051,7 @@ void MainWindow2::paintPupilDilation()
 }
 
 
-void MainWindow2::paintCurrentFixation(int from, int to)
-{
+void MainWindow2::paintCurrentFixation(int from, int to) {
     // Paints the fixation that we are manipulating at this precise moment
     //QPixmap pixmap(ui->lPanelFixations->width()-2,ui->lPanelFixations->height()-2);
     //pixmap.fill(Qt::transparent);
@@ -1109,10 +1067,10 @@ void MainWindow2::paintCurrentFixation(int from, int to)
     painter.setPen(myPen);
     painter.setBrush(QBrush("#CD00CD"));
 
-    int posStart = (from - ((_currentFragment-1) * _secsFragment * _hz) ) * (1/_displayIncrement);
-    int posEnd = ((to - ((_currentFragment-1) * _secsFragment * _hz) ) * (1/_displayIncrement)) - posStart;
+    int posStart = (from - ((_currentFragment - 1) * _secsFragment * _hz) ) * (1 / _displayIncrement);
+    int posEnd = ((to - ((_currentFragment - 1) * _secsFragment * _hz) ) * (1 / _displayIncrement)) - posStart;
 
-    painter.drawRect(QRect( posStart ,fixPos, posEnd,barHeight));
+    painter.drawRect(QRect( posStart , fixPos, posEnd, barHeight));
 
     ui->lPanelFixations->setPixmap(pixmap);
     painter.end();
@@ -1121,19 +1079,18 @@ void MainWindow2::paintCurrentFixation(int from, int to)
 
 
 
-void MainWindow2::paintLabels()
-{
+void MainWindow2::paintLabels() {
 
     if (p_active_participant == NULL) return;
 
     // Find Max Pupil dilation and paint the number
-    if ( roughM.n_cols == 8){
+    if ( roughM.n_cols == 8) {
         //mat aux = roughM.cols(6,7);
         //maxPupilDilation = aux.max() + 1;
         //float medPupilDialation = maxPupilDilation / 2;
         //ui->lDialMax->setText(QString::number(maxPupilDilation));
         //ui->lDialMed->setText(QString::number(medPupilDialation));
-    }else{ // No pupil dilation
+    } else { // No pupil dilation
         //ui->lDialMax->setText("");
         //ui->lDialMed->setText("");
         //ui->lDialMin->setText("");
@@ -1154,12 +1111,11 @@ void MainWindow2::paintLabels()
     ui->lSubjectName->setText(this->p_active_participant->GetName());
 
     //Velocity zoom level
-    this->p_lMagnification->setText("x" + QString::number(this->_velocity_view_zoom,'f',2));
+    this->p_lMagnification->setText("x" + QString::number(this->_velocity_view_zoom, 'f', 2));
 }
 
 
-void MainWindow2::paintClear()
-{
+void MainWindow2::paintClear() {
     ui->lPanelRough->clear();
     ui->lPanelMissingData->clear();
     ui->lPanelSmooth->clear();
@@ -1174,8 +1130,7 @@ void MainWindow2::paintClear()
  *          PUBLIC SLOTS METHODS
  */
 
-void MainWindow2::fncPress_bInterpolate()
-{
+void MainWindow2::fncPress_bInterpolate() {
     DialogInterpolation w;
     w.setWindowTitle(tr("Interpolate smoothed data"));
     w.loadData(p_active_participant, (*p_smoothM));
@@ -1188,10 +1143,9 @@ void MainWindow2::fncPress_bInterpolate()
     paintVelocity();
 }
 
-void MainWindow2::fncPress_bSmooth()
-{
+void MainWindow2::fncPress_bSmooth() {
     DialogSmoothXY win;
-    win.loadData((*p_active_participant),(*p_roughM), (*p_smoothM));
+    win.loadData((*p_active_participant), (*p_roughM), (*p_smoothM));
     win.setWindowTitle(tr("Smooth data"));
     win.exec();
 
@@ -1203,10 +1157,9 @@ void MainWindow2::fncPress_bSmooth()
 
 }
 
-void MainWindow2::fncPress_bEstimateFixations()
-{
+void MainWindow2::fncPress_bEstimateFixations() {
     DialogEstimateFixations efd;
-    efd.loadData((*p_active_participant),(*p_roughM),(*p_smoothM), (*p_autoFixAllM));
+    efd.loadData((*p_active_participant), (*p_roughM), (*p_smoothM), (*p_autoFixAllM));
     efd.exec();
 
     //reload incase batch processed
@@ -1214,72 +1167,61 @@ void MainWindow2::fncPress_bEstimateFixations()
     GPMatrixFiles::readFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     GPMatrixFiles::readFileSafe((*p_autoFixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
 
-    if (!p_autoFixAllM->is_empty())
-    {
+    if (!p_autoFixAllM->is_empty()) {
         fixAllM = autoFixAllM;
-        GPMatrixFunctions::fncReturnFixationinSegments( p_fixAllM, p_experimentalSegmentsM);
-        if (!p_autoFixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_autoFixAllM),p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
+        GPMatrixFunctions::returnFixationinSegments( p_fixAllM, p_experimentalSegmentsM);
+        if (!p_autoFixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_autoFixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
         if (!p_fixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     }
 
     paintAll();
 }
 
-void MainWindow2::fncPress_bNext()
-{
+void MainWindow2::fncPress_bNext() {
     // Go to the next fragment
-    if ( _currentFragment != _nFragments)
-    {
-        _previousFragment = _currentFragment;
-        _currentFragment = _currentFragment + 1;
+    if ( _currentFragment < _nFragments) {
+        _currentFragment++;
         paintAll();
     }
 }
 
 
-void MainWindow2::fncPress_bPrevious()
-{
+void MainWindow2::fncPress_bPrevious() {
     // Go to the previous fragment
-    if (_currentFragment != 1)
-    {
-        _currentFragment = _previousFragment;
-        _previousFragment = _previousFragment - 1;
+    if (_currentFragment > 1) {
+        _currentFragment--;
         paintAll();
     }
 }
 
-void MainWindow2::fncPress_bParticipantLeft()
-{
+void MainWindow2::fncPress_bParticipantLeft() {
     int pn1 = this->_index_active_participant;
-    int pn = pn1-1;
-    if (pn<0) pn = 0;
-    if (pn>=_project.numParticipants()) pn = _project.numParticipants()-1;
-    ui->lineEditParticipant->setText(QString::number(pn+1));
-    if (pn1!=pn) this->fncSetActiveParticipant(pn);
+    int pn = pn1 - 1;
+    if (pn < 0) pn = 0;
+    if (pn >= _project.numParticipants()) pn = _project.numParticipants() - 1;
+    ui->lineEditParticipant->setText(QString::number(pn + 1));
+    if (pn1 != pn) this->fncSetActiveParticipant(pn);
 }
 
-void MainWindow2::fncPress_bParticipantRight()
-{
+void MainWindow2::fncPress_bParticipantRight() {
     int pn1 = this->_index_active_participant;
-    int pn = pn1+1;
-    if (pn<0) pn = 0;
-    if (pn>=_project.numParticipants()) pn = _project.numParticipants()-1;
-    ui->lineEditParticipant->setText(QString::number(pn+1));
-    if (pn1!=pn) this->fncSetActiveParticipant(pn);
+    int pn = pn1 + 1;
+    if (pn < 0) pn = 0;
+    if (pn >= _project.numParticipants()) pn = _project.numParticipants() - 1;
+    ui->lineEditParticipant->setText(QString::number(pn + 1));
+    if (pn1 != pn) this->fncSetActiveParticipant(pn);
 }
 
-void MainWindow2::fncPress_bExecuteManual()
-{
+void MainWindow2::fncPress_bExecuteManual() {
     // Manual execution of Create/ delete / Merge
     int from = ui->txFrom->text().toInt(); // Get the converted data from the text box. If it's not numeric it return 0.
     int to =  ui->txTo->text().toInt();
-    if (from >0 && to>0){
+    if (from > 0 && to > 0) {
         this->fncPress_bExecuteManual(from, to); // Pass the event to MainWindow2 class
     }
 }
 
-void MainWindow2::fncPress_bNotes()
-{
+void MainWindow2::fncPress_bNotes() {
     DialogParticipantEditNotes gpen(this->p_active_participant);
     gpen.exec();
     this->paintLabels();
@@ -1288,38 +1230,31 @@ void MainWindow2::fncPress_bNotes()
 
 
 
-void MainWindow2::fncPress_bCreate()
-{
+void MainWindow2::fncPress_bCreate() {
     fncPressActionButton(Consts::AC_CREATE, ui->bCreate, Consts::HELP_CREATE_MODE);
 }
 
-void MainWindow2::fncPress_bDelete()
-{
+void MainWindow2::fncPress_bDelete() {
     fncPressActionButton(Consts::AC_DELETE, ui->bDelete, Consts::HELP_DELETE_MODE);
 }
 
-void MainWindow2::fncPress_bMerge()
-{
+void MainWindow2::fncPress_bMerge() {
     fncPressActionButton(Consts::AC_MERGE, ui->bMerge, Consts::HELP_MERGE_MODE);
 }
 
-void MainWindow2::fncPress_bSmoothPursuit()
-{
-    fncPressActionButton(Consts::AC_SMOOTH_PURSUIT,ui->bSmoothPursuit,Consts::HELP_PURSUIT_MODE);
+void MainWindow2::fncPress_bSmoothPursuit() {
+    fncPressActionButton(Consts::AC_SMOOTH_PURSUIT, ui->bSmoothPursuit, Consts::HELP_PURSUIT_MODE);
 }
 
-void MainWindow2::fncPress_bResetFixations()
-{
-    fncPressActionButton(Consts::AC_RESET_TO_AUTO,ui->bResetToAuto,Consts::HELP_RESET_MODE);
+void MainWindow2::fncPress_bResetFixations() {
+    fncPressActionButton(Consts::AC_RESET_TO_AUTO, ui->bResetToAuto, Consts::HELP_RESET_MODE);
 }
 
-void MainWindow2::fncPress_bResizeFixation()
-{
+void MainWindow2::fncPress_bResizeFixation() {
     fncPressActionButton(Consts::AC_DRAG_ENDS, ui->bResizeFixation, Consts::HELP_DRAG_MODE);
 }
 
-void MainWindow2::fncPressActionButton(int action, QPushButton* button, QString message)
-{
+void MainWindow2::fncPressActionButton(int action, QPushButton* button, QString message) {
     // Activate. deactivate an action mode.
     ui->bCreate->setStyleSheet("");
     ui->bDelete->setStyleSheet("");
@@ -1328,22 +1263,18 @@ void MainWindow2::fncPressActionButton(int action, QPushButton* button, QString 
     ui->bSmoothPursuit->setStyleSheet("");
     ui->bResizeFixation->setStyleSheet("");
 
-    if (this->_currentAction == action)
-    {
+    if (this->_currentAction == action) {
         button->setStyleSheet("");
         _currentAction = Consts::AC_NOACTION;
         ui->statusbar->showMessage(Consts::HELP_STATUS_READY);
-    }
-    else
-    {
+    } else {
         button->setStyleSheet("* { background-color: rgb(255,125,100) }");
         _currentAction = action;
         ui->statusbar->showMessage(message);
     }
 }
 
-void MainWindow2::fncPress_bExecuteManual(int from, int to)
-{
+void MainWindow2::fncPress_bExecuteManual(int from, int to) {
     // Ececute the action manually rather than with the mouse click
     fncManipulateFix(from, to);
 
@@ -1355,15 +1286,13 @@ void MainWindow2::fncPress_bExecuteManual(int from, int to)
     paintFixations();
 }
 
-void MainWindow2::fncPress_bZoomin()
-{
+void MainWindow2::fncPress_bZoomin() {
     this->_velocity_view_zoom *= 2;
     paintVelocity();
     paintLabels();
 }
 
-void MainWindow2::fncPress_bZoomout()
-{
+void MainWindow2::fncPress_bZoomout() {
     this->_velocity_view_zoom /= 2;
     paintVelocity();
     paintLabels();
@@ -1374,18 +1303,15 @@ void MainWindow2::fncPress_bZoomout()
   *     MENU EVENTS
   */
 
-void MainWindow2::fncPress_subMenuDetectFixations()
-{
+void MainWindow2::fncPress_subMenuDetectFixations() {
     ui->stackedWidget->setCurrentWidget(ui->page_auto);
 }
 
-void MainWindow2::fncPress_subMenuManualEditing()
-{
+void MainWindow2::fncPress_subMenuManualEditing() {
     ui->stackedWidget->setCurrentWidget(ui->page_manual);
 }
 
-void MainWindow2::fncPress_subMenuDialogConfig()
-{
+void MainWindow2::fncPress_subMenuDialogConfig() {
     fncWaitForLoad();
 
     //TODO: change to load participant settings
@@ -1401,22 +1327,19 @@ void MainWindow2::fncPress_subMenuDialogConfig()
     fncSetActiveParticipant(0);
 }
 
-void MainWindow2::fncPress_subMenuShowErrorLog()
-{
+void MainWindow2::fncPress_subMenuShowErrorLog() {
     DialogGrafixError::ShowDialog();
 }
 
-void MainWindow2::fncPress_subMenuShowStatistics()
-{
+void MainWindow2::fncPress_subMenuShowStatistics() {
     fncWaitForLoad();
     DialogStatistics w;
     w.setWindowTitle(tr("Statistics"));
-    w.loadData(p_fixAllM,p_autoFixAllM, p_experimentalSegmentsM);
+    w.loadData(p_fixAllM, p_autoFixAllM, p_experimentalSegmentsM);
     w.exec();
 }
 
-void MainWindow2::fncPress_subMenuHeatMap()
-{
+void MainWindow2::fncPress_subMenuHeatMap() {
     fncWaitForLoad();
     DialogHeatMap w;
     w.setWindowTitle(tr("Heap Maps"));
@@ -1424,8 +1347,7 @@ void MainWindow2::fncPress_subMenuHeatMap()
     w.exec();
 }
 
-void MainWindow2::fncPress_subMenuProjectOpen()
-{
+void MainWindow2::fncPress_subMenuProjectOpen() {
     // Open a new project
     fncWaitForLoad();
 
@@ -1434,19 +1356,17 @@ void MainWindow2::fncPress_subMenuProjectOpen()
 
     //saves directory of project returned
     QSettings settings("options.ini", QSettings::IniFormat);
-    settings.setValue(Consts::SETTING_PROJECT,_project.GetFullDirectory());
+    settings.setValue(Consts::SETTING_PROJECT, _project.GetFullDirectory());
 
     p_active_participant = NULL;
-    if (_project.numParticipants()>0)
-    {
+    if (_project.numParticipants() > 0) {
         qDebug() << "Participants out:" << _project.numParticipants() << "\n";
         fncSetActiveParticipant(0);//TODO: Settings remember last participant
     }
 }
 
 
-void MainWindow2::fncPress_subMenuVisualizeCurrentFragment()
-{
+void MainWindow2::fncPress_subMenuVisualizeCurrentFragment() {
     fncWaitForLoad();
     DialogVisualization w;
     w.setWindowTitle(tr("Visualize Fragment"));
@@ -1454,8 +1374,7 @@ void MainWindow2::fncPress_subMenuVisualizeCurrentFragment()
     w.exec();
 }
 
-void MainWindow2::fncPress_subMenuVisualizeSegments()
-{
+void MainWindow2::fncPress_subMenuVisualizeSegments() {
     fncWaitForLoad();
     DialogVisualizationSegments w;
     w.setWindowTitle(tr("Visualize Segment"));
@@ -1463,8 +1382,7 @@ void MainWindow2::fncPress_subMenuVisualizeSegments()
     w.exec();
 }
 
-void MainWindow2::fncPress_subMenuExport()
-{
+void MainWindow2::fncPress_subMenuExport() {
     // Export the fixations in the middle of the segments
     fncWaitForLoad();
     DialogExport w;
@@ -1474,8 +1392,7 @@ void MainWindow2::fncPress_subMenuExport()
 }
 
 
-void MainWindow2::fncPress_subMenuRecalculateFixations()
-{
+void MainWindow2::fncPress_subMenuRecalculateFixations() {
     // It recalcules all the values for the fixations
     fncWaitForLoad();
     GPFixationOperations::fncRecalculateFixations(roughM, fixAllM, _expWidth, _expHeight, _degPerPixel, _copyEyes);
@@ -1487,8 +1404,7 @@ void MainWindow2::fncPress_subMenuRecalculateFixations()
 }
 
 
-void MainWindow2::fncPress_subMenuCalculateSmooth()
-{
+void MainWindow2::fncPress_subMenuCalculateSmooth() {
     fncWaitForLoad();
     DialogSmoothXY w;
     w.setWindowTitle(tr("Smooth data"));
@@ -1502,93 +1418,82 @@ void MainWindow2::fncPress_subMenuCalculateSmooth()
     paintVelocity();
 }
 
-void MainWindow2::fncPress_subMenuAdjustParameters()
-{
+void MainWindow2::fncPress_subMenuAdjustParameters() {
     fncWaitForLoad();
     DialogTestSmoothParameters d;
-    d.loadData(roughM,_displayStartIndex,_displayStopIndex,(*p_active_participant));
+    d.loadData(roughM, _displayStartIndex, _displayStopIndex, (*p_active_participant));
 
     d.exec();
     fncLoadSettings(Consts::ACTIVE_CONFIGURATION());  //reload parameters after adjustment
 }
 
-void MainWindow2::fncPress_subMenuChangeConfiguration()
-{
+void MainWindow2::fncPress_subMenuChangeConfiguration() {
     fncWaitForLoad();
     DialogSaveNewConfiguration d;
     d.loadData(this->_last_selected_configuration, this->_project);
     d.exec();
 
     GrafixConfiguration selected_config = d.Selected();
-    if (!(selected_config == Consts::ACTIVE_CONFIGURATION()))
-    {
+    if (!(selected_config == Consts::ACTIVE_CONFIGURATION())) {
         //not active configuration, so load the settings.
         _project.ActivateConfiguration(selected_config);
         fncLoadSettings(selected_config);
         this->_configuration_changed = false;
         ui->lConfigurationStatus->setText("Active Configuration: " + selected_config.first);
-        ui->statusbar->showMessage("Status: The active configuration '" + selected_config.first +"' has been selected.");
+        ui->statusbar->showMessage("Status: The active configuration '" + selected_config.first + "' has been selected.");
         this->_last_selected_configuration = selected_config;
     }
 }
 
-void MainWindow2::fncPress_subMenuReloadConfiguration()
-{
+void MainWindow2::fncPress_subMenuReloadConfiguration() {
     if (_last_selected_configuration == Consts::ACTIVE_CONFIGURATION()) return;
     _project.ActivateConfiguration(_last_selected_configuration);
     fncLoadSettings(_last_selected_configuration);
     this->_configuration_changed = false;
     ui->lConfigurationStatus->setText("Active Configuration: " + _last_selected_configuration.first);
-    ui->statusbar->showMessage("Status: The active configuration '" + _last_selected_configuration.first +"' has been re-instantiated.");
+    ui->statusbar->showMessage("Status: The active configuration '" + _last_selected_configuration.first + "' has been re-instantiated.");
 }
 
-void MainWindow2::fncPress_subMenuClose()
-{
+void MainWindow2::fncPress_subMenuClose() {
     this->close();
 }
 
-void MainWindow2::fncPress_subMenuMovie()
-{
+void MainWindow2::fncPress_subMenuMovie() {
     DialogVideoPlayer dvp;
     dvp.loadData(p_active_participant, roughM, smoothM, fixAllM);
     dvp.exec();
 }
 
-void MainWindow2::fncChange_tParticipantNumber()
-{
+void MainWindow2::fncChange_tParticipantNumber() {
     //check if number and in participant
     int number = ui->lineEditParticipant->text().toInt();
-    if (number<1) number = 1;
-    if (number>_project.numParticipants()) number = _project.numParticipants();
+    if (number < 1) number = 1;
+    if (number > _project.numParticipants()) number = _project.numParticipants();
     ui->lineEditParticipant->setText(QString::number(number));
 
-    if (number-1 != this->_index_active_participant)
-        this->fncSetActiveParticipant(number-1);
+    if (number - 1 != this->_index_active_participant)
+        this->fncSetActiveParticipant(number - 1);
 }
 
-void MainWindow2::fncChange_tSegmentNumber()
-{
+void MainWindow2::fncChange_tSegmentNumber() {
     int number = ui->lineEditSegment->text().toInt();
-    if (number<1) number = 1;
-    if (number>_nFragments) number = _nFragments;
+    if (number < 1) number = 1;
+    if (number > _nFragments) number = _nFragments;
     ui->lineEditSegment->setText(QString::number(number));
 
-    if (number != _currentFragment)
-    {
+    if (number != _currentFragment) {
         _currentFragment = number;
         this->paintAll();
     }
 }
 
-void MainWindow2::fncSettingsChanged()
-{
+void MainWindow2::fncSettingsChanged() {
     this->_configuration_changed = true;
     ui->lConfigurationStatus->setText("Active Configuration: Unsaved.");
     ui->statusbar->showMessage("Status: The active configuration has been changed, save configuration now if you want to be able to re-use this configuration in the future");
 }
 
-void MainWindow2::fncSetToolTips()
-{
+void MainWindow2::fncSetToolTips() {
     this->ui->lPanelMissingData->setToolTip("Missing Data");
     this->ui->lPanelFlags->setToolTip("Flags for various actions performed:\n"
                                       "Interpolation - missing data has been interpolated.\n"
@@ -1634,117 +1539,99 @@ void MainWindow2::fncSetToolTips()
 
 }
 
-void MainWindow2::fncChange_tInterpolation()
-{
+void MainWindow2::fncChange_tInterpolation() {
     fncChangeLineEdit(Consts::SETTING_INTERP_LATENCY, ui->leInterpolation, ui->sliderInterpolation);
 }
-void MainWindow2::fncChange_tDisplacement()
-{
+void MainWindow2::fncChange_tDisplacement() {
     fncChangeLineEdit(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, ui->leDisplacement, ui->sliderDisplacement);
 }
-void MainWindow2::fncChange_tDisplacInterpolate()
-{
-    fncChangeLineEdit(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, ui->leDisplacInterpolate,ui->sliderDisplacInterpolate);
+void MainWindow2::fncChange_tDisplacInterpolate() {
+    fncChangeLineEdit(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, ui->leDisplacInterpolate, ui->sliderDisplacInterpolate);
 }
-void MainWindow2::fncChange_tMinFixation()
-{
+void MainWindow2::fncChange_tMinFixation() {
     fncChangeLineEdit(Consts::SETTING_POSTHOC_MIN_DURATION_VAL, ui->leMinFixation, ui->sliderMinFixation);
 }
-void MainWindow2::fncChange_tVelocity()
-{
+void MainWindow2::fncChange_tVelocity() {
     fncChangeLineEdit(Consts::SETTING_VELOCITY_THRESHOLD, ui->leVelocity, ui->sliderVelocity);
     paintVelocity();//to paint line
 }
-void MainWindow2::fncChange_tVelocityVariance()
-{
+void MainWindow2::fncChange_tVelocityVariance() {
     fncChangeLineEdit(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, ui->leVelocityVariance, ui->sliderVelocityVariance);
 }
-void MainWindow2::fncChange_tSigmaS()
-{
+void MainWindow2::fncChange_tSigmaS() {
     fncChangeLineEdit(Consts::SETTING_SMOOTHING_SIGMA_S, ui->leSigmaS, ui->sliderSigmaS);
 }
-void MainWindow2::fncChange_tSigmaR()
-{
+void MainWindow2::fncChange_tSigmaR() {
     fncChangeLineEdit(Consts::SETTING_SMOOTHING_SIGMA_R, ui->leSigmaR, ui->sliderSigmaR);
 }
 
-void MainWindow2::fncChangeSlider(QString setting, QSlider* sl, QLineEdit* le)
-{
+void MainWindow2::fncChangeSlider(QString setting, QSlider* sl, QLineEdit* le) {
     if (_hold_changes) return;
     _hold_changes = true;
     double new_value = Consts::GetValueFromSlider(setting, sl->value());
-    _project.SetProjectSetting(setting,Consts::ACTIVE_CONFIGURATION(),new_value);
-    le->setText(QString::number(new_value,'f',3));
+    _project.SetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION(), new_value);
+    le->setText(QString::number(new_value, 'f', 3));
     fncSettingsChanged();
     _hold_changes = false;
 }
 
-void MainWindow2::fncChangeLineEdit(QString setting, QLineEdit* le, QSlider* sl)
-{
+void MainWindow2::fncChangeLineEdit(QString setting, QLineEdit* le, QSlider* sl) {
     if (_hold_changes) return;
     _hold_changes = true;
     double new_value = le->text().toDouble();
-    _project.SetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION(),new_value);
+    _project.SetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION(), new_value);
     sl->setValue(Consts::GetSliderValue(setting, new_value));
     fncSettingsChanged();
     _hold_changes = false;
 }
 
-void MainWindow2::fncChange_sSigmaS()
-{
+void MainWindow2::fncChange_sSigmaS() {
     fncChangeSlider(Consts::SETTING_SMOOTHING_SIGMA_S, ui->sliderSigmaS, ui->leSigmaS);
 }
-void MainWindow2::fncChange_sSigmaR()
-{
+void MainWindow2::fncChange_sSigmaR() {
     fncChangeSlider(Consts::SETTING_SMOOTHING_SIGMA_R, ui->sliderSigmaR, ui->leSigmaR);
 }
-void MainWindow2::fncChange_sDisplacement()
-{
+void MainWindow2::fncChange_sDisplacement() {
     fncChangeSlider(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_VAL, ui->sliderDisplacement, ui->leDisplacement);
 }
 
-void MainWindow2::fncChange_sDisplacInterpolate()
-{
+void MainWindow2::fncChange_sDisplacInterpolate() {
     fncChangeSlider(Consts::SETTING_INTERP_MAXIMUM_DISPLACEMENT, ui->sliderDisplacInterpolate, ui->leDisplacInterpolate);
 }
 
-void MainWindow2::fncChange_sInterpolation()
-{
+void MainWindow2::fncChange_sInterpolation() {
     fncChangeSlider(Consts::SETTING_INTERP_LATENCY, ui->sliderInterpolation, ui->leInterpolation);
 }
 
-void MainWindow2::fncChange_sMinFixation()
-{
+void MainWindow2::fncChange_sMinFixation() {
     fncChangeSlider(Consts::SETTING_POSTHOC_MIN_DURATION_VAL, ui->sliderMinFixation, ui->leMinFixation);
 }
 
 
-void MainWindow2::fncChange_sVelocity()
-{
+void MainWindow2::fncChange_sVelocity() {
     fncChangeSlider(Consts::SETTING_VELOCITY_THRESHOLD, ui->sliderVelocity, ui->leVelocity);
     paintVelocity(); //to paint line
 }
 
-void MainWindow2::fncChange_sVelocityVariance()
-{
+void MainWindow2::fncChange_sVelocityVariance() {
     fncChangeSlider(Consts::SETTING_POSTHOC_LIMIT_RMS_VAL, ui->sliderVelocityVariance, ui->leVelocityVariance);
 }
 
-void MainWindow2::fncPress_cbDisplacement(){
+void MainWindow2::fncPress_cbDisplacement() {
     _project.SetProjectSetting(Consts::SETTING_POSTHOC_MERGE_CONSECUTIVE_FLAG, Consts::ACTIVE_CONFIGURATION(),
-                                 ui->cb_displacement->checkState());
+                               ui->cb_displacement->checkState());
     fncSettingsChanged();
 }
 
-void MainWindow2::fncPress_cbMinFixation(){
+void MainWindow2::fncPress_cbMinFixation() {
     _project.SetProjectSetting(Consts::SETTING_POSTHOC_MIN_DURATION_FLAG, Consts::ACTIVE_CONFIGURATION(),
-                                 ui->cb_minFixation->checkState());
+                               ui->cb_minFixation->checkState());
     fncSettingsChanged();
 }
 
-void MainWindow2::fncPress_cbVelocityVariance(){
+void MainWindow2::fncPress_cbVelocityVariance() {
     _project.SetProjectSetting(Consts::SETTING_POSTHOC_LIMIT_RMS_FLAG, Consts::ACTIVE_CONFIGURATION(),
-                                 ui->cb_velocityVariance->checkState());
+                               ui->cb_velocityVariance->checkState());
     fncSettingsChanged();
 }
 
