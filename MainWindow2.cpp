@@ -202,7 +202,14 @@ bool MainWindow2::LoadProject() {
 }
 
 bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
+
+    // prevent spruios events
     if (!obj->isWindowType()) return false;
+
+    if (QApplication::activeWindow() != this) {
+        paintExperimentalSegments(); //erase the line
+        return false;
+    }
 
     bool isMouseEvent = (event->type() == QEvent::MouseMove ||
                          event->type() == QEvent::MouseButtonPress ||
@@ -1351,8 +1358,10 @@ void MainWindow2::fncPress_subMenuProjectOpen() {
     // Open a new project
     fncWaitForLoad();
 
+    qDebug() << "loading";
     DialogOpenProject w(&_project);
     w.exec();
+
 
     //saves directory of project returned
     QSettings settings("options.ini", QSettings::IniFormat);

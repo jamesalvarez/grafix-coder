@@ -3,7 +3,7 @@
 #include "ui_DialogOpenProject.h"
 
 
-DialogOpenProject::DialogOpenProject(GrafixProject * project, QWidget *parent) :
+DialogOpenProject::DialogOpenProject(GrafixProject* project, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DialogOpenProject)
 {
@@ -34,7 +34,9 @@ DialogOpenProject::~DialogOpenProject()
 
 void DialogOpenProject::accept()
 {
+    qDebug() << "Saving settings";
     _project->SaveSettings();
+    qDebug() << "SAved";
     QDialog::accept();
 }
 

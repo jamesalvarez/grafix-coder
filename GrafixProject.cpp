@@ -488,14 +488,18 @@ void GrafixProject::SaveSettings()
 
 bool GrafixProject::LoadProjectSettings(QString d)
 {
+    qDebug() << "loading settings";
     this->cleanParticipants();
     _directory = d;
 
+    qDebug() << "clean parts";
 
     if (this->HasDirectory() && this->HasSettings())
     {
+        qDebug() << "has direc and settings";
         QSettings settings(this->GetProjectSettingsPath(), QSettings::IniFormat);
         int numberparticipants = settings.value(Consts::SETTING_NUMBER_PARTICIPANTS).toInt();
+        _participants.empty();
         for (int i = 0; i < numberparticipants; i++)
         {
             QString pcode = Consts::SETTING_PARTICIPANT_DIRECTORY + QString::number(i);

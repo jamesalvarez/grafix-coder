@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>687</width>
-    <height>463</height>
+    <height>482</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,33 +39,11 @@
     <string>Choose the columns that you would like to export:</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="cb_timestamp">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>50</y>
-     <width>121</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Timestamp</string>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-  </widget>
   <widget class="QCheckBox" name="cb_xLeftRough">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>120</y>
+     <x>50</x>
+     <y>220</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -77,8 +55,8 @@
   <widget class="QCheckBox" name="cb_yLeftRough">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>150</y>
+     <x>50</x>
+     <y>250</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -90,8 +68,8 @@
   <widget class="QCheckBox" name="cb_xRightRough">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>180</y>
+     <x>50</x>
+     <y>280</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -103,8 +81,8 @@
   <widget class="QCheckBox" name="cb_yRightRough">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>210</y>
+     <x>50</x>
+     <y>310</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -116,9 +94,9 @@
   <widget class="QCheckBox" name="cb_xFilter">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>120</y>
-     <width>141</width>
+     <x>200</x>
+     <y>220</y>
+     <width>111</width>
      <height>20</height>
     </rect>
    </property>
@@ -129,9 +107,9 @@
   <widget class="QCheckBox" name="cb_yFilter">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>150</y>
-     <width>141</width>
+     <x>200</x>
+     <y>250</y>
+     <width>111</width>
      <height>20</height>
     </rect>
    </property>
@@ -142,8 +120,8 @@
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>90</y>
+     <x>50</x>
+     <y>190</y>
      <width>101</width>
      <height>16</height>
     </rect>
@@ -155,8 +133,8 @@
   <widget class="QCheckBox" name="cb_LeftPupil">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>240</y>
+     <x>50</x>
+     <y>340</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -168,8 +146,8 @@
   <widget class="QCheckBox" name="cb_rightPupil">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>270</y>
+     <x>50</x>
+     <y>370</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -181,8 +159,8 @@
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>90</y>
+     <x>200</x>
+     <y>190</y>
      <width>101</width>
      <height>16</height>
     </rect>
@@ -194,8 +172,8 @@
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>90</y>
+     <x>320</x>
+     <y>190</y>
      <width>101</width>
      <height>16</height>
     </rect>
@@ -207,8 +185,8 @@
   <widget class="QCheckBox" name="cb_fixNumber">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>120</y>
+     <x>320</x>
+     <y>220</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -220,8 +198,8 @@
   <widget class="QCheckBox" name="cb_fixDur">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>150</y>
+     <x>320</x>
+     <y>250</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -233,8 +211,8 @@
   <widget class="QCheckBox" name="cb_xAverage">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>180</y>
+     <x>320</x>
+     <y>280</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -246,8 +224,8 @@
   <widget class="QCheckBox" name="cb_yAverage">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>210</y>
+     <x>320</x>
+     <y>310</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -259,8 +237,8 @@
   <widget class="QCheckBox" name="cb_euclideanDis">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>240</y>
+     <x>320</x>
+     <y>340</y>
      <width>151</width>
      <height>20</height>
     </rect>
@@ -273,7 +251,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>390</y>
+     <y>430</y>
      <width>131</width>
      <height>41</height>
     </rect>
@@ -293,7 +271,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>390</y>
+     <y>430</y>
      <width>131</width>
      <height>41</height>
     </rect>
@@ -312,34 +290,37 @@
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>90</y>
+     <x>490</x>
+     <y>190</y>
      <width>101</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>*Saccades:</string>
+    <string>Saccades:</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_6">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>440</y>
-     <width>571</width>
-     <height>16</height>
+     <x>280</x>
+     <y>60</y>
+     <width>401</width>
+     <height>81</height>
     </rect>
    </property>
    <property name="text">
-    <string>*Please note that the saccades calculation may only be accurate in high quality datasets</string>
+    <string>For timestamped data, fixation and saccade data is presented alongside the data rows which encompass that event.  Please note that the saccades calculation may only be accurate in high quality datasets</string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
    </property>
   </widget>
   <widget class="QCheckBox" name="cb_sacNumber">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>120</y>
+     <x>490</x>
+     <y>220</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -351,8 +332,8 @@
   <widget class="QCheckBox" name="cb_sacDuration">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>150</y>
+     <x>490</x>
+     <y>250</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -364,8 +345,8 @@
   <widget class="QCheckBox" name="cb_smoothpursuit">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>270</y>
+     <x>320</x>
+     <y>370</y>
      <width>151</width>
      <height>20</height>
     </rect>
@@ -377,8 +358,8 @@
   <widget class="QCheckBox" name="cb_sacAmplitude">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>180</y>
+     <x>490</x>
+     <y>280</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -390,8 +371,8 @@
   <widget class="QCheckBox" name="cb_sacVelocityAv">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>210</y>
+     <x>490</x>
+     <y>310</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -403,8 +384,8 @@
   <widget class="QCheckBox" name="cb_sacVelocityPeak">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>240</y>
+     <x>490</x>
+     <y>340</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -417,7 +398,7 @@
    <property name="geometry">
     <rect>
      <x>540</x>
-     <y>390</y>
+     <y>430</y>
      <width>131</width>
      <height>41</height>
     </rect>
@@ -436,9 +417,9 @@
   <widget class="QCheckBox" name="cb_velocity">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>180</y>
-     <width>141</width>
+     <x>200</x>
+     <y>280</y>
+     <width>101</width>
      <height>20</height>
     </rect>
    </property>
@@ -449,14 +430,56 @@
   <widget class="QPushButton" name="b_select_all">
    <property name="geometry">
     <rect>
-     <x>560</x>
-     <y>10</y>
+     <x>290</x>
+     <y>150</y>
      <width>113</width>
      <height>32</height>
     </rect>
    </property>
    <property name="text">
     <string>Select All</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="rb_timestamped">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>60</y>
+     <width>151</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Timestamped Data</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="rb_fixations">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>90</y>
+     <width>151</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Fixations</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="rb_saccades">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>120</y>
+     <width>151</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Saccades</string>
    </property>
   </widget>
  </widget>

@@ -631,7 +631,7 @@ void GPMatrixFunctions::calculateFixation(const mat &roughM, int startIndex, int
     double averageX = validData ? mean(preparedRoughM.col(1)) : -1;
     double averageY = validData ? mean(preparedRoughM.col(2)) : -1;
     double variance = validData ? calculateRMSRaw(preparedRoughM, expWidth, expHeight, degPerPixel) : -1;
-    double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationM.col(4)) + mean(roughFixationM.col(5))) / 2 : 0;
+    double pupilDilation = (roughM.n_cols >= 8) ? (mean(roughFixationM.col(6)) + mean(roughFixationM.col(7))) / 2 : 0;
 
     outFixation << startIndex << endIndex << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
 }
@@ -640,7 +640,7 @@ void GPMatrixFunctions::calculateFixation(const mat &roughM, int startIndex, int
  *      SACCADES
  ***************************/
 
-void GPMatrixFunctions::calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM) {
+void GPMatrixFunctions::calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM, double degreesPerPixel) {
 
     //clear saccades matrix
     saccadesM.reset();
@@ -661,7 +661,7 @@ void GPMatrixFunctions::calculateSaccades(mat &saccadesM, const mat &fixAllM, co
         double xDiff = smoothM.at(startOfSaccade, 2) - smoothM.at(endOfSaccade, 2);
         double yDiff = smoothM.at(startOfSaccade, 3) - smoothM.at(endOfSaccade, 3);
 
-        double amplitudePixels = sqrt((xDiff * xDiff) + (yDiff * yDiff));
+        double amplitudePixels = sqrt((xDiff * xDiff) + (yDiff * yDiff)) * degreesPerPixel;
 
         //calculate average and peak velocity
 
@@ -898,6 +898,10 @@ void GPMatrixFunctions::calculateVelocity(mat &smoothM, GrafixSettingsLoader set
     double x_1back = smoothM(0, 2);
     double y_1back = smoothM(0, 3);
     double time_1back = smoothM(0, 0);
+
+    // Set firs row to be saccade
+    smoothM.at(0, 4) = -1;
+    smoothM.at(0, 5) = 0;
 
     for (uword i = 1; i < smoothM.n_rows; ++i) {
 

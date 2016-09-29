@@ -50,6 +50,8 @@ public slots:
     void fncPress_bExportAll();
     void fncPress_bCancel();
     void fncPress_bSelectAll();
+    Consts::EXPORT_TYPE fncGetCurrentExportTypeFromRadioButtons();
+    void fncChangeExportType();
 };
 
 #endif // EXPORTDIALOG_H

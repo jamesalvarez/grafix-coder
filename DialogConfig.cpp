@@ -31,6 +31,7 @@ void DialogConfig::loadData(GrafixProject *project)
                                                   _configuration).toBool());
 
 
+    ui->combo_HZ->addItem("30", Consts::HZ_30);
     ui->combo_HZ->addItem("50", Consts::HZ_50);
     ui->combo_HZ->addItem("60", Consts::HZ_60);
     ui->combo_HZ->addItem("120", Consts::HZ_120);

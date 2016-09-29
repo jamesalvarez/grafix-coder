@@ -234,9 +234,26 @@ bool GPMatrixFiles::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QString 
         return false;
     }
 
+    Consts::EXPORT_TYPE exportType = (Consts::EXPORT_TYPE)(settingsLoader.LoadSetting(Consts::SETTING_EXPORT_TYPE).toInt());
+
+    switch(exportType) {
+        case Consts::EXPORT_TIMESTAMPED:
+            return makeExportTimestampedData(roughM, smoothM, fixAllM, filename, settingsLoader);
+        case Consts::EXPORT_FIXATIONS:
+            return makeExportFixations(fixAllM, filename, settingsLoader);
+        case Consts::EXPORT_SACCADES:
+            return makeExportSaccades(smoothM, fixAllM, filename, settingsLoader);
+    }
+}
+
+bool GPMatrixFiles::makeExportTimestampedData(mat &roughM, mat &smoothM, mat &fixAllM, QString filename, GrafixSettingsLoader &settingsLoader) {
+
+    double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+
     // Calculate saccades
     mat saccadesM;
-    GPMatrixFunctions::calculateSaccades(saccadesM, fixAllM, smoothM);
+    GPMatrixFunctions::calculateSaccades(saccadesM, fixAllM, smoothM, degreesPerPixel);
+
 
     // Begin with timsetamp
     mat exportM = roughM.col(0);
@@ -348,7 +365,7 @@ bool GPMatrixFiles::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QString 
         for (uword i = 0; i < fixAllM.n_rows ; i ++) {
             exportM.rows(fixAllM(i, FIXCOL_START) + 1, fixAllM(i, FIXCOL_END)).col(new_col_index).fill(fixAllM(i, FIXCOL_RMS));
         }
-        headerString += "fixation_rmd,";
+        headerString += "fixation_rms,";
     }
 
     if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT).toBool()) {   // Is smooth pursuit?
@@ -409,6 +426,109 @@ bool GPMatrixFiles::exportFile(mat &roughM, mat &smoothM, mat &fixAllM, QString 
             exportM.rows(saccadesM(i, SACCOL_START) + 1, saccadesM(i, SACCOL_END)).col(new_col_index).fill(saccadesM(i, SACCOL_VEL_PEAK));
         }
         headerString += "saccade_velocity_peak,";
+    }
+
+    // Remove last comma
+    if (headerString.length() > 0) {
+        headerString = headerString.left(headerString.length() - 1);
+    }
+
+    return GPMatrixFiles::saveFileSafe(exportM, filename, headerString);
+}
+
+bool GPMatrixFiles::makeExportSaccades(mat &smoothM, mat &fixAllM, QString filename, GrafixSettingsLoader &settingsLoader) {
+
+    double degreesPerPixel = settingsLoader.LoadSetting(Consts::SETTING_DEGREE_PER_PIX).toDouble();
+
+    // Calculate saccades
+    mat saccadesM;
+    GPMatrixFunctions::calculateSaccades(saccadesM, fixAllM, smoothM, degreesPerPixel);
+
+    // Start and end points
+    mat exportM;
+    QString headerString = "";
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_NUMBER).toBool()) {   // Saccade number!
+        exportM = mat(saccadesM.n_rows, 1);
+        for (uword i = 0; i < saccadesM.n_rows ; i ++) {
+            exportM(i, 0) = i + 1;
+        }
+        headerString += "sacade_number,saccade_start, saccade_end,";
+        exportM = join_rows(exportM, saccadesM.cols(SACCOL_START, SACCOL_END));
+    } else {
+        headerString += "saccade_start, saccade_end,";
+        exportM = saccadesM.cols(SACCOL_START, SACCOL_END);
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_DURATION).toBool()) {
+        exportM = join_rows(exportM, saccadesM.col(SACCOL_DURATION));
+        headerString += "saccade_duration,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_DISTANCE).toBool()) {
+        exportM = join_rows(exportM, saccadesM.col(SACCOL_DISTANCE));
+        headerString += "saccade_distance,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_VELOCITY_AVERAGE).toBool()) {
+        exportM = join_rows(exportM, saccadesM.col(SACCOL_VEL_AVG));
+        headerString += "saccade_velocity_average,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_SACCADE_VELOCITY_PEAK).toBool()) {
+        exportM = join_rows(exportM, saccadesM.col(SACCOL_VEL_PEAK));
+        headerString += "saccade_velocity_peak,";
+    }
+
+    // Remove last comma
+    if (headerString.length() > 0) {
+        headerString = headerString.left(headerString.length() - 1);
+    }
+
+    return GPMatrixFiles::saveFileSafe(exportM, filename, headerString);
+}
+
+bool GPMatrixFiles::makeExportFixations(mat &fixAllM, QString filename, GrafixSettingsLoader &settingsLoader) {
+
+    // Start and end points
+    mat exportM;
+    QString headerString = "";
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_NUMBER).toBool()) {   // Saccade number!
+        exportM = mat(fixAllM.n_rows, 1);
+        for (uword i = 0; i < fixAllM.n_rows ; i ++) {
+            exportM(i, 0) = i + 1;
+        }
+        headerString += "fixation_number,fixation_start, fixation_end,";
+        exportM = join_rows(exportM, fixAllM.cols(FIXCOL_START, FIXCOL_END));
+    } else {
+        headerString += "fixation_start, fixation_end,";
+        exportM = fixAllM.cols(FIXCOL_START, FIXCOL_END);
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_DURATION).toBool()) {   // Fixation duration!
+        exportM = join_rows(exportM, fixAllM.col(FIXCOL_DURATION));
+        headerString += "fixation_duration,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_X_AVERAGE).toBool()) {   // Average X
+        exportM = join_rows(exportM, fixAllM.col(FIXCOL_AVERAGEX));
+        headerString += "fixation_x,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_Y_AVERAGE).toBool()) {   // Average y
+        exportM = join_rows(exportM, fixAllM.col(FIXCOL_AVERAGEY));
+        headerString += "fixation_y,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_RMS).toBool()) {   // RMS
+        exportM = join_rows(exportM, fixAllM.col(FIXCOL_RMS));
+        headerString += "fixation_rms,";
+    }
+
+    if (settingsLoader.LoadSetting(Consts::SETTING_EXPORT_FIXATION_IS_SMOOTH_PURSUIT).toBool()) {   // Is smooth pursuit?
+        exportM = join_rows(exportM, fixAllM.col(FIXCOL_SMOOTH_PURSUIT));
+        headerString += "fixation_smooth_pursuit,";
     }
 
     // Remove last comma

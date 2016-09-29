@@ -38,7 +38,7 @@ namespace GPMatrixFunctions {
 
 
     //Saccades
-    void calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM);
+    void calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM, double degreesPerPixel);
 
 
     //Post-hoc

@@ -9,13 +9,12 @@
 
 
 namespace Ui {
-class DialogOpenProject;
+    class DialogOpenProject;
 }
 
 class QMenu;
 
-class DialogOpenProject : public QDialog
-{
+class DialogOpenProject : public QDialog {
 
 
 public:
