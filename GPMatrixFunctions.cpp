@@ -541,10 +541,8 @@ void GPMatrixFunctions::estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFi
 
     // Merge all fixations with a displacement lower than the displacement threshold
     if (cb_displacement) {
-        debugPrintMatrix(AutoFixAllM);
         qDebug() << "Merging...";
         GPMatrixFunctions::posthocMergeDisplacementThreshold(RoughM, SmoothM, AutoFixAllM,  settingsLoader);
-        debugPrintMatrix(AutoFixAllM);
     }
 
 
@@ -746,55 +744,43 @@ void GPMatrixFunctions::posthocMergeDisplacementThreshold(mat &roughM, mat &smoo
     double yMultiplier = expHeight * degreePerPixel;
 
 
+    qDebug() << "start merging";
     smoothM.col(7).fill(0); // Reset flags that mark merging
 
-    for (uword i = 0; i < fixAllM.n_rows - 1; ++i) {
+    for (uword iCurrentFixation = 0; iCurrentFixation < fixAllM.n_rows - 1; ++iCurrentFixation) {
 
-        double x1Degs = fixAllM.at(i, FIXCOL_AVERAGEX) * xMultiplier;
-        double y1Degs = fixAllM.at(i, FIXCOL_AVERAGEY) * yMultiplier;
+        uword iNextFixation = iCurrentFixation + 1;
+        double x1Degs = fixAllM.at(iCurrentFixation, FIXCOL_AVERAGEX) * xMultiplier;
+        double y1Degs = fixAllM.at(iCurrentFixation, FIXCOL_AVERAGEY) * yMultiplier;
 
-        double x2Degs = fixAllM.at(i + 1, FIXCOL_AVERAGEX) * xMultiplier;
-        double y2Degs = fixAllM.at(i + 1, FIXCOL_AVERAGEY) * yMultiplier;
+        double x2Degs = fixAllM.at(iNextFixation, FIXCOL_AVERAGEX) * xMultiplier;
+        double y2Degs = fixAllM.at(iNextFixation, FIXCOL_AVERAGEY) * yMultiplier;
 
         double xDiff = x1Degs - x2Degs;
         double yDiff = y1Degs - y2Degs;
 
         double distance = sqrt((xDiff * xDiff) + (yDiff * yDiff));
-        double delay = fixAllM.at(i + 1, FIXCOL_START) - fixAllM.at(i, FIXCOL_END);
+        double delay = fixAllM.at(iNextFixation, FIXCOL_START) - fixAllM.at(iCurrentFixation, FIXCOL_END);
 
         // Merge if: The displacement from fixation 1 and fixation 2 is less than "displacement" AND
         // if the distance between fixation 1 and fixation 2 is less than 50 ms .
         if (distance <= maximumDisplacement && delay <= maximumDelay) {
 
+            int startIndex = fixAllM.at(iCurrentFixation, FIXCOL_START);
+            int endIndex = fixAllM.at(iNextFixation, FIXCOL_END);
+
             // Flag on the smooth matrix
-            smoothM(span(fixAllM.at(i, FIXCOL_START), fixAllM.at(i + 1, FIXCOL_END)), span(7, 7) ).fill(1);
+            smoothM(span(startIndex, endIndex), span(7, 7) ).fill(1);
 
             // MERGE!
-            double fixationDuration = roughM.at(fixAllM.at(i + 1, FIXCOL_END), 0)  - roughM.at(fixAllM.at(i, FIXCOL_START), 0);
+            mat mergedFixation;
+            calculateFixation(roughM, startIndex, endIndex, copy_eyes, expWidth, expHeight, degreePerPixel, mergedFixation);
 
-            mat roughFixationData = roughM.rows(fixAllM.at(i, FIXCOL_START), fixAllM.at(i + 1, FIXCOL_END));
-            mat preparedRoughM;
-            excludeMissingDataRoughMatrix(preparedRoughM, roughFixationData, copy_eyes);
-
-            double averageX = mean(preparedRoughM.col(1));
-            double averageY = mean(preparedRoughM.col(2));
-            double variance = calculateRMSRaw(preparedRoughM, expWidth, expHeight, degreePerPixel);
-            double pupilDilation = (roughM.n_cols > 6) ? (mean(roughFixationData.col(4)) + mean(roughFixationData.col(5))) / 2 : 0;
-
-
-            fixAllM.at(i, FIXCOL_END) = fixAllM.at(i + 1, FIXCOL_END);
-            fixAllM.at(i, FIXCOL_DURATION) = fixationDuration;
-            fixAllM.at(i, FIXCOL_AVERAGEX) = averageX;
-            fixAllM.at(i, FIXCOL_AVERAGEY) = averageY;
-            fixAllM.at(i, FIXCOL_RMS) = variance;
-            fixAllM.at(i, FIXCOL_SMOOTH_PURSUIT) = 0;
-            fixAllM.at(i, FIXCOL_PUPIL) = pupilDilation;
-
-            fixAllM.shed_row(i + 1);
+            fixAllM.row(iCurrentFixation) = mergedFixation;
+            fixAllM.shed_row(iNextFixation);
 
             //see if this fixation can merge with next one
-            i = i - 1;
-
+            iCurrentFixation = iCurrentFixation - 1;
 
         }
     }
@@ -834,7 +820,6 @@ void GPMatrixFunctions::posthocRemoveHighVarianceFixations(mat *p_smoothM, mat *
  * Use excludeMissingDataRoughMatrix to prepare.
  */
 double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int expHeight, double degPerPixel) {
-    debugPrintMatrix(preparedRoughM);
 
     if (preparedRoughM.n_rows < 2 )
         return -1;
@@ -864,8 +849,6 @@ double GPMatrixFunctions::calculateRMSRaw(mat &preparedRoughM, int expWidth, int
         x1 = x2;
         y1 = y2;
     }
-
-    debugPrintMatrix(squaredDistances);
 
     double rms = sqrt(mean(mean(squaredDistances)));
 

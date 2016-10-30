@@ -205,7 +205,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Duration (seconds)</string>
+    <string>Duration (ms)</string>
    </property>
   </widget>
   <widget class="QCheckBox" name="cb_xAverage">
@@ -339,7 +339,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Duration (seconds)</string>
+    <string>Duration (ms)</string>
    </property>
   </widget>
   <widget class="QCheckBox" name="cb_smoothpursuit">
