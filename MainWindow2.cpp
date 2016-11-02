@@ -1282,19 +1282,19 @@ void MainWindow2::fncPress_bResizeFixation() {
 
 void MainWindow2::fncPressActionButton(int action, QPushButton* button, QString message) {
     // Activate. deactivate an action mode.
-    ui->bCreate->setStyleSheet("");
-    ui->bDelete->setStyleSheet("");
-    ui->bMerge->setStyleSheet("");
-    ui->bResetToAuto->setStyleSheet("");
-    ui->bSmoothPursuit->setStyleSheet("");
-    ui->bResizeFixation->setStyleSheet("");
+    ui->bCreate->setChecked(false);
+    ui->bDelete->setChecked(false);
+    ui->bMerge->setChecked(false);
+    ui->bResetToAuto->setChecked(false);
+    ui->bSmoothPursuit->setChecked(false);
+    ui->bResizeFixation->setChecked(false);
 
     if (this->_currentAction == action) {
-        button->setStyleSheet("");
+        button->setChecked(false);
         _currentAction = Consts::AC_NOACTION;
         ui->statusbar->showMessage(Consts::HELP_STATUS_READY);
     } else {
-        button->setStyleSheet("* { background-color: rgb(255,125,100) }");
+        button->setChecked(true);
         _currentAction = action;
         ui->statusbar->showMessage(message);
     }

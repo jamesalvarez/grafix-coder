@@ -683,6 +683,9 @@
              <property name="text">
               <string>ADJUST</string>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
@@ -696,6 +699,9 @@
              </property>
              <property name="text">
               <string>CREATE</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -711,6 +717,9 @@
              <property name="text">
               <string>DELETE</string>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
@@ -724,6 +733,9 @@
              </property>
              <property name="text">
               <string>MERGE</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -739,6 +751,9 @@
              <property name="text">
               <string>SMOOTH PURSUIT</string>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
@@ -753,19 +768,8 @@
              <property name="text">
               <string>RESET TO AUTO</string>
              </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="bUndoButton">
-             <property name="font">
-              <font>
-               <pointsize>10</pointsize>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>UNDO</string>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -843,6 +847,20 @@
             </widget>
            </item>
           </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="bUndoButton">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>UNDO</string>
+          </property>
          </widget>
         </item>
         <item>
