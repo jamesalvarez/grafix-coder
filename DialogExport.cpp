@@ -132,7 +132,8 @@ QString DialogExport::getSettingForCheckBox(QCheckBox* checkBox) {
 
 void DialogExport::fncPress_bExport() {
 
-    GrafixSettingsLoader settingsLoader(*(this->_participant->GetProject()));
+    GrafixProject *project = this->_participant->GetProject();
+    GrafixSettingsLoader settingsLoader(*project);
 
     //Save state
     for (int i = 0; i < _checkboxes.size(); ++i) {
@@ -142,7 +143,10 @@ void DialogExport::fncPress_bExport() {
     settingsLoader.SetSetting(Consts::SETTING_EXPORT_TYPE,(int)fncGetCurrentExportTypeFromRadioButtons());
 
     // **** Save the file
-    QString filename = QFileDialog::getSaveFileName(this, "Save exported data", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "*.csv");
+
+    // Get current path of project
+    QString projectPath = project->GetFullDirectory();
+    QString filename = QFileDialog::getSaveFileName(this, "Save exported data", projectPath, "*.csv");
 
     //check that fn has extension
     if (QFileInfo(filename).suffix() == "") {

@@ -96,6 +96,8 @@ void DialogVideoPlayer::fncCalculateAspectRatios()
     double ratioW = expWidth / vid_width;
     double ratioH = expHeight / vid_height;
 
+
+
     // smaller ratio will ensure that the image fits in the view
     if (ratioW > ratioH)
     {
@@ -118,6 +120,11 @@ void DialogVideoPlayer::fncCalculateAspectRatios()
         vid_offset_x = 0;
         vid_offset_y = (display_height - vid_height) / 2;
     }
+
+    qDebug() << "exp width: " << expWidth << " exp height: " << expHeight;
+    qDebug() << "vid width: " << vid_width << " vid height: " << vid_height;
+    qDebug() << "disp width: " << display_width << " disp height: " << display_height;
+    qDebug() << "offsetts: " << vid_offset_x << " " << vid_offset_y;
 
     rect_overlay->setRect(0,0,display_width,display_height);
     item->setPos(vid_offset_x, vid_offset_y);

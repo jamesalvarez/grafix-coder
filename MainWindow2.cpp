@@ -32,6 +32,7 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     this->_last_selected_configuration = Consts::ACTIVE_CONFIGURATION();
     this->_hold_changes = false;
 
+
     // Menu events
     connect( ui->actionConfiguration, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuDialogConfig() ) );
     connect( ui->actionNew_Open, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuProjectOpen() ) );
@@ -39,7 +40,7 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     connect( ui->actionSegment, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuVisualizeSegments() ) );
     connect( ui->actionExport_Data, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuExport()));
     connect( ui->actionSmoothing, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuCalculateSmooth()));
-    connect( ui->actionRecalculate_Fixations, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuRecalculateFixations())); // It recalculates the duration, variance,
+    connect( ui->actionRecalculate_Fixations, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuRecalculateFixations()));
     connect( ui->actionShow_Statistics, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuShowStatistics()));
     connect( ui->actionHeat_Map, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuHeatMap()));
     connect( ui->actionShow_Error_Log, SIGNAL(triggered()), this, SLOT(fncPress_subMenuShowErrorLog()));
@@ -60,6 +61,7 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     connect( ui->bSmoothPursuit, SIGNAL( clicked()), this, SLOT( fncPress_bSmoothPursuit() ) );
     connect( ui->bResetToAuto, SIGNAL( clicked()), this, SLOT( fncPress_bResetFixations()));
     connect( ui->bResizeFixation, SIGNAL( clicked()), this, SLOT( fncPress_bResizeFixation()));
+    connect( ui->bUndoButton, SIGNAL( clicked()), this, SLOT( fncPress_bUndo()));
     connect( ui->bExecManual, SIGNAL( clicked()), this, SLOT( fncPress_bExecuteManual() ) );
     connect( ui->lineEditParticipant, SIGNAL(returnPressed()), this, SLOT ( fncChange_tParticipantNumber() ));
     connect( ui->lineEditSegment, SIGNAL( returnPressed()), this, SLOT( fncChange_tSegmentNumber()));
@@ -68,7 +70,6 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     connect( ui->bNotes, SIGNAL(clicked()), this, SLOT (fncPress_bNotes()));
 
     // Automatic fixation buttons:
-    //connect( ui->b_acceptEstimation, SIGNAL( clicked() ), this, SLOT( fncPress_bAcceptEstimation() ) );
     connect( ui->b_interpolate, SIGNAL( clicked() ), this, SLOT( fncPress_bInterpolate() ) );
     connect( ui->b_smooth, SIGNAL( clicked() ), this, SLOT( fncPress_bSmooth() ) );
     connect( ui->b_estimateFixations, SIGNAL( clicked() ), this, SLOT( fncPress_bEstimateFixations() ));
@@ -191,13 +192,13 @@ bool MainWindow2::LoadProject() {
 
     }
 
+    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());
+
     //set current participant
     if (_project.numParticipants() > 0) {
         qDebug() << "Participants out:" << _project.numParticipants() << "\n";
         fncSetActiveParticipant(0);//TODO: Settings remember last participant
     }
-
-    fncLoadSettings(Consts::ACTIVE_CONFIGURATION());
     return true;
 }
 
@@ -285,6 +286,7 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
                         fixAllM(_selectedFixationRow + 1, FIXCOL_START) < mousedIndex) {
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
                 } else {
+                    saveUndoState(true);
                     mat fixation;
                     GPMatrixFunctions::calculateFixation(roughM,
                                                          fixAllM(_selectedFixationRow, FIXCOL_START),
@@ -298,13 +300,12 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
 
                     ui->statusbar->showMessage("Error: Fixations cannot overlap");
                 } else {
+                    saveUndoState(true);
                     mat fixation;
-                    qDebug() << "AAAA";
                     GPMatrixFunctions::calculateFixation(roughM,
                                                          mousedIndex, fixAllM(_selectedFixationRow, FIXCOL_END),
                                                          _copyEyes, _expWidth, _expHeight,
                                                          _degPerPixel, fixation);
-                    qDebug() << "BBBB";
                     fixAllM.row(_selectedFixationRow) = fixation;
                     qDebug() << "CCCC";
                 }
@@ -394,7 +395,7 @@ void MainWindow2::resizeEvent(QResizeEvent* event) {
     this->p_bZoomin->raise();
     this->p_lMagnification->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - (2 * spacing) - (7 * button_size), new_pos.y(), button_size * 5, button_size);
     this->p_lMagnification->raise();
-    statusBar()->showMessage("Resized");
+    qDebug() << "Resized";
     paintAll();
 }
 
@@ -444,6 +445,7 @@ void MainWindow2::fncSetActiveParticipant(int position) {
 
         if(this->_index_active_participant == position) {
             fncResetDisplayParams();
+            qDebug() << "set active participant";
             paintAll();
         }
     }
@@ -550,6 +552,7 @@ void MainWindow2::fncSetDisplayParams() {
 // function for create/ merge/ delete depending in the selected action.
 void MainWindow2::fncManipulateFix(int from, int to) {
     if (from < to) { // If the end of the fixation is bigger than the start.
+        saveUndoState(true);
         switch (_currentAction) {
             case Consts::AC_CREATE:
                 fixAllM = GPFixationOperations::fncCreateFixation(fixAllM, roughM,   _hz,  _secsFragment,  _currentFragment, from, to, _expWidth, _expHeight, _degPerPixel, _copyEyes);
@@ -599,6 +602,8 @@ bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant) {
         fixAllM = join_rows(fixAllM.cols(0, 5), fixAllM.col(9));
         fixAllM = join_rows(fixAllM, zeros(fixAllM.n_rows, 1)); // Pupil dilation!
     }
+
+    saveUndoState(false);
 
     return true;
 }
@@ -1165,6 +1170,7 @@ void MainWindow2::fncPress_bSmooth() {
 }
 
 void MainWindow2::fncPress_bEstimateFixations() {
+
     DialogEstimateFixations efd;
     efd.loadData((*p_active_participant), (*p_roughM), (*p_smoothM), (*p_autoFixAllM));
     efd.exec();
@@ -1176,6 +1182,7 @@ void MainWindow2::fncPress_bEstimateFixations() {
 
     if (!p_autoFixAllM->is_empty()) {
         fixAllM = autoFixAllM;
+        saveUndoState(false);
         GPMatrixFunctions::returnFixationinSegments( p_fixAllM, p_experimentalSegmentsM);
         if (!p_autoFixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_autoFixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
         if (!p_fixAllM->is_empty()) GPMatrixFiles::saveFileSafe((*p_fixAllM), p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
@@ -1247,6 +1254,18 @@ void MainWindow2::fncPress_bDelete() {
 
 void MainWindow2::fncPress_bMerge() {
     fncPressActionButton(Consts::AC_MERGE, ui->bMerge, Consts::HELP_MERGE_MODE);
+}
+
+void MainWindow2::saveUndoState(bool canUndo) {
+    ui->bUndoButton->setEnabled(canUndo);
+    fixAllMPrevious = fixAllM;
+}
+
+void MainWindow2::fncPress_bUndo() {
+    mat temp = fixAllMPrevious;
+    fixAllMPrevious = fixAllM;
+    fixAllM = temp;
+    paintFixations();
 }
 
 void MainWindow2::fncPress_bSmoothPursuit() {
@@ -1405,7 +1424,7 @@ void MainWindow2::fncPress_subMenuRecalculateFixations() {
     // It recalcules all the values for the fixations
     fncWaitForLoad();
     GPFixationOperations::fncRecalculateFixations(roughM, fixAllM, _expWidth, _expHeight, _degPerPixel, _copyEyes);
-
+    saveUndoState(false);
     if (!fixAllM.is_empty())
         GPMatrixFiles::saveFileSafe(fixAllM, p_active_participant->GetMatrixPath(Consts::MATRIX_FIXALL));
 
@@ -1492,7 +1511,7 @@ void MainWindow2::fncChange_tSegmentNumber() {
 
     if (number != _currentFragment) {
         _currentFragment = number;
-        this->paintAll();
+        paintAll();
     }
 }
 

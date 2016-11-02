@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
+    <width>571</width>
     <height>316</height>
    </rect>
   </property>
@@ -20,124 +20,41 @@
    <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="font">
-      <font>
-       <pointsize>14</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
+   <item row="8" column="2">
+    <widget class="QCheckBox" name="cbEyes">
+     <property name="toolTip">
+      <string>When smoothing data, checking this option will use data from one eye only, if the other eye has missing data.  If unchecked, the smoothed data will show missing values whenever either or both eyes are missing.</string>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
      </property>
      <property name="text">
-      <string>Sampling rate (Hz):</string>
+      <string/>
      </property>
     </widget>
    </item>
-   <item row="0" column="2" colspan="3">
-    <widget class="QComboBox" name="combo_HZ"/>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_19">
-     <property name="font">
-      <font>
-       <pointsize>14</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="toolTip">
-      <string>The number of degrees of visual angle taken by each pixel (e.g. = 0.0177, if 1680 x 1050px at 90cm)</string>
-     </property>
-     <property name="text">
-      <string>Degree per pixel:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="3">
-    <widget class="QLabel" name="label_5">
-     <property name="font">
-      <font>
-       <pointsize>16</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>x</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="2">
-    <widget class="QLabel" name="label_3">
-     <property name="font">
-      <font>
-       <pointsize>14</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="toolTip">
-      <string>The screen resolution of the display used in the experiment.</string>
-     </property>
-     <property name="text">
-      <string>Experimental screen resolution:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="2" colspan="3">
-    <widget class="QLineEdit" name="tDegreePerPixel">
-     <property name="toolTip">
-      <string>The number of degrees of visual angle taken by each pixel (e.g. = 0.0177, if 1680 x 1050px at 90cm)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_4">
-     <property name="font">
-      <font>
-       <pointsize>14</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="toolTip">
-      <string>The number of seconds worth of data for each segment of display.</string>
-     </property>
-     <property name="text">
-      <string>Seconds per fragment:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="4">
-    <widget class="QLineEdit" name="tHeight">
-     <property name="toolTip">
-      <string>Vertical resolution.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="2" colspan="3">
-    <widget class="QComboBox" name="combo_secsSegment">
-     <property name="toolTip">
-      <string>The number of seconds worth of data for each segment of display.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
+   <item row="3" column="2">
     <widget class="QLineEdit" name="tWidth">
      <property name="toolTip">
       <string>Horizontal resolution.</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="ltSpacing">
-     <property name="text">
-      <string/>
+   <item row="6" column="2" colspan="3">
+    <widget class="QComboBox" name="combo_secsSegment">
+     <property name="toolTip">
+      <string>The number of seconds worth of data for each segment of display.</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="0" colspan="5">
+   <item row="4" column="2" colspan="2">
+    <widget class="QLineEdit" name="tDegreePerPixel">
+     <property name="toolTip">
+      <string>The number of degrees of visual angle taken by each pixel (e.g. = 0.0177, if 1680 x 1050px at 90cm)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="0" colspan="5">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QPushButton" name="b_cancel">
@@ -169,20 +86,78 @@
      </item>
     </layout>
    </item>
-   <item row="4" column="2">
-    <widget class="QCheckBox" name="cbEyes">
-     <property name="toolTip">
-      <string>When smoothing data, checking this option will use data from one eye only, if the other eye has missing data.  If unchecked, the smoothed data will show missing values whenever either or both eyes are missing.</string>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
      </property>
-     <property name="layoutDirection">
-      <enum>Qt::LeftToRight</enum>
+     <property name="text">
+      <string>Sampling rate (Hz):</string>
      </property>
+    </widget>
+   </item>
+   <item row="2" column="4">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>Height</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="ltSpacing">
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="6" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string>The number of seconds worth of data for each segment of display.</string>
+     </property>
+     <property name="text">
+      <string>Seconds per fragment:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QLabel" name="label">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Width</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
     <widget class="QLabel" name="ltCbEyes">
      <property name="font">
       <font>
@@ -196,6 +171,71 @@
      </property>
      <property name="text">
       <string>Fill missing data with opposite eye:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_19">
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string>The number of degrees of visual angle taken by each pixel (e.g. = 0.0177, if 1680 x 1050px at 90cm)</string>
+     </property>
+     <property name="text">
+      <string>Degree per pixel:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="3">
+    <widget class="QLabel" name="label_5">
+     <property name="font">
+      <font>
+       <pointsize>16</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>x</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="4">
+    <widget class="QLineEdit" name="tHeight">
+     <property name="toolTip">
+      <string>Vertical resolution.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QLabel" name="label_3">
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string>The screen resolution of the display used in the experiment.</string>
+     </property>
+     <property name="text">
+      <string>Experimental screen resolution:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2" colspan="3">
+    <widget class="QComboBox" name="combo_HZ"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="label_8">
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>

@@ -439,9 +439,6 @@ void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader setti
         // If no previous data is detected, then cannot interpolate
         if (indexPrevData == -1) continue;
 
-        qDebug() << endl << "sample missing at: " << i;
-        qDebug() << " indexPrevData: " << indexPrevData;
-
         // Find the point where the data is back:
         int indexDataBack = -1;
         for (uword j = i; j < SmoothM.n_rows; ++j) {
@@ -450,8 +447,6 @@ void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader setti
                 break;
             }
         }
-
-        qDebug() << " indexDataBack: " << indexDataBack;
 
         // If the data doesn't come back then cannot interpolate
         if (indexDataBack == -1) break;
@@ -462,8 +457,7 @@ void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader setti
         i = indexDataBack;
 
         if (gapLength > maxSamplesInterpolation) {
-            qDebug() << " gap length: " << gapLength << " cannot interpolate as over samples threshold ";
-            continue;
+            continue; // Cannot interpolate as over samples threshold
         }
 
         //Check the displacement distance
@@ -472,11 +466,10 @@ void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader setti
         double displacement = degreesPerPixel * sqrt((xDiff * xDiff) + (yDiff * yDiff));
 
         if (displacement > maxDisplacementInterpolation) {
-            qDebug() << " displacement: " << displacement << " cannot interpolate: over distance threshold ";
-            continue;
+            continue;  // Distance is too great - no interpolation
         }
 
-        qDebug() << "interpolating...";
+        // INTERPOLATE
 
         // Jumps in signal for each sample to interpolate linearly
         double xInterval = xDiff / gapLength;
@@ -490,6 +483,9 @@ void GPMatrixFunctions::interpolateData(mat &SmoothM, GrafixSettingsLoader setti
 
 
     }
+
+    // Recalculate velocity
+    calculateVelocity(SmoothM, settingsLoader);
     gpProgressBar.endProcessing();
 }
 

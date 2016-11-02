@@ -65,6 +65,7 @@ private:
     mat roughM;   // [time ms, 0 , left x , left y, right x, right y]
     mat smoothM;  // [time ms, interpolation(0 or 1), x, y]
     mat fixAllM;
+    mat fixAllMPrevious; // Used to store when doing undo
     mat experimentalSegmentsM;
     mat autoFixAllM; // Automatic detection of fixation durations
 
@@ -128,6 +129,8 @@ private:
     void fncChangeLineEdit(QString setting, QLineEdit* le, QSlider* sl);
     void fncPressActionButton(int action, QPushButton* button, QString message);
 
+    //undo
+    void saveUndoState(bool canUndo);
 
     //saving loading files
     bool fncReadAllFiles(GrafixParticipant* participant);
@@ -201,6 +204,7 @@ public slots:
     void fncPress_bCreate();
     void fncPress_bDelete();
     void fncPress_bMerge();
+    void fncPress_bUndo();
     void fncPress_bExecuteManual(int from, int to);
     void fncPress_bSmoothPursuit();
     void fncPress_bResetFixations();
