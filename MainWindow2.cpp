@@ -36,7 +36,6 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     // Menu events
     connect( ui->actionConfiguration, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuDialogConfig() ) );
     connect( ui->actionNew_Open, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuProjectOpen() ) );
-    connect( ui->actionCurrent_Fragment, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuVisualizeCurrentFragment() ) );
     connect( ui->actionSegment, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuVisualizeSegments() ) );
     connect( ui->actionExport_Data, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuExport()));
     connect( ui->actionSmoothing, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuCalculateSmooth()));
@@ -1391,15 +1390,6 @@ void MainWindow2::fncPress_subMenuProjectOpen() {
         qDebug() << "Participants out:" << _project.numParticipants() << "\n";
         fncSetActiveParticipant(0);//TODO: Settings remember last participant
     }
-}
-
-
-void MainWindow2::fncPress_subMenuVisualizeCurrentFragment() {
-    fncWaitForLoad();
-    DialogVisualization w;
-    w.setWindowTitle(tr("Visualize Fragment"));
-    w.loadData(_currentFragment, p_active_participant, roughM, smoothM, fixAllM);
-    w.exec();
 }
 
 void MainWindow2::fncPress_subMenuVisualizeSegments() {

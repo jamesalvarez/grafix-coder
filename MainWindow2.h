@@ -9,7 +9,6 @@
 #include "DialogGrafixError.h"
 #include "DialogTestSmoothParameters.h"
 #include "DialogConfig.h"
-#include "DialogVisualization.h"
 #include "DialogVisualizationSegments.h"
 #include "DialogSmoothXY.h"
 #include "DialogStatistics.h"
@@ -180,7 +179,6 @@ public slots:
 
     void fncPress_subMenuDialogConfig();
     void fncPress_subMenuProjectOpen();
-    void fncPress_subMenuVisualizeCurrentFragment();
     void fncPress_subMenuVisualizeSegments();
     void fncPress_subMenuExport();
     void fncPress_subMenuCalculateSmooth();

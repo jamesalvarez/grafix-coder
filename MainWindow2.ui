@@ -1539,7 +1539,6 @@
      <property name="title">
       <string>Visualisations</string>
      </property>
-     <addaction name="actionCurrent_Fragment"/>
      <addaction name="actionSegment"/>
      <addaction name="actionMovie"/>
     </widget>
