@@ -7,14 +7,15 @@
 #include <QSettings>
 
 class GrafixProject;
+class GrafixParticipant;
 
 //This is used to load settings from a particular path and configuration in
 //a more efficient way - also prevents accidentally accessing different settings etc
 //note QSettings is re-entrant so no need to store an object to it.
 
-class GrafixSettingsLoader
-{
+class GrafixSettingsLoader {
 public:
+    GrafixSettingsLoader(const GrafixParticipant &participant);
     GrafixSettingsLoader(const GrafixProject &project);
     GrafixSettingsLoader(const GrafixProject &project, const GrafixConfiguration configuration);
     GrafixSettingsLoader(const QString path);

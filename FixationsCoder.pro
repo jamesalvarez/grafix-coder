@@ -46,7 +46,8 @@ SOURCES += main.cpp \
     DialogVideoPlayer.cpp \
     FixationsListModel.cpp \
     GPMatrixProgressBar.cpp \
-    GPMatrixFiles.cpp
+    GPMatrixFiles.cpp \
+    VisualizationDrawer.cpp
 
 HEADERS  += \
     MyConstants.h \
@@ -78,7 +79,8 @@ HEADERS  += \
     DialogVideoPlayer.h \
     FixationsListModel.h \
     GPMatrixProgressBar.h \
-    GPMatrixFiles.h
+    GPMatrixFiles.h \
+    VisualizationDrawer.h
 
 FORMS    += \
     DialogTestSmoothParameters.ui \

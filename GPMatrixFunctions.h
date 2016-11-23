@@ -35,7 +35,7 @@ namespace GPMatrixFunctions {
     void estimateFixations(mat &RoughM, mat &SmoothM, mat &AutoFixAll, GrafixSettingsLoader &settingsLoader);
     void calculateFixations(mat &fixAllM, mat &roughM , mat &smoothM, GrafixSettingsLoader settingsLoader);
     void calculateFixation(const mat &roughM, int startIndex, int endIndex, bool copy_eyes, int expWidth, int expHeight, double degPerPixel, mat &outFixation);
-
+    uvec getFixationsInBetween(uword startIndex, uword endIndex, const mat &fixAllM);
 
     //Saccades
     void calculateSaccades(mat &saccadesM, const mat &fixAllM, const mat &smoothM, double degreesPerPixel);

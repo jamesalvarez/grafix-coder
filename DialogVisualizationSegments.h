@@ -3,13 +3,14 @@
 
 #include "MyConstants.h"
 #include "GrafixProject.h"
+#include "VisualizationDrawer.h"
 
 #include <QtWidgets/QMainWindow>
 #include <QtGui>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QFileDialog>
-#include <qpainter.h>
+
 
 #include <sstream>
 #include <string>
@@ -40,6 +41,7 @@ public:
 private:
     Ui::DialogVisualizationSegments *ui;
     GrafixParticipant *_participant;
+    VisualizationDrawer *_visualizationDrawer;
 
     int currentSegment;
     int currentFragment;
@@ -57,15 +59,18 @@ private:
 
     std::vector< pair<int,string> > pathsImages;
 
+
     int playOnOff;
 
-    void paintXYAxes();
-    void paintRoughXY();
-    void paintSmoothXY();
+
+    uword startIndex;
+    uword stopIndex;
+
     void playSmooth();
-    void playRough();
+
+    void paintCurrentFrame();
+
     void paintBlankPanel();
-    void paintFixations();
     void paintBackgroundImage();
 
     int getMilliCount();

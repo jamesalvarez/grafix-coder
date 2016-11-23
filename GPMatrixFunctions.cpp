@@ -630,6 +630,27 @@ void GPMatrixFunctions::calculateFixation(const mat &roughM, int startIndex, int
     outFixation << startIndex << endIndex << dur << averageX << averageY << variance << 0 << pupilDilation <<  endr ;
 }
 
+uvec GPMatrixFunctions::getFixationsInBetween(uword startIndex, uword endIndex, const mat &fixAllM) {
+
+    uvec fixationIndexes;
+
+    for (uword i = 0; i < fixAllM.n_rows; i++) {
+        // Fixations that start anywhere in this segment
+        bool fixationStartsInSegment = (fixAllM(i, FIXCOL_START) >= startIndex && fixAllM(i, FIXCOL_START) <=  endIndex );
+
+        // Fixations that start before the segment begins, and end in this one.
+        bool fixationStartsBeforeSegment = (fixAllM(i, FIXCOL_START) <= startIndex && fixAllM(i, FIXCOL_END) >= endIndex );
+
+        bool displayFixation = fixationStartsInSegment || fixationStartsBeforeSegment;
+
+        if (displayFixation) {
+            fixationIndexes << i;
+        }
+    }
+
+    return fixationIndexes;
+}
+
 /***************************
  *      SACCADES
  ***************************/
