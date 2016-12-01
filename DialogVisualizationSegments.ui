@@ -513,7 +513,6 @@
    </property>
   </widget>
   <zorder>lPanelBackground</zorder>
-  <zorder>lPanelVisualization</zorder>
   <zorder>rad_smooth</zorder>
   <zorder>lLabel_15</zorder>
   <zorder>rad_rough</zorder>
@@ -543,6 +542,7 @@
   <zorder>b_inputImage</zorder>
   <zorder>l_selectImage</zorder>
   <zorder>lPanelXY_2</zorder>
+  <zorder>lPanelVisualization</zorder>
  </widget>
  <resources/>
  <connections/>

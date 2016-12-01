@@ -17,8 +17,10 @@ DialogVisualizationSegments::DialogVisualizationSegments(QWidget *parent) :
     connect( ui->b_prevSegment, SIGNAL( clicked() ), this, SLOT( fncPress_bPrevSegment() ) );
     connect( ui->b_inputImage, SIGNAL( clicked() ), this, SLOT( fncPress_bInputImage() ) );
 
-    connect(ui->rad_rough,SIGNAL(clicked(bool)),this,SLOT(fncChange_Visualization(bool)));
-    connect(ui->rad_smooth,SIGNAL(clicked(bool)),this,SLOT(fncChange_Visualization(bool)));
+    connect(ui->cbFixations, SIGNAL(clicked()), this, SLOT(updateVisualizationSettings()));
+    connect(ui->cbPupilDilation, SIGNAL(clicked()), this, SLOT(updateVisualizationSettings()));
+    connect(ui->rad_rough, SIGNAL(clicked()), this, SLOT(updateVisualizationSettings()));
+    connect(ui->rad_smooth, SIGNAL(clicked()), this, SLOT(updateVisualizationSettings()));
 
     ui->rad_rough->setChecked(true);
     playOnOff = 0; // Off
@@ -74,10 +76,10 @@ void DialogVisualizationSegments::loadData(GrafixParticipant *participant, mat r
 
 
     _visualizationDrawer = new VisualizationDrawer(this->roughM, this->smoothM, this->fixAllM, this->segmentsM, participant);
-    _visualizationDrawer->updateTimeLineFrame(ui->lPanelXY->width(), ui->lPanelXY->height());
-    _visualizationDrawer->updateVisualizationFrame(ui->lPanelVisualization->width(), ui->lPanelVisualization->height());
-    ui->lPanelVisualization->setPixmap(_visualizationDrawer->visualizationPixmap);
-    ui->lPanelXY->setPixmap(_visualizationDrawer->processLinePixmap);
+
+    updateVisualizationSettings();
+    updateVisualizationGeometry();
+    paintFrame(0);
 
     loadImages();
     fncUpdateFragment();
@@ -188,7 +190,7 @@ void DialogVisualizationSegments::loadImages(){
 }
 
 
-void DialogVisualizationSegments::playSmooth(){
+void DialogVisualizationSegments::playVisualization(){
 
     startIndex = (segmentsM(currentSegment-1,1) ) + ((currentFragment-1) * secsFragment * hz );
     stopIndex =  (segmentsM(currentSegment-1,2) );
@@ -214,16 +216,8 @@ void DialogVisualizationSegments::playSmooth(){
         if (playOnOff == 0)
             break;
 
-        _visualizationDrawer->paintCurrentFrame(i);
-        ui->lPanelFixations->setPixmap(_visualizationDrawer->fixationsPixmap);
-        ui->lPanelXY->setPixmap(_visualizationDrawer->timeLinePixmap);
-        ui->lPanelVisualization->setPixmap(_visualizationDrawer->visualizationPixmap);
-        ui->lPanelXY_2->setPixmap(_visualizationDrawer->processLinePixmap);
 
-        ui->lPanelFixations->repaint();
-        ui->lPanelXY->repaint();
-        ui->lPanelVisualization->repaint();
-        ui->lPanelXY_2->repaint();
+        paintFrame(i);
 
         qApp->processEvents();
 
@@ -236,11 +230,18 @@ void DialogVisualizationSegments::playSmooth(){
 
 }
 
-void DialogVisualizationSegments::paintCurrentFrame() {
+void DialogVisualizationSegments::paintFrame(uword frame) {
+    _visualizationDrawer->paintCurrentFrame(frame);
+    ui->lPanelFixations->setPixmap(_visualizationDrawer->fixationsPixmap);
+    //ui->lPanelXY->setPixmap(_visualizationDrawer->timeLinePixmap);
+    //ui->lPanelVisualization->setPixmap(_visualizationDrawer->visualizationPixmap);
+    //ui->lPanelXY_2->setPixmap(_visualizationDrawer->processLinePixmap);
 
+    ui->lPanelFixations->repaint();
+    //ui->lPanelXY->repaint();
+    //ui->lPanelVisualization->repaint();
+    //ui->lPanelXY_2->repaint();
 }
-
-
 
 
 int DialogVisualizationSegments::getMilliCount(){
@@ -267,7 +268,7 @@ void DialogVisualizationSegments::fncPress_bPlay(){
     if (playOnOff == 0){
         playOnOff = 1; // Playing gaze
         ui->b_play->setText("Stop");
-        playSmooth();
+        playVisualization();
         playOnOff = 0; // Stop playing gaze
         ui->b_play->setText("Play");
     }else{
@@ -276,11 +277,19 @@ void DialogVisualizationSegments::fncPress_bPlay(){
     }
 }
 
-void DialogVisualizationSegments::fncChange_Visualization(bool type){
-    Q_UNUSED(type);
-    playOnOff = 0;
-    ui->b_play->setText("Play");
-    paintBackgroundImage();
+void DialogVisualizationSegments::updateVisualizationSettings() {
+
+    _visualizationDrawer->setSetting(VIS_PLAY_SMOOTH, ui->rad_smooth->isChecked());
+    _visualizationDrawer->setSetting(VIS_PAINT_FIXATION_NUMBERS, ui->cbFixations->isChecked());
+    _visualizationDrawer->setSetting(VIS_PAINT_PUPIL_DILATION, ui->cbPupilDilation->isChecked());
+
+}
+
+void DialogVisualizationSegments::updateVisualizationGeometry() {
+
+    _visualizationDrawer->updateTimeLineFrame(ui->lPanelXY->width(), ui->lPanelXY->height());
+    _visualizationDrawer->updateVisualizationFrame(ui->lPanelVisualization->width(), ui->lPanelVisualization->height());
+    _visualizationDrawer->updateFixationFrame(ui->lPanelFixations->width(), ui->lPanelFixations->height());
 }
 
 void DialogVisualizationSegments::fncUpdateFragment(){

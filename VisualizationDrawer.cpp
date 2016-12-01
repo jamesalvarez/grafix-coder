@@ -1,5 +1,7 @@
 #include "VisualizationDrawer.h"
 
+
+
 VisualizationDrawer::VisualizationDrawer(const mat &roughM, const mat &smoothM, const mat &fixAllM, const mat &segmentsM, const GrafixParticipant *participant) {
     this->roughM = &roughM;
     this->smoothM = &smoothM;
@@ -15,7 +17,7 @@ VisualizationDrawer::VisualizationDrawer(const mat &roughM, const mat &smoothM, 
     this->_paintPupilDilation = true;
 
     this->_smoothPen = QPen(Qt::blue,1,Qt::SolidLine, Qt::RoundCap);
-    this->_roughPen1 = QPen(Qt::red, 1.2, Qt::SolidLine, Qt::RoundCap);
+    this->_roughPenLeftEye = QPen(Qt::red, 1.2, Qt::SolidLine, Qt::RoundCap);
     this->_roughPen2 = QPen(QColor(255,50,0), 1.2, Qt::SolidLine, Qt::RoundCap);
     this->_bluePen = QPen(Qt::blue, 1.2, Qt::SolidLine, Qt::RoundCap);
     this->_redPen = QPen(Qt::red, 1.2, Qt::SolidLine, Qt::RoundCap);
@@ -36,17 +38,35 @@ VisualizationDrawer::~VisualizationDrawer() {
     delete this->settingsLoader;
 }
 
+void VisualizationDrawer::setSetting(int key, QVariant value) {
+    switch(key) {
+        case VIS_PLAY_SMOOTH:
+        _playingSmooth = value.toBool();
+        break;
+    case VIS_PAINT_FIXATION_NUMBERS:
+        _paintFixationNumbers = value.toBool();
+        break;
+    case VIS_PAINT_PUPIL_DILATION:
+        _paintPupilDilation = value.toBool();
+        break;
+    }
+}
+
 void VisualizationDrawer::updateVisualizationFrame(int width, int height) {
     visualizationPixmap = QPixmap(width, height);
+    visualizationPixmap.fill(Qt::transparent);
 }
 
 void VisualizationDrawer::updateFixationFrame(int width, int height) {
     fixationsPixmap = QPixmap(width, height);
+    fixationsPixmap.fill(Qt::transparent);
 }
 
 void VisualizationDrawer::updateTimeLineFrame(int width, int height) {
     processLinePixmap = QPixmap(width, height);
     timeLinePixmap = QPixmap(width, height);
+    processLinePixmap.fill(Qt::transparent);
+    timeLinePixmap.fill(Qt::transparent);
 }
 
 void VisualizationDrawer::updateDrawingSettings() {
@@ -61,6 +81,8 @@ void VisualizationDrawer::updateDrawingSettings() {
 }
 
 void VisualizationDrawer::paintCurrentFrame(uword currentIndex) {
+
+    qDebug() << "Painting frame: " << currentIndex;
 
     this->_currentIndex = currentIndex;
 
@@ -85,6 +107,7 @@ void VisualizationDrawer::paintCurrentFrame(uword currentIndex) {
                 break;
             }
         }
+        paintTimeLine();
     }
 
 
@@ -98,8 +121,10 @@ void VisualizationDrawer::paintCurrentFrame(uword currentIndex) {
         }
     }
 
-    paintTimeLine();
+    paintProcessLine();
     paintVisualization();
+
+    qDebug() << "Finished painting frame: " << currentIndex;
 
 }
 
@@ -107,11 +132,12 @@ void VisualizationDrawer::paintCurrentFrame(uword currentIndex) {
 
 void VisualizationDrawer::paintVisualization() {
 
-    visualizationPixmap.fill(Qt::transparent);
+    //visualizationPixmap.fill(Qt::transparent);
     QPainter visualizationPainter(&visualizationPixmap);
 
     // Paint fixation number: Paint fixations option checked:
     if (_paintFixationNumbers && _currentFixationIndex > -1) {
+        qDebug() << "Painting fixation number";
         QString fixationNumber = QString::number(_currentFixationIndex + 1);
         QFont font = visualizationPainter.font();
         if (this->_playingSmooth) {
@@ -135,20 +161,30 @@ void VisualizationDrawer::paintVisualization() {
             }
         }
         // Draw point
-        visualizationPainter.setPen(_smoothPen);
-        visualizationPainter.drawPoint( smoothM->at(_currentIndex ,2 ) / _expWidth * visualizationPixmap.width(), smoothM->at(_currentIndex ,3 ) / _expHeight * visualizationPixmap.height()); // XL
+        int smooth_x = smoothM->at(_currentIndex ,2 ) / _expWidth * visualizationPixmap.width();
+        int smooth_y = smoothM->at(_currentIndex ,3 ) / _expHeight * visualizationPixmap.height();
 
+        visualizationPainter.setPen(_smoothPen);
+        visualizationPainter.drawPoint(smooth_x, smooth_y);
+
+        qDebug() << "Drawing smooth point at: " << smooth_x << " , " << smooth_y;
     } else {
         // Option 2 checked : Paint pupil dilation
         if (_paintPupilDilation && roughM->n_cols == 8){
             if (roughM->at(_currentIndex ,6) > 0){
-                _roughPen1.setWidth(roughM->at(_currentIndex ,6) * 10);
+                _roughPenLeftEye.setWidth(roughM->at(_currentIndex ,6) * 10);
             }
         }
 
-        _roughPen1.setColor(QColor(255, 0, 0, 255));
-        visualizationPainter.setPen(_roughPen1);
-        visualizationPainter.drawPoint( roughM->at(_currentIndex ,2 )  * visualizationPixmap.width(), roughM->at(_currentIndex ,3 )  * visualizationPixmap.height()); // XL
+
+
+        int left_x = roughM->at(_currentIndex, 2)  * visualizationPixmap.width();
+        int left_y = roughM->at(_currentIndex, 3)  * visualizationPixmap.height();
+
+        visualizationPainter.setPen(_roughPenLeftEye);
+        visualizationPainter.drawPoint(left_x, left_y);
+
+        qDebug() << "Drawing rough point at: " << left_x << " , " << left_y ;
 
         // Option 2 checked : Paint pupil dilation
         if (_paintPupilDilation  && roughM->n_cols == 8){
@@ -157,9 +193,12 @@ void VisualizationDrawer::paintVisualization() {
             }
         }
 
-        _roughPen2.setColor(QColor(0, 50, 128, 255));
+        int right_x = roughM->at(_currentIndex, 4)  * visualizationPixmap.width();
+        int right_y = roughM->at(_currentIndex, 5)  * visualizationPixmap.height();
         visualizationPainter.setPen(_roughPen2);
-        visualizationPainter.drawPoint( roughM->at(_currentIndex ,4 )  * visualizationPixmap.width(), roughM->at(_currentIndex ,5 )  * visualizationPixmap.height()); // XL
+        visualizationPainter.drawPoint(right_x, right_y);
+
+        qDebug() << "Drawing rough point at: " << right_x << " , " << right_y ;
 
     }
 
@@ -178,7 +217,7 @@ void VisualizationDrawer::paintTimeLine() {
 
         int x = (i - _currentFragmentStartIndex ) * _samplesPerFragment;
 
-        if (_playingSmooth) {
+        if (!_playingSmooth) {
             if (roughM->at(i,2 ) != -1){
                 painter.setPen(_redPen);
                 painter.drawPoint(x, roughM->at(i,2 ) * height); // XL

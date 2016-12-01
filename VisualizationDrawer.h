@@ -1,10 +1,14 @@
-   #ifndef VISUALIZATIONDRAWER_H
+#ifndef VISUALIZATIONDRAWER_H
 #define VISUALIZATIONDRAWER_H
 
 #include "MyConstants.h"
 #include "GrafixProject.h"
 #include <qpainter.h>
 #include "armadillo"
+
+#define VIS_PLAY_SMOOTH 1
+#define VIS_PAINT_FIXATION_NUMBERS 2
+#define VIS_PAINT_PUPIL_DILATION 3
 
 using namespace arma;
 
@@ -23,7 +27,7 @@ class VisualizationDrawer
     // Settings
     double _increment;
     QPen _smoothPen;
-    QPen _roughPen1;
+    QPen _roughPenLeftEye;
     QPen _roughPen2;
     QPen _redPen;
     QPen _redPen2;
@@ -66,6 +70,7 @@ public:
     void updateVisualizationFrame(int width, int height);
     void updateFixationFrame(int width, int height);
     void updateTimeLineFrame(int width, int height);
+    void setSetting(int key, QVariant value);
 
     void paintCurrentFrame(uword _currentIndex);
 };

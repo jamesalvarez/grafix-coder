@@ -66,9 +66,8 @@ private:
     uword startIndex;
     uword stopIndex;
 
-    void playSmooth();
-
-    void paintCurrentFrame();
+    void playVisualization();
+    void paintFrame(uword frame);
 
     void paintBlankPanel();
     void paintBackgroundImage();
@@ -85,7 +84,8 @@ public slots:
     // Buttons
     void fncPress_bPlay();
     void fncPress_bCancel();
-    void fncChange_Visualization(bool type);
+    void updateVisualizationSettings();
+    void updateVisualizationGeometry();
     void closeEvent(QCloseEvent *);
 
     void fncPress_bNextFragment();
