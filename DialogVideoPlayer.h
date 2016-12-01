@@ -39,10 +39,27 @@ private:
     int hz;
     int expWidth;
     int expHeight;
+    double timerOffset;
 
+
+    // State of playback
     int playOnOff;
+    double currentTimeMS;
+    int currentIndex;
+    uword currentFragment;
 
+    // Playing - Movie driven or by timer
+    void playTimer();
     void playMovie();
+
+    // Update state of playback
+    void updatePlaybackState(double newTimeMS);
+
+    // Painting
+    void paintCurrentVisualizationFrame();
+    void paintCurrentTimeLineLineFrame();
+    void paintNoFrameFound();
+    void paintTimeLine();
 
 public slots:
     void openFile();
@@ -52,7 +69,7 @@ private slots:
     void mediaStateChanged(QMediaPlayer::State state);
     void positionChanged(qint64 position);
     void durationChanged(qint64 duration);
-    void setPosition(int position);
+    void movieSliderReleased();
     void handleError();
     void fncCalculateAspectRatios();
 
@@ -67,10 +84,15 @@ private:
     int vid_height;
 
     QMediaPlayer *mediaPlayer;
-    QGraphicsScene *scene;
-    QGraphicsVideoItem *item;
-    QGraphicsRectItem *rect_overlay;
-    QGraphicsPixmapItem *pixmap_overlay;
+
+    QGraphicsScene *visualizationScene;
+    QGraphicsScene *timeLineScene;
+
+    QGraphicsVideoItem *visualizationVideoItem;
+    QGraphicsRectItem *screenLayerItem;
+    QGraphicsPixmapItem *visualizationPixmapItem;
+    QGraphicsLineItem *timeLineTimeItem;
+    QGraphicsPixmapItem *timeLinePixmapItem;
     Ui::DialogVideoPlayer *ui;
 };
 
