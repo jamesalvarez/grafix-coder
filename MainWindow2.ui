@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>699</width>
-    <height>707</height>
+    <width>1283</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -390,6 +390,12 @@
          <property name="enabled">
           <bool>true</bool>
          </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -409,6 +415,12 @@
        </item>
        <item>
         <widget class="QLabel" name="lPanelRough">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Rough</string>
          </property>
@@ -416,6 +428,12 @@
        </item>
        <item>
         <widget class="QLabel" name="lPanelSmooth">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Smooth</string>
          </property>
@@ -423,6 +441,12 @@
        </item>
        <item>
         <widget class="QLabel" name="lPanelFixations">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -442,6 +466,12 @@
        </item>
        <item>
         <widget class="QLabel" name="lPanelFlags">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -461,6 +491,12 @@
        </item>
        <item>
         <widget class="QLabel" name="lPanelPupilDilation">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Pupil Dilation</string>
          </property>
@@ -468,6 +504,12 @@
        </item>
        <item>
         <widget class="QLabel" name="lPanelVelocity">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Velocity</string>
          </property>
@@ -1519,7 +1561,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>699</width>
+     <width>1283</width>
      <height>22</height>
     </rect>
    </property>

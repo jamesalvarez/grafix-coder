@@ -111,7 +111,7 @@ private:
     bool _configuration_changed;
     bool _hold_changes;
     double _velocity_view_zoom;
-    bool _resizedAndNeedDisplay;
+    int refreshTimer;
 
     FixationsListModel* _fixationList;
 
@@ -152,6 +152,7 @@ private:
 
 protected:
     void  resizeEvent(QResizeEvent*resizeEvent);
+    void  timerEvent(QTimerEvent *timerEvent);
     bool  eventFilter(QObject *obj, QEvent *event);
 
 public slots:

@@ -211,19 +211,6 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
         return false;
     }
 
-    if (event->type() == QEvent::Resize) {
-        _resizedAndNeedDisplay = true;
-        qDebug() << " need resize ";
-        return true;
-    }
-
-    if (_resizedAndNeedDisplay && event->type() == QEvent::MouseButtonRelease) {
-        _resizedAndNeedDisplay = false;
-        qDebug() << " resized ";
-        resizeDisplay();
-        return false;
-    }
-
     bool isMouseEvent = (event->type() == QEvent::MouseMove ||
                          event->type() == QEvent::MouseButtonPress ||
                          event->type() == QEvent::MouseButtonRelease);
@@ -288,11 +275,6 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
             ui->lTo->setText(QString::number(mousedIndex));
         }
     } else if (event->type() == QEvent::MouseButtonRelease) {
-
-        if (_resizedAndNeedDisplay) {
-            resizeDisplay();
-        }
-
         if (_mouseAction == Consts::FIX_OFF) return false;
 
         _mouseAction = Consts::FIX_OFF;
@@ -387,9 +369,61 @@ bool MainWindow2::eventFilter(QObject *obj, QEvent *event) {
     return false;
 }
 
-void MainWindow2::resizeEvent(QResizeEvent* resizeEvent) {
-    QMainWindow::resizeEvent(resizeEvent);
-    //_resizedAndNeedDisplay = true;
+void MainWindow2::resizeEvent(QResizeEvent* event) {
+    Q_UNUSED(event);
+
+    ui->lPanelFixations->clear();
+    ui->lPanelFlags->clear();
+    ui->lPanelMissingData->clear();
+    ui->lPanelPupilDilation->clear();
+    ui->lPanelRough->clear();
+    ui->lPanelSmooth->clear();
+    ui->lPanelVelocity->clear();
+    p_over_display_label->clear();
+    p_bZoomin->hide();
+    p_bZoomout->hide();
+    p_lMagnification->hide();
+
+    if (refreshTimer){
+        killTimer(refreshTimer);
+        refreshTimer = 0;
+    }
+    refreshTimer = startTimer(500);
+}
+
+
+void MainWindow2::timerEvent(QTimerEvent *timerEvent){
+    /*your actions here*/
+    killTimer(timerEvent->timerId());
+    refreshTimer = 0;
+
+    int w = ui->lPanelMissingData->width();
+    int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
+
+    QPoint new_pos = ui->lPanelMissingData->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
+    //int y = new_pos.y() - (this->frameGeometry().height() - this->geometry().height());
+    this->p_over_display_label->setGeometry(new_pos.x(),
+                                            new_pos.y(),
+                                            w,
+                                            h);
+
+    this->p_over_display_label->raise();
+
+    //Now for zoom buttons
+    int button_size = 20;
+    int spacing = 3;
+    new_pos = ui->lPanelVelocity->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
+    this->p_bZoomout->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - button_size, new_pos.y(), button_size, button_size);
+    this->p_bZoomout->raise();
+    this->p_bZoomin->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - spacing - (2 * button_size), new_pos.y(), button_size, button_size);
+    this->p_bZoomin->raise();
+    this->p_lMagnification->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - (2 * spacing) - (7 * button_size), new_pos.y(), button_size * 5, button_size);
+    this->p_lMagnification->raise();
+    p_bZoomin->show();
+    p_bZoomout->show();
+    p_lMagnification->show();
+    qDebug() << "Resized";
+    paintAll();
 }
 
 
@@ -610,35 +644,6 @@ void MainWindow2::fncSaveAllFiles(GrafixParticipant *participant) {
     if (!fixAllM.is_empty()) GPMatrixFiles::saveFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     if (!autoFixAllM.is_empty()) GPMatrixFiles::saveFileSafe(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
     if (!experimentalSegmentsM.is_empty()) GPMatrixFiles::saveFileSafe(experimentalSegmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
-}
-
-void MainWindow2::resizeDisplay() {
-
-    int w = ui->lPanelMissingData->width();
-    int h = ui->lPanelVelocity->y() + ui->lPanelVelocity->height() - ui->lPanelMissingData->y();
-
-    QPoint new_pos = ui->lPanelMissingData->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
-    //int y = new_pos.y() - (this->frameGeometry().height() - this->geometry().height());
-    this->p_over_display_label->setGeometry(new_pos.x(),
-                                            new_pos.y(),
-                                            w,
-                                            h);
-
-    this->p_over_display_label->raise();
-
-    //Now for zoom buttons
-    int button_size = 20;
-    int spacing = 3;
-    new_pos = ui->lPanelVelocity->pos() + ui->frameDataDisplay->pos() + ui->centralwidget->pos();
-    this->p_bZoomout->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - button_size, new_pos.y(), button_size, button_size);
-    this->p_bZoomout->raise();
-    this->p_bZoomin->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - spacing - (2 * button_size), new_pos.y(), button_size, button_size);
-    this->p_bZoomin->raise();
-    this->p_lMagnification->setGeometry(new_pos.x() + ui->lPanelVelocity->width() - (2 * spacing) - (7 * button_size), new_pos.y(), button_size * 5, button_size);
-    this->p_lMagnification->raise();
-
-    paintAll();
-
 }
 
 
