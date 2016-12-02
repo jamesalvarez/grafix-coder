@@ -388,7 +388,7 @@ void MainWindow2::resizeEvent(QResizeEvent* event) {
         killTimer(refreshTimer);
         refreshTimer = 0;
     }
-    refreshTimer = startTimer(500);
+    refreshTimer = startTimer(250);
 }
 
 

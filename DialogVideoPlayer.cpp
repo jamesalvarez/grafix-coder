@@ -1,6 +1,9 @@
 #include "DialogVideoPlayer.h"
 #include "ui_DialogVideoPlayer.h"
 
+#include <time.h>
+#include <sys/timeb.h>
+
 DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DialogVideoPlayer) {
@@ -10,10 +13,15 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     connect(ui->buttonOpen, SIGNAL(clicked()), this, SLOT(openFile()));
     connect(ui->buttonPlay, SIGNAL(clicked()), this, SLOT(playButton()));
     connect(ui->sliderPosition, SIGNAL(sliderReleased()), this, SLOT(movieSliderReleased()), Qt::QueuedConnection);
-
+    connect(ui->checkBoxSmooth, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
+    connect(ui->rbFragment, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
+    connect(ui->rbSegment, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
+    connect(ui->rbWholeFile, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
+    connect(ui->checkBoxLoop, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
+    connect(ui->checkBoxMovie, SIGNAL(clicked(bool)), this, SLOT(changeMovieMode()));
 
     // Set up ui controls
-    ui->buttonPlay->setEnabled(false);
+    ui->checkBoxMovie->setEnabled(false);
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
     ui->sliderPosition->setRange(0, 0);
 
@@ -47,7 +55,6 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
 
 
     // Media player connections
-    connect(mediaPlayer, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(mediaStateChanged(QMediaPlayer::State)));
     connect(mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
     connect(mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
     connect(mediaPlayer, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(handleError()));
@@ -104,9 +111,11 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
         ui->checkBoxSmooth->setChecked(true);
     }
 
-    timerOffset = (*p_roughM).at(0, 0); //this is the ms of when the player first started
+    firstSampleMS = (*p_roughM).at(0, 0); //this is the ms of when the player first started
     currentIndex = 0;
     currentFragment = -1;
+
+    settingChanged();
 
     updatePlaybackState(0, true);
 }
@@ -133,9 +142,8 @@ void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
         double samples_over_time_line = (double)samplesPerFragment * (double)(mouseEvent->pos().x() - timeLineRect.x()) / (double)timeLineRect.width();
         int current_position = (currentFragment * samplesPerFragment) + (int)floor(samples_over_time_line);
 
-        if (current_position > 0 && current_position < p_roughM->n_rows) {
-            double ms = p_roughM->at(current_position, 0);
-            updatePlaybackState(ms, true);
+        if (current_position > 0 && current_position < (int)p_roughM->n_rows) {
+            updatePlaybackState(current_position, true);
         }
     }
 }
@@ -194,61 +202,77 @@ void DialogVideoPlayer::openFile() {
     if (!fileName.isEmpty()) {
         mediaPlayer->setMedia(QUrl::fromLocalFile(fileName));
 
-        fncCalculateAspectRatios();
-
-
-        double video_aspect = (double)vid_width / (double)vid_height;
-        double data_aspect = (double)expWidth / (double)expHeight;
-
-        if (video_aspect == data_aspect) {
-            ui->statusLabel->setText("Video loaded.");
+        if (mediaPlayer->isVideoAvailable()) {
+            fncCalculateAspectRatios();
+            ui->checkBoxMovie->setEnabled(true);
+            ui->checkBoxMovie->setChecked(true);
+            return;
         } else {
-            if (video_aspect > data_aspect) {
-                ui->statusLabel->setText("Video loaded: Video aspect is wider than data.");
-            } else {
-                ui->statusLabel->setText("Video loaded: Video aspect is taller than data.");
-            }
+            QMessageBox messageBox;
+            messageBox.critical(0,"Error","An error has occured when loading this movie!");
+            messageBox.setFixedSize(500,200);
         }
-
-        ui->buttonPlay->setEnabled(true);
     }
 }
 
 void DialogVideoPlayer::playButton() {
-    switch(mediaPlayer->state()) {
-        case QMediaPlayer::PlayingState:
-            mediaPlayer->pause();
-            break;
-        default:
-            playMovie();
-            break;
+
+    if (playing) {
+        stopPlaying();
+
+    } else {
+        startPlaying();
+
     }
 }
 
-void DialogVideoPlayer::playTimer() {
-
+void DialogVideoPlayer::stopPlaying() {
+    playing = false;
+    ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 }
 
-void DialogVideoPlayer::playMovie() {
-    //wait to start (buggy otherwise)
-    while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia) {
-        qApp->processEvents();
+
+
+void DialogVideoPlayer::startPlaying() {
+    playing = true;
+    ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+    if (ui->checkBoxMovie->isChecked()) {
+        //wait to start (buggy otherwise)
+        while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia) {
+            qApp->processEvents();
+        }
+
+        mediaPlayer->setPosition(currentTimeMS - firstSampleMS);
+        mediaPlayer->play();
+
+        while(mediaPlayer->state() == QMediaPlayer::PlayingState && playing) {
+
+            // Get position in ms with offset since start of movie and map to data
+            double current_movie_time = (double)(mediaPlayer->position()) + firstSampleMS;
+            updatePlaybackStateTime(current_movie_time);
+            qApp->processEvents();
+        }
+
+        mediaPlayer->stop();
+    } else {
+        clockStartTime = getMilliCount();
+        playStartSampleMS = p_roughM->at(qMax(0, currentIndex), 0 );
+        while(playing) {
+            double current_movie_time = playStartSampleMS + getMilliCount() - clockStartTime;
+            updatePlaybackStateTime(current_movie_time);
+            qApp->processEvents();
+        }
     }
-
-    mediaPlayer->play();
-
-    while(mediaPlayer->state() == QMediaPlayer::PlayingState) {
-
-        // Get position in ms with offset since start of movie and map to data
-        double current_movie_time = (double)(mediaPlayer->position()) + timerOffset;
-        updatePlaybackState(current_movie_time, false);
-        qApp->processEvents();
-    }
-
-    mediaPlayer->stop();
 }
 
-void DialogVideoPlayer::updatePlaybackState(double newTimeMS, bool resetAll = false) {
+int DialogVideoPlayer::getMilliCount(){
+    timeb tb;
+    ftime(&tb);
+    int nCount = tb.millitm + (tb.time & 0xfffff) * 1000;
+    return nCount;
+}
+
+void DialogVideoPlayer::updatePlaybackStateTime(double newTimeMS) {
 
     qDebug() << "playing: " << newTimeMS;
 
@@ -258,39 +282,73 @@ void DialogVideoPlayer::updatePlaybackState(double newTimeMS, bool resetAll = fa
 
     int last_index = (*p_roughM).n_rows - 1;
 
-    int previousIndex = resetAll ? 0 : qMax(currentIndex,0);
-    currentIndex = -1;
+    int previousIndex = qMax(currentIndex,0);
+
+    if (p_roughM->at(previousIndex,0) > currentTimeMS ) {
+        previousIndex = 0;
+    }
+
+    int current_index = -1;
 
     for(int search_index = previousIndex; search_index <= last_index; search_index++) {
         double searched_time = (*p_roughM).at(search_index, 0);
         if (searched_time >= currentTimeMS) {
             //found latest frame - paint
-            currentIndex = search_index;
+            current_index = search_index;
 
             break;
         }
     }
 
+    updatePlaybackState(current_index, false);
+
+}
+
+void DialogVideoPlayer::updatePlaybackState(int index, bool resetAll) {
+    currentIndex = index;
+    currentTimeMS = p_roughM->at(qMax(0, currentIndex), 0 );
+    //  If time is greater that biggest time in rough matrix...
     if (currentIndex == -1) {
-        currentFragment = -1;
-        paintNoFrameFound();
-        qDebug() << "no frame";
-    } else {
 
-        // Calculate current fragment
-        int current_fragment = (int)floor((double)currentIndex / samplesPerFragment);
+        if (settingLoop) {
 
-        if (current_fragment != currentFragment) {
-            currentFragment = current_fragment;
-            paintTimeLine();
+            switch (settingPlayMode) {
+             case DialogVideoPlayer::PlayModeSegment:
+                stopPlaying();
+                break;
+             case DialogVideoPlayer::PlayModeFragment: {
+                uword fragment_start = currentFragment * samplesPerFragment;
+                updatePlaybackState(fragment_start, true);}
+                break;
+             case DialogVideoPlayer::PlayModeWholeFile:
+                updatePlaybackState(0, true);
+                break;
+
+            }
+        }  else {
+            stopPlaying();
+            return;
         }
-        paintCurrentVisualizationFrame();
     }
+
+    // Calculate current fragment
+    int current_fragment = currentIndex > -1 ? (int)floor((double)currentIndex / samplesPerFragment) : -1;
+
+    if (current_fragment != currentFragment) {
+        currentFragment = current_fragment;
+        paintTimeLine();
+    }
+    paintCurrentVisualizationFrame();
 
     paintCurrentTimeLineLineFrame();
 
-    if (resetAll && mediaPlayer->state() == QMediaPlayer::PlayingState) {
-        mediaPlayer->setPosition(newTimeMS - timerOffset);
+    if (resetAll) {
+        if (ui->checkBoxMovie->isChecked()) {
+            mediaPlayer->setPosition(currentTimeMS - firstSampleMS);
+        } else {
+            clockStartTime = getMilliCount();
+            playStartSampleMS = p_roughM->at(qMax(0, currentIndex), 0 );
+        }
     }
 }
 
@@ -310,7 +368,7 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
 
 
 
-    if (ui->checkBoxSmooth->isChecked()) {
+    if (settingPlaySmooth) {
         QPen myPen(Qt::green, pen_size_multi * 4, Qt::SolidLine);
         myPen.setColor(QColor(0, 250, 0, 255));
         myPen.setCapStyle(Qt::RoundCap);
@@ -325,8 +383,6 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
         // Option 1 checked: Paint fixation numbers
         if (show_fixation_numbers) {
             painter.setFont(serifFont);
-
-
             uvec fixIndex =  arma::find((*p_fixAllM).col(FIXCOL_START) <= currentIndex);
             mat aux = (*p_fixAllM).rows(fixIndex);
             fixIndex =  arma::find(aux.col(FIXCOL_END) >= currentIndex);
@@ -382,15 +438,19 @@ void DialogVideoPlayer::paintNoFrameFound() {
     pixmap.fill(Qt::transparent);
 
     QPainter painter(&pixmap);
-
     QFont serifFont("Times", 12, QFont::Bold);
-
     painter.setFont(serifFont);
-
     painter.drawText( QPoint( 5, 20 ), "No valid data found!" );
-
     painter.end();
+
     visualizationPixmapItem->setPixmap(pixmap);
+
+    // Clear time line
+    QPixmap timeLinePixmap = QPixmap(ui->timeLineView->width(), ui->timeLineView->height());
+    timeLinePixmap.fill(Qt::white);
+    timeLinePixmapItem->setPixmap(timeLinePixmap);
+
+
 }
 
 void DialogVideoPlayer::paintTimeLine() {
@@ -409,15 +469,13 @@ void DialogVideoPlayer::paintTimeLine() {
 
     uword startIndex = currentFragment * samplesPerFragment;
 
-    bool playingSmooth = ui->checkBoxSmooth->isChecked();
-
     qDebug() << "width" << width;
-    for (uword i = 0; i < (int)samplesPerFragment; ++i) {
+    for (uword i = 0; i < (uword)samplesPerFragment; ++i) {
 
         uword index = i + startIndex;
         double x = (double)i * width / (double)samplesPerFragment;
 
-        if (!playingSmooth) {
+        if (settingPlaySmooth) {
             if (p_roughM->at(index,2 ) != -1){
                 painter.setPen(redPen);
                 painter.drawPoint(x, p_roughM->at(i,2 ) * height); // XL
@@ -455,17 +513,24 @@ void DialogVideoPlayer::paintTimeLine() {
     timeLinePixmapItem->setPixmap(timeLinePixmap);
 }
 
+void DialogVideoPlayer::changeMovieMode() {
 
-void DialogVideoPlayer::mediaStateChanged(QMediaPlayer::State state) {
-    switch(state) {
-        case QMediaPlayer::PlayingState:
-            ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-            break;
-        default:
-            ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-            break;
-    }
 }
+
+void DialogVideoPlayer::settingChanged() {
+    if (ui->rbFragment->isChecked()) {
+        settingPlayMode = DialogVideoPlayer::PlayModeFragment;
+    } else if (ui->rbSegment->isChecked()) {
+        settingPlayMode = DialogVideoPlayer::PlayModeSegment;
+    } else if (ui->rbWholeFile->isChecked()) {
+        settingPlayMode = DialogVideoPlayer::PlayModeWholeFile;
+    }
+
+    settingPlaySmooth = ui->checkBoxSmooth->isChecked();
+    settingLoop = ui->checkBoxLoop->isChecked();
+}
+
+
 
 void DialogVideoPlayer::positionChanged(qint64 position) {
     ui->sliderPosition->setValue(position);

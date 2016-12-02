@@ -20,6 +20,8 @@ class DialogVideoPlayer : public QDialog
 {
     Q_OBJECT
 
+
+
 public:
     explicit DialogVideoPlayer(QWidget *parent = 0);
     ~DialogVideoPlayer();
@@ -31,33 +33,48 @@ public:
 
 private:
 
+    typedef enum  {
+        PlayModeSegment,
+        PlayModeFragment,
+        PlayModeWholeFile
+    } PlayMode;
+
     GrafixParticipant* _participant;
     mat* p_roughM;
     mat* p_smoothM;
     mat* p_fixAllM;
 
-    int typeData; // Smooth or Rough
+
     int secsFragment;
     int hz;
     int samplesPerFragment;
     int expWidth;
     int expHeight;
-    double timerOffset;
+    double firstSampleMS;
+    double playStartSampleMS;
+    int clockStartTime;
 
+    // Play settings
+    PlayMode settingPlayMode;
+    bool settingPlaySmooth;
+    bool settingLoop;
 
     // State of playback
+    bool playing;
     int playOnOff;
     double currentTimeMS;
     int currentIndex;
     int currentFragment;
 
     // Playing - Movie driven or by timer
-    void playTimer();
-    void playMovie();
+    void stopPlaying();
+    void startPlaying();
+    int getMilliCount();
+
 
     // Update state of playback
-    void updatePlaybackState(double newTimeMS, bool resetAll);
-
+    void updatePlaybackStateTime(double newTimeMS);
+    void updatePlaybackState(int index, bool resetAll);
     // Painting
     void paintCurrentVisualizationFrame();
     void paintCurrentTimeLineLineFrame();
@@ -69,7 +86,8 @@ public slots:
     void playButton();
 
 private slots:
-    void mediaStateChanged(QMediaPlayer::State state);
+    void changeMovieMode();
+    void settingChanged();
     void positionChanged(qint64 position);
     void durationChanged(qint64 duration);
     void movieSliderReleased();
