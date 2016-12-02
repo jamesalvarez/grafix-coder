@@ -67,6 +67,8 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
 
     // Set up line indicating time on time line
     timeLineTimeItem = new QGraphicsLineItem();
+    timeLineTimeItem->setPen(QPen(Qt::black, 1, Qt::DashLine));
+    timeLineTimeItem->setPos(0, 0);
     timeLineScene->addItem(timeLineTimeItem);
 
 }
@@ -85,16 +87,17 @@ DialogVideoPlayer::~DialogVideoPlayer() {
 
 void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in) {
 
-    this->_participant = participant;
-    this->p_roughM = &p_roughM_in;
-    this->p_smoothM = &p_smoothM_in;
-    this->p_fixAllM = &p_fixAllM_in;
-    this->secsFragment = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, Consts::ACTIVE_CONFIGURATION()).toInt();
-    this->hz = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_HZ, Consts::ACTIVE_CONFIGURATION()).toInt();
-    this->expWidth = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt();
-    this->expHeight = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt();
+    _participant = participant;
+    p_roughM = &p_roughM_in;
+    p_smoothM = &p_smoothM_in;
+    p_fixAllM = &p_fixAllM_in;
+    secsFragment = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, Consts::ACTIVE_CONFIGURATION()).toInt();
+    hz = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_HZ, Consts::ACTIVE_CONFIGURATION()).toInt();
+    samplesPerFragment = secsFragment * hz;
+    expWidth = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_WIDTH, Consts::ACTIVE_CONFIGURATION()).toInt();
+    expHeight = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt();
 
-    if (this->p_smoothM->is_empty()) {
+    if (p_smoothM->is_empty()) {
         ui->checkBoxSmooth->setChecked(false);
         ui->checkBoxSmooth->setEnabled(false);
     } else {
@@ -103,12 +106,38 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
 
     timerOffset = (*p_roughM).at(0, 0); //this is the ms of when the player first started
     currentIndex = 0;
+    currentFragment = -1;
+
+    updatePlaybackState(0, true);
 }
 
 void DialogVideoPlayer::resizeEvent (QResizeEvent *event) {
     QDialog::resizeEvent(event);
     fncCalculateAspectRatios();
 
+    paintTimeLine();
+    paintCurrentTimeLineLineFrame();
+    paintCurrentVisualizationFrame();
+
+}
+
+void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
+    bool leftButton = mouseEvent->buttons() & Qt::LeftButton;
+
+    QRect timeLineRect = ui->timeLineView->geometry();
+
+    bool onTimeLine = timeLineRect.contains(mouseEvent->pos());
+
+    if (leftButton && onTimeLine) {
+        // Set position
+        double samples_over_time_line = (double)samplesPerFragment * (double)(mouseEvent->pos().x() - timeLineRect.x()) / (double)timeLineRect.width();
+        int current_position = (currentFragment * samplesPerFragment) + (int)floor(samples_over_time_line);
+
+        if (current_position > 0 && current_position < p_roughM->n_rows) {
+            double ms = p_roughM->at(current_position, 0);
+            updatePlaybackState(ms, true);
+        }
+    }
 }
 
 void DialogVideoPlayer::fncCalculateAspectRatios() {
@@ -148,6 +177,9 @@ void DialogVideoPlayer::fncCalculateAspectRatios() {
     screenLayerItem->setRect(0, 0, display_width, display_height);
     visualizationVideoItem->setPos(vid_offset_x, vid_offset_y);
     ui->visualizationView->fitInView(this->screenLayerItem, Qt::KeepAspectRatio);
+
+
+    timeLineScene->setSceneRect(ui->timeLineView->rect());
 }
 
 void DialogVideoPlayer::closeEvent(QCloseEvent *event) {
@@ -209,14 +241,14 @@ void DialogVideoPlayer::playMovie() {
 
         // Get position in ms with offset since start of movie and map to data
         double current_movie_time = (double)(mediaPlayer->position()) + timerOffset;
-        updatePlaybackState(current_movie_time);
+        updatePlaybackState(current_movie_time, false);
         qApp->processEvents();
     }
 
     mediaPlayer->stop();
 }
 
-void DialogVideoPlayer::updatePlaybackState(double newTimeMS) {
+void DialogVideoPlayer::updatePlaybackState(double newTimeMS, bool resetAll = false) {
 
     qDebug() << "playing: " << newTimeMS;
 
@@ -226,7 +258,7 @@ void DialogVideoPlayer::updatePlaybackState(double newTimeMS) {
 
     int last_index = (*p_roughM).n_rows - 1;
 
-    int previousIndex = qMax(currentIndex,0);
+    int previousIndex = resetAll ? 0 : qMax(currentIndex,0);
     currentIndex = -1;
 
     for(int search_index = previousIndex; search_index <= last_index; search_index++) {
@@ -235,18 +267,30 @@ void DialogVideoPlayer::updatePlaybackState(double newTimeMS) {
             //found latest frame - paint
             currentIndex = search_index;
 
-            //use previous frame
-            if (currentIndex > 0) currentIndex--;
-
             break;
         }
     }
 
     if (currentIndex == -1) {
+        currentFragment = -1;
         paintNoFrameFound();
         qDebug() << "no frame";
     } else {
+
+        // Calculate current fragment
+        int current_fragment = (int)floor((double)currentIndex / samplesPerFragment);
+
+        if (current_fragment != currentFragment) {
+            currentFragment = current_fragment;
+            paintTimeLine();
+        }
         paintCurrentVisualizationFrame();
+    }
+
+    paintCurrentTimeLineLineFrame();
+
+    if (resetAll && mediaPlayer->state() == QMediaPlayer::PlayingState) {
+        mediaPlayer->setPosition(newTimeMS - timerOffset);
     }
 }
 
@@ -324,6 +368,13 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
 
 void DialogVideoPlayer::paintCurrentTimeLineLineFrame() {
 
+    // Get how far in fragment currentIndex is
+    int index_in_fragment = currentIndex - (currentFragment * samplesPerFragment);
+    double pos_in_fragment = (double)index_in_fragment / (double)samplesPerFragment;
+
+    qreal x = pos_in_fragment * ui->timeLineView->width();
+    qreal y = ui->timeLineView->height();
+    timeLineTimeItem->setLine(x,0,x,y);
 }
 
 void DialogVideoPlayer::paintNoFrameFound() {
@@ -343,7 +394,65 @@ void DialogVideoPlayer::paintNoFrameFound() {
 }
 
 void DialogVideoPlayer::paintTimeLine() {
+    qDebug() << "painting time line";
+    QPixmap timeLinePixmap = QPixmap(ui->timeLineView->width(), ui->timeLineView->height());
+    timeLinePixmap.fill(Qt::white);
 
+    QPainter painter(&timeLinePixmap);
+
+    double height = timeLinePixmap.height();
+    double width = timeLinePixmap.width();
+    double height2 = height / (double)expWidth;
+
+    QPen redPen(Qt::red, 1, Qt::SolidLine);
+    QPen bluePen(Qt::blue, 1, Qt::SolidLine);
+
+    uword startIndex = currentFragment * samplesPerFragment;
+
+    bool playingSmooth = ui->checkBoxSmooth->isChecked();
+
+    qDebug() << "width" << width;
+    for (uword i = 0; i < (int)samplesPerFragment; ++i) {
+
+        uword index = i + startIndex;
+        double x = (double)i * width / (double)samplesPerFragment;
+
+        if (!playingSmooth) {
+            if (p_roughM->at(index,2 ) != -1){
+                painter.setPen(redPen);
+                painter.drawPoint(x, p_roughM->at(i,2 ) * height); // XL
+            }
+
+            if (p_roughM->at(index,3 ) != -1){
+                painter.setPen(redPen);
+                painter.drawPoint(x, p_roughM->at(i,3 ) * height); // YL
+            }
+
+            if (p_roughM->at(index,4 ) != -1){
+                painter.setPen(bluePen);
+                painter.drawPoint(x, p_roughM->at(i,4 ) * height); // XR
+            }
+
+            if (p_roughM->at(index,5 ) != -1){
+                painter.setPen(bluePen);
+                painter.drawPoint(x, p_roughM->at(i,5 ) * height); // YR
+            }
+        } else {
+            if (p_smoothM->at(index,2 ) != -1){
+                painter.setPen(redPen);
+                painter.drawPoint(x, p_smoothM->at(i,2 ) * height2);
+            }
+
+            if (p_smoothM->at(index,3 ) != -1){
+                painter.setPen(bluePen);
+                painter.drawPoint(x, p_smoothM->at(i,3 ) * height2);
+            }
+        }
+    }
+
+    painter.end();
+
+    timeLinePixmapItem->setPixmap(timeLinePixmap);
 }
 
 

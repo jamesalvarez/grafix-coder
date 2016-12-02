@@ -27,6 +27,8 @@ public:
     void loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in);
     void resizeEvent (QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
+    void mousePressEvent(QMouseEvent *mouseEvent);
+
 private:
 
     GrafixParticipant* _participant;
@@ -37,6 +39,7 @@ private:
     int typeData; // Smooth or Rough
     int secsFragment;
     int hz;
+    int samplesPerFragment;
     int expWidth;
     int expHeight;
     double timerOffset;
@@ -46,14 +49,14 @@ private:
     int playOnOff;
     double currentTimeMS;
     int currentIndex;
-    uword currentFragment;
+    int currentFragment;
 
     // Playing - Movie driven or by timer
     void playTimer();
     void playMovie();
 
     // Update state of playback
-    void updatePlaybackState(double newTimeMS);
+    void updatePlaybackState(double newTimeMS, bool resetAll);
 
     // Painting
     void paintCurrentVisualizationFrame();

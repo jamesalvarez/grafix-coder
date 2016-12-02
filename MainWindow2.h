@@ -111,6 +111,7 @@ private:
     bool _configuration_changed;
     bool _hold_changes;
     double _velocity_view_zoom;
+    bool _resizedAndNeedDisplay;
 
     FixationsListModel* _fixationList;
 
@@ -136,6 +137,7 @@ private:
     void fncSaveAllFiles(GrafixParticipant *participant);
 
     //painting
+    void resizeDisplay();
     void paintAll();
     void paintRoughData();
     void paintSmoothData();
@@ -149,7 +151,7 @@ private:
     void paintClear();
 
 protected:
-    void  resizeEvent(QResizeEvent* event);
+    void  resizeEvent(QResizeEvent*resizeEvent);
     bool  eventFilter(QObject *obj, QEvent *event);
 
 public slots:

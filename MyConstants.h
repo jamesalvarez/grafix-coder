@@ -282,6 +282,7 @@ namespace Consts {
                                     " processing is applied to merge similar fixations and remove noisy or short"
                                     " fixations.";
 
+
     const int MAXSLIDER_SETTING_INTERP_LATENCY = 18000;
     const int MAXSLIDER_SETTING_INTERP_VELOCITY_THRESHOLD = 10000;
     const int MAXSLIDER_SETTING_INTERP_MAXIMUM_DISPLACEMENT = 15000;
