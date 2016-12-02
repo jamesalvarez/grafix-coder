@@ -80,6 +80,7 @@ private:
     void paintCurrentTimeLineLineFrame();
     void paintNoFrameFound();
     void paintTimeLine();
+    void paintFixations();
 
 public slots:
     void openFile();
@@ -108,12 +109,15 @@ private:
 
     QGraphicsScene *visualizationScene;
     QGraphicsScene *timeLineScene;
+    QGraphicsScene *fixationsScene;
 
     QGraphicsVideoItem *visualizationVideoItem;
     QGraphicsRectItem *screenLayerItem;
     QGraphicsPixmapItem *visualizationPixmapItem;
     QGraphicsLineItem *timeLineTimeItem;
     QGraphicsPixmapItem *timeLinePixmapItem;
+    QGraphicsPixmapItem *fixationsPixmapItem;
+
     Ui::DialogVideoPlayer *ui;
 };
 

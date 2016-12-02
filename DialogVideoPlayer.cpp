@@ -71,6 +71,15 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     timeLinePixmapItem = new QGraphicsPixmapItem();
     timeLineScene->addItem(timeLinePixmapItem);
 
+    // Set up the fixations view
+    ui->fixationsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->fixationsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    fixationsScene = new QGraphicsScene(this);
+    ui->fixationsView->setScene(fixationsScene);
+
+    // Set up timeline pixmap
+    fixationsPixmapItem = new QGraphicsPixmapItem();
+    fixationsScene->addItem(fixationsPixmapItem);
 
     // Set up line indicating time on time line
     timeLineTimeItem = new QGraphicsLineItem();
@@ -82,6 +91,8 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
 
 DialogVideoPlayer::~DialogVideoPlayer() {
     mediaPlayer->stop();
+    delete fixationsPixmapItem;
+    delete fixationsScene;
     delete timeLineTimeItem;
     delete timeLinePixmapItem;
     delete timeLineScene;
@@ -89,6 +100,7 @@ DialogVideoPlayer::~DialogVideoPlayer() {
     delete visualizationVideoItem;
     delete visualizationScene;
     delete mediaPlayer;
+
     delete ui;
 }
 
@@ -125,6 +137,7 @@ void DialogVideoPlayer::resizeEvent (QResizeEvent *event) {
     fncCalculateAspectRatios();
 
     paintTimeLine();
+    paintFixations();
     paintCurrentTimeLineLineFrame();
     paintCurrentVisualizationFrame();
 
@@ -134,7 +147,6 @@ void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
     bool leftButton = mouseEvent->buttons() & Qt::LeftButton;
 
     QRect timeLineRect = ui->timeLineView->geometry();
-
     bool onTimeLine = timeLineRect.contains(mouseEvent->pos());
 
     if (leftButton && onTimeLine) {
@@ -144,6 +156,26 @@ void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
 
         if (current_position > 0 && current_position < (int)p_roughM->n_rows) {
             updatePlaybackState(current_position, true);
+        }
+
+        return;
+    }
+
+    QRect fixationsRect = ui->fixationsView->geometry();
+    bool onFixations = fixationsRect.contains(mouseEvent->pos());
+
+    if (leftButton && onFixations) {
+        // Set position to beginning of fixation (if on one)
+        double samples_over_fixations = (double)samplesPerFragment * (double)(mouseEvent->pos().x() - fixationsRect.x()) / (double)fixationsRect.width();
+        int selected_position = (currentFragment * samplesPerFragment) + (int)floor(samples_over_fixations);
+        for (uword i = 0; i < p_fixAllM->n_rows  ; i++) {
+            bool fixation_starts_before_selected = p_fixAllM->at(i, FIXCOL_START) <= selected_position;
+            bool fixation_ends_after_selected = p_fixAllM->at(i, FIXCOL_END) >= selected_position;
+
+            //go to start of fixation
+            if (fixation_starts_before_selected && fixation_ends_after_selected) {
+                updatePlaybackState(p_fixAllM->at(i, FIXCOL_START), true);
+            }
         }
     }
 }
@@ -209,8 +241,8 @@ void DialogVideoPlayer::openFile() {
             return;
         } else {
             QMessageBox messageBox;
-            messageBox.critical(0,"Error","An error has occured when loading this movie!");
-            messageBox.setFixedSize(500,200);
+            messageBox.critical(0, "Error", "An error has occured when loading this movie!");
+            messageBox.setFixedSize(500, 200);
         }
     }
 }
@@ -265,7 +297,7 @@ void DialogVideoPlayer::startPlaying() {
     }
 }
 
-int DialogVideoPlayer::getMilliCount(){
+int DialogVideoPlayer::getMilliCount() {
     timeb tb;
     ftime(&tb);
     int nCount = tb.millitm + (tb.time & 0xfffff) * 1000;
@@ -282,9 +314,9 @@ void DialogVideoPlayer::updatePlaybackStateTime(double newTimeMS) {
 
     int last_index = (*p_roughM).n_rows - 1;
 
-    int previousIndex = qMax(currentIndex,0);
+    int previousIndex = qMax(currentIndex, 0);
 
-    if (p_roughM->at(previousIndex,0) > currentTimeMS ) {
+    if (p_roughM->at(previousIndex, 0) > currentTimeMS ) {
         previousIndex = 0;
     }
 
@@ -313,16 +345,17 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetAll) {
         if (settingLoop) {
 
             switch (settingPlayMode) {
-             case DialogVideoPlayer::PlayModeSegment:
-                stopPlaying();
+                case DialogVideoPlayer::PlayModeSegment:
+                    stopPlaying();
+                    break;
+                case DialogVideoPlayer::PlayModeFragment: {
+                    uword fragment_start = currentFragment * samplesPerFragment;
+                    updatePlaybackState(fragment_start, true);
+                }
                 break;
-             case DialogVideoPlayer::PlayModeFragment: {
-                uword fragment_start = currentFragment * samplesPerFragment;
-                updatePlaybackState(fragment_start, true);}
-                break;
-             case DialogVideoPlayer::PlayModeWholeFile:
-                updatePlaybackState(0, true);
-                break;
+                case DialogVideoPlayer::PlayModeWholeFile:
+                    updatePlaybackState(0, true);
+                    break;
 
             }
         }  else {
@@ -337,6 +370,7 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetAll) {
     if (current_fragment != currentFragment) {
         currentFragment = current_fragment;
         paintTimeLine();
+        paintFixations();
     }
     paintCurrentVisualizationFrame();
 
@@ -430,7 +464,7 @@ void DialogVideoPlayer::paintCurrentTimeLineLineFrame() {
 
     qreal x = pos_in_fragment * ui->timeLineView->width();
     qreal y = ui->timeLineView->height();
-    timeLineTimeItem->setLine(x,0,x,y);
+    timeLineTimeItem->setLine(x, 0, x, y);
 }
 
 void DialogVideoPlayer::paintNoFrameFound() {
@@ -476,34 +510,34 @@ void DialogVideoPlayer::paintTimeLine() {
         double x = (double)i * width / (double)samplesPerFragment;
 
         if (settingPlaySmooth) {
-            if (p_roughM->at(index,2 ) != -1){
+            if (p_roughM->at(index, 2 ) != -1) {
                 painter.setPen(redPen);
-                painter.drawPoint(x, p_roughM->at(i,2 ) * height); // XL
+                painter.drawPoint(x, p_roughM->at(i, 2 ) * height); // XL
             }
 
-            if (p_roughM->at(index,3 ) != -1){
+            if (p_roughM->at(index, 3 ) != -1) {
                 painter.setPen(redPen);
-                painter.drawPoint(x, p_roughM->at(i,3 ) * height); // YL
+                painter.drawPoint(x, p_roughM->at(i, 3 ) * height); // YL
             }
 
-            if (p_roughM->at(index,4 ) != -1){
+            if (p_roughM->at(index, 4 ) != -1) {
                 painter.setPen(bluePen);
-                painter.drawPoint(x, p_roughM->at(i,4 ) * height); // XR
+                painter.drawPoint(x, p_roughM->at(i, 4 ) * height); // XR
             }
 
-            if (p_roughM->at(index,5 ) != -1){
+            if (p_roughM->at(index, 5 ) != -1) {
                 painter.setPen(bluePen);
-                painter.drawPoint(x, p_roughM->at(i,5 ) * height); // YR
+                painter.drawPoint(x, p_roughM->at(i, 5 ) * height); // YR
             }
         } else {
-            if (p_smoothM->at(index,2 ) != -1){
+            if (p_smoothM->at(index, 2 ) != -1) {
                 painter.setPen(redPen);
-                painter.drawPoint(x, p_smoothM->at(i,2 ) * height2);
+                painter.drawPoint(x, p_smoothM->at(i, 2 ) * height2);
             }
 
-            if (p_smoothM->at(index,3 ) != -1){
+            if (p_smoothM->at(index, 3 ) != -1) {
                 painter.setPen(bluePen);
-                painter.drawPoint(x, p_smoothM->at(i,3 ) * height2);
+                painter.drawPoint(x, p_smoothM->at(i, 3 ) * height2);
             }
         }
     }
@@ -511,6 +545,81 @@ void DialogVideoPlayer::paintTimeLine() {
     painter.end();
 
     timeLinePixmapItem->setPixmap(timeLinePixmap);
+}
+
+void DialogVideoPlayer::paintFixations() {
+
+    QPixmap fixationsPixmap = QPixmap(ui->fixationsView->width(), ui->fixationsView->height());
+    fixationsPixmap.fill(Qt::white);
+    QPainter painter(&fixationsPixmap);
+
+    double positionMultiplier = (double)ui->fixationsView->width() / (double)samplesPerFragment;
+
+    int counter = 0;
+    QFont font = painter.font() ;
+    font.setPointSize ( 8 );
+    painter.setFont(font);
+
+    std::stringstream number;
+    number.str("");
+
+    double posStart = 0;
+    double posEnd = 0;
+
+    uword start_index = currentFragment * samplesPerFragment;
+    uword end_index = start_index + samplesPerFragment;
+
+    int auxIndex = 0;
+    if (p_fixAllM->n_rows > 0) {
+        uvec fixIndex =  arma::find(p_fixAllM->col(FIXCOL_END) >= start_index);
+
+        if (!fixIndex.is_empty()) {
+            auxIndex = fixIndex(0);
+        } else {
+            auxIndex = p_fixAllM->n_rows ;
+        }
+
+    }
+
+    for (uword i = auxIndex; i < p_fixAllM->n_rows  ; i++) {
+
+        bool fixation_starts_after_fragment_start = p_fixAllM->at(i, FIXCOL_START) >= start_index;
+        bool fixation_starts_before_fragment_end = p_fixAllM->at(i, FIXCOL_START) <=  end_index;
+        bool fixation_starts_before_fragment_start = p_fixAllM->at(i, FIXCOL_START) <= start_index;
+        bool fixation_ends_after_fragment_start = p_fixAllM->at(i, FIXCOL_END) >= start_index;
+
+        if ((fixation_starts_after_fragment_start && fixation_starts_before_fragment_end) ||
+                (fixation_starts_before_fragment_start && fixation_ends_after_fragment_start)) {
+
+            // If it's a fixation that didn't end in the previous segment
+            if (fixation_starts_before_fragment_start && fixation_ends_after_fragment_start )
+                posStart = -1;
+            else
+                posStart = (p_fixAllM->at(i, FIXCOL_START) - start_index ) * positionMultiplier;
+
+            qDebug() << " positionM: " << positionMultiplier << " v " << p_fixAllM->at(i, FIXCOL_START);
+            posEnd = ((p_fixAllM->at(i, FIXCOL_END) - start_index ) * positionMultiplier) - posStart;
+
+            if (p_fixAllM->at(i, FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES) {
+                painter.setBrush(QBrush("#ffbc00"));
+            } else {
+                painter.setBrush(QBrush("#1ac500"));
+            }
+
+            painter.drawRect(QRect(posStart, 12, posEnd, 16));
+            number.str("");
+            number << counter;
+            painter.drawText( QPoint(posStart, 9), number.str().c_str() );
+
+            counter ++; // Next fixation
+
+        } else if (p_fixAllM->at(i, FIXCOL_END) >= end_index) {
+            break;
+        }
+    }
+
+    painter.end();
+    fixationsPixmapItem->setPixmap(fixationsPixmap);
 }
 
 void DialogVideoPlayer::changeMovieMode() {
