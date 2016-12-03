@@ -21,7 +21,7 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     connect(ui->checkBoxMovie, SIGNAL(clicked(bool)), this, SLOT(changeMovieMode()));
     connect(ui->spinBoxFragment, SIGNAL(valueChanged(int)), this, SLOT(spinBoxFragmentChanged(int)));
     connect(ui->spinBoxSegment, SIGNAL(valueChanged(int)), SLOT(spinBoxSegmentChanged(int)));
-            
+
     // Set up ui controls
     ui->checkBoxMovie->setEnabled(false);
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
@@ -267,7 +267,12 @@ void DialogVideoPlayer::openFile() {
     if (!fileName.isEmpty()) {
         mediaPlayer->setMedia(QUrl::fromLocalFile(fileName));
 
-        if (mediaPlayer->isVideoAvailable()) {
+        // Wait to load...
+        while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia && mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
+            qApp->processEvents();
+        }
+
+        if (mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
             resizeDisplay();
             ui->checkBoxMovie->setEnabled(true);
             ui->checkBoxMovie->setChecked(true);
@@ -299,11 +304,18 @@ void DialogVideoPlayer::stopPlaying() {
 
 
 void DialogVideoPlayer::startPlaying() {
+
     playing = true;
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     if (ui->checkBoxMovie->isChecked()) {
-        //wait to start (buggy otherwise)
-        while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia) {
+        if (mediaPlayer->mediaStatus() == QMediaPlayer::InvalidMedia) {
+            ui->checkBoxMovie->setChecked(false);
+            ui->checkBoxMovie->setEnabled(false);
+            stopPlaying();
+            return;
+        }
+
+        while(mediaPlayer->mediaStatus() == QMediaPlayer::LoadingMedia) {
             qApp->processEvents();
         }
 
@@ -374,7 +386,7 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
 
 
     bool trigger_fragment_mode = settingPlayMode == PlayModeFragment &&
-            (index >= ((currentFragment + 1) * samplesPerFragment) || index == -1);
+                                 (index >= ((currentFragment + 1) * samplesPerFragment) || index == -1);
 
     if (trigger_fragment_mode) {
         if (settingLoop) {
@@ -385,8 +397,8 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
         return;
     }
 
-    bool trigger_whole_file_mode = settingPlayMode== PlayModeWholeFile &&
-            (index >= p_roughM->n_rows || index == -1);
+    bool trigger_whole_file_mode = settingPlayMode == PlayModeWholeFile &&
+                                   (index >= p_roughM->n_rows || index == -1);
 
     if (trigger_whole_file_mode) {
         if (settingLoop) {
@@ -433,68 +445,58 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
 
 void DialogVideoPlayer::paintCurrentVisualizationFrame() {
 
-    QFont serifFont("Times", 64, QFont::Bold);
-    bool show_fixation_numbers = false;
 
-    double width_multi = (double)display_width / (double)expWidth;
-    double height_multi = (double)display_height / (double)expHeight;
-    double pen_size_multi = display_width / 100;
+    bool show_fixation_numbers = true;
+
+
 
     QPixmap pixmap(display_width, display_height);
     pixmap.fill(Qt::transparent);
-
     QPainter painter(&pixmap);
 
 
+    QPen myPen(QColor(0,0,0,127), 1, Qt::SolidLine);
+    myPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(myPen);
 
-    if (settingPlaySmooth) {
-        QPen myPen(Qt::green, pen_size_multi * 4, Qt::SolidLine);
-        myPen.setColor(QColor(0, 250, 0, 255));
-        myPen.setCapStyle(Qt::RoundCap);
-
-        if ((*p_roughM)(currentIndex , 6) > 0 && (*p_roughM)(currentIndex , 7) > 0) {
-            myPen.setWidth(((*p_roughM)(currentIndex , 6) + (*p_roughM)(currentIndex , 7)) * pen_size_multi);
+    if (show_fixation_numbers) {
+        QFont serifFont("Times", 64, QFont::Bold);
+        painter.setFont(serifFont);
+        uvec fixIndex =  arma::find((*p_fixAllM).col(FIXCOL_START) <= currentIndex);
+        mat aux = (*p_fixAllM).rows(fixIndex);
+        fixIndex =  arma::find(aux.col(FIXCOL_END) >= currentIndex);
+        if (fixIndex.n_rows != 0) {
+            painter.drawText( QRect(0, 0, display_width, display_height), Qt::AlignCenter, QString::number(fixIndex(0)) );
         }
-
-        painter.setPen(myPen);
-        painter.drawPoint((*p_smoothM)(currentIndex , 2 ) * width_multi, (*p_smoothM)(currentIndex , 3 ) * height_multi); // XL
-
-        // Option 1 checked: Paint fixation numbers
-        if (show_fixation_numbers) {
-            painter.setFont(serifFont);
-            uvec fixIndex =  arma::find((*p_fixAllM).col(FIXCOL_START) <= currentIndex);
-            mat aux = (*p_fixAllM).rows(fixIndex);
-            fixIndex =  arma::find(aux.col(FIXCOL_END) >= currentIndex);
-            if (fixIndex.n_rows != 0) {
-                // If there is a fixation between the values, paint it!
-
-                myPen.setColor(QColor(0, 50, 128, 255));
-                painter.setPen(myPen);
-
-                painter.drawText( QPoint( display_width / 2, display_height / 2 ), QString::number(fixIndex(0)) );
-
-            }
-        }
-
-
-    } else {
-        QPen myPen(Qt::red, pen_size_multi * 4, Qt::SolidLine);
-        myPen.setCapStyle(Qt::RoundCap);
-        //set pupil dilation
-        if ((*p_roughM)(currentIndex , 6) > 0) myPen.setWidth((*p_roughM)(currentIndex , 6) * pen_size_multi);
-
-        myPen.setColor(QColor(255, 0, 0, 255));
-        painter.setPen(myPen);
-        painter.drawPoint( (*p_roughM)(currentIndex , 2 )  * display_width, (*p_roughM)(currentIndex , 3 )  * display_height);
-
-        // Option 2 checked : Paint pupil dilation
-        if ((*p_roughM)(currentIndex , 7) > 0) myPen.setWidth((*p_roughM)(currentIndex , 7) * pen_size_multi);
-
-        myPen.setColor(QColor(0, 50, 128, 255));
-        painter.setPen(myPen);
-        painter.drawPoint( (*p_roughM)(currentIndex , 4 )  * display_width, (*p_roughM)(currentIndex , 5 )  * display_height);
     }
 
+
+    mat *matrixToUse = settingPlaySmooth ? p_smoothM : p_roughM;
+    QPen *pensToUse = settingPlaySmooth ? smoothPens : roughPens;
+    int nPensToUse = settingPlaySmooth ? 1 : 2;
+    double width_multi = settingPlaySmooth ? (double)display_width / (double)expWidth : display_width;
+    double height_multi = settingPlaySmooth ? (double)display_height / (double)expHeight : display_height;
+    double pen_size_multi = 20;
+
+    for(int i = 0; i < nPensToUse; ++i) {
+        myPen.setColor(pensToUse[i].color());
+
+        // Pupil width
+        if (p_roughM->at(currentIndex, 6) > 0 && p_roughM->at(currentIndex, 7) > 0) {
+            double width = (p_roughM->at(currentIndex, 6) + p_roughM->at(currentIndex, 7)) / 6;
+            int penWidth = (int)floor(width * pen_size_multi);
+            qDebug() << " width: " << width << " pen width: " << penWidth;
+            myPen.setWidth(penWidth);
+        } else {
+            myPen.setWidth(pen_size_multi);
+        }
+
+        painter.setPen(myPen);
+
+        uword index = 2 * (i + 1);
+        painter.drawPoint(matrixToUse->at(currentIndex, index) * width_multi, matrixToUse->at(currentIndex, index + 1) * height_multi);
+
+    }
 
     painter.end();
     visualizationPixmapItem->setPixmap(pixmap);
