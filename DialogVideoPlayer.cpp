@@ -650,7 +650,7 @@ void DialogVideoPlayer::paintFixations() {
 }
 
 void DialogVideoPlayer::changeMovieMode() {
-
+    stopPlaying();
 }
 
 void DialogVideoPlayer::settingChanged() {
