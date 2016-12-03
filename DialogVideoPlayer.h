@@ -67,6 +67,8 @@ private:
     int currentFragment;
     int currentSegment;
 
+    QMap<int,QString> pathsImages;
+
     // Playing - Movie driven or by timer
     void stopPlaying();
     void startPlaying();
@@ -85,20 +87,23 @@ private:
     void paintNoFrameFound();
     void paintTimeLine();
     void paintFixations();
+    void paintBackgroundImage();
+    void clearBackgroundImage();
+    void loadImages();
 
 public slots:
-    void openFile();
-    void playButton();
+    void openMoviePress();
+    void playButtonPress();
+    void openImageFilePress();
 
 private slots:
     void changeMovieMode();
     void settingChanged();
-    void positionChanged(qint64 position);
-    void durationChanged(qint64 duration);
-    void movieSliderReleased();
+
     void handleError();
     void resizeDisplay();
 
+    void spinBoxIndexChanged(int value);
     void spinBoxSegmentChanged(int value);
     void spinBoxFragmentChanged(int value);
 
@@ -118,6 +123,7 @@ private:
     QGraphicsScene *timeLineScene;
     QGraphicsScene *fixationsScene;
 
+    QGraphicsPixmapItem *backgroundImageItem;
     QGraphicsVideoItem *visualizationVideoItem;
     QGraphicsRectItem *screenLayerItem;
     QGraphicsPixmapItem *visualizationPixmapItem;
