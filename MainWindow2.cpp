@@ -98,7 +98,7 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     p_roughM = &roughM;   // [time ms, 0 , left x , left y, right x, right y]
     p_smoothM = &smoothM;  // [time ms, interpolation(0 or 1), x, y]
     p_fixAllM = &fixAllM;
-    p_experimentalSegmentsM = &experimentalSegmentsM;
+    p_experimentalSegmentsM = &segmentsM;
     p_autoFixAllM = &autoFixAllM; // Automatic detection of fixation durations
 
     //set slider maxes etc
@@ -486,7 +486,7 @@ void MainWindow2::fncSetActiveParticipantThread(int position) {
     this->roughM.reset();
     this->smoothM.reset();
     this->fixAllM.reset();
-    this->experimentalSegmentsM.reset();
+    this->segmentsM.reset();
     this->autoFixAllM.reset();
 
     if (fncReadAllFiles(this->_project.GetParticipant(position))) {
@@ -620,7 +620,7 @@ bool MainWindow2::fncReadAllFiles(GrafixParticipant* participant) {
     if (_files_stop_flag) return false;
     GPMatrixFiles::readFileSafe(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
     if (_files_stop_flag) return false;
-    GPMatrixFiles::readFileSafe(experimentalSegmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
+    GPMatrixFiles::readFileSafe(segmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
     if (_files_stop_flag) return false;
 
     // If fixAllM has only 6 columns, we add another one for the smooth pursuit.
@@ -643,7 +643,7 @@ void MainWindow2::fncSaveAllFiles(GrafixParticipant *participant) {
     if (!smoothM.is_empty()) GPMatrixFiles::saveFileSafe(smoothM, participant->GetMatrixPath(Consts::MATRIX_SMOOTH));
     if (!fixAllM.is_empty()) GPMatrixFiles::saveFileSafe(fixAllM, participant->GetMatrixPath(Consts::MATRIX_FIXALL));
     if (!autoFixAllM.is_empty()) GPMatrixFiles::saveFileSafe(autoFixAllM, participant->GetMatrixPath(Consts::MATRIX_AUTOFIXALL));
-    if (!experimentalSegmentsM.is_empty()) GPMatrixFiles::saveFileSafe(experimentalSegmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
+    if (!segmentsM.is_empty()) GPMatrixFiles::saveFileSafe(segmentsM, participant->GetMatrixPath(Consts::MATRIX_SEGMENTS));
 }
 
 
@@ -673,7 +673,7 @@ void MainWindow2::paintExperimentalSegments() {
     QPixmap pixmap2(this->p_over_display_label->width(), this->p_over_display_label->height());
     pixmap2.fill(Qt::transparent);
     //pixmap2.fill(Qt::white);
-    if (!experimentalSegmentsM.is_empty()) {
+    if (!segmentsM.is_empty()) {
         QPainter painter(&pixmap2);
 
 
@@ -684,8 +684,8 @@ void MainWindow2::paintExperimentalSegments() {
         painter.setBrush(QBrush(QColor(192, 192, 192, 127)));
 
         // Order the segments depending on time
-        uvec indices = sort_index(experimentalSegmentsM.cols(1, 1));
-        mat expSegAux = experimentalSegmentsM.rows(indices);
+        uvec indices = sort_index(segmentsM.cols(1, 1));
+        mat expSegAux = segmentsM.rows(indices);
 
         // find the segments that may be involved in the current fragment
         uvec fixIndex =  arma::find(expSegAux.col(2) >= _displayStartIndex);
@@ -1426,7 +1426,7 @@ void MainWindow2::fncPress_subMenuVisualizeSegments() {
     fncWaitForLoad();
     DialogVisualizationSegments w;
     w.setWindowTitle(tr("Visualize Segment"));
-    w.loadData(p_active_participant, roughM, smoothM, fixAllM, experimentalSegmentsM);
+    w.loadData(p_active_participant, roughM, smoothM, fixAllM, segmentsM);
     w.exec();
 }
 
@@ -1508,7 +1508,7 @@ void MainWindow2::fncPress_subMenuClose() {
 
 void MainWindow2::fncPress_subMenuMovie() {
     DialogVideoPlayer dvp;
-    dvp.loadData(p_active_participant, roughM, smoothM, fixAllM);
+    dvp.loadData(p_active_participant, roughM, smoothM, fixAllM, segmentsM);
     dvp.exec();
 }
 

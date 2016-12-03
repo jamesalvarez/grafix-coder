@@ -24,6 +24,10 @@
 #define SACCOL_VEL_AVG 4
 #define SACCOL_VEL_PEAK 5
 
+// Indexes for correct columns for segments matric
+#define SEGCOL_ID 0
+#define SEGCOL_START 1
+#define SEGCOL_END 2
 
 
 typedef struct config {

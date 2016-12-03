@@ -120,12 +120,27 @@ DialogVideoPlayer::~DialogVideoPlayer() {
     delete ui;
 }
 
-void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in) {
+void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in, mat &p_segmentsM_in) {
 
     _participant = participant;
+
     p_roughM = &p_roughM_in;
     p_smoothM = &p_smoothM_in;
     p_fixAllM = &p_fixAllM_in;
+
+    segmentsM = p_segmentsM_in;
+    if (segmentsM.n_rows == 0) {
+        segmentsM.zeros(1,3);
+        segmentsM(0,0) = 0;
+        segmentsM(0,1) = 0;
+        segmentsM(0,2) = p_roughM->n_rows - 1;
+    }
+    // order the segments
+    uvec indices = sort_index(segmentsM.cols(1,1));
+    this->segmentsM = segmentsM.rows(indices);
+
+
+
     secsFragment = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT, Consts::ACTIVE_CONFIGURATION()).toInt();
     hz = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_HZ, Consts::ACTIVE_CONFIGURATION()).toInt();
     samplesPerFragment = secsFragment * hz;
@@ -143,6 +158,7 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
     firstSampleMS = (*p_roughM).at(0, 0); //this is the ms of when the player first started
     currentIndex = 0;
     currentFragment = -1;
+    currentSegment = 0;
 
     settingChanged();
 
@@ -226,10 +242,10 @@ void DialogVideoPlayer::resizeDisplay() {
         vid_offset_y = (display_height - vid_height) / 2;
     }
 
-    qDebug() << "exp width: " << expWidth << " exp height: " << expHeight;
-    qDebug() << "vid width: " << vid_width << " vid height: " << vid_height;
-    qDebug() << "disp width: " << display_width << " disp height: " << display_height;
-    qDebug() << "offsetts: " << vid_offset_x << " " << vid_offset_y;
+    //qDebug() << "exp width: " << expWidth << " exp height: " << expHeight;
+    //qDebug() << "vid width: " << vid_width << " vid height: " << vid_height;
+    //qDebug() << "disp width: " << display_width << " disp height: " << display_height;
+    //qDebug() << "offsetts: " << vid_offset_x << " " << vid_offset_y;
 
     screenLayerItem->setRect(0, 0, display_width, display_height);
     visualizationVideoItem->setPos(vid_offset_x, vid_offset_y);
@@ -240,16 +256,18 @@ void DialogVideoPlayer::resizeDisplay() {
 }
 
 void DialogVideoPlayer::spinBoxSegmentChanged(int value) {
+    int target_index = qBound(0, value, (int)segmentsM.n_rows - 1);
+    if (target_index == 0) {
+        updatePlaybackState(0, true);
+    } else {
+        updatePlaybackState(segmentsM(FIXCOL_START,target_index), true);
+    }
 
 }
 
 void DialogVideoPlayer::spinBoxFragmentChanged(int value) {
-    int target_index = value * samplesPerFragment;
-    if (target_index < p_roughM->n_rows && target_index > -1) {
-        updatePlaybackState(target_index, true);
-    } else {
-        ui->spinBoxFragment->setValue(currentFragment);
-    }
+    int target_index = qBound(0, value * samplesPerFragment, (int)p_roughM->n_rows - 1);
+    updatePlaybackState(target_index, true);
 }
 
 
@@ -351,8 +369,6 @@ int DialogVideoPlayer::getMilliCount() {
 
 void DialogVideoPlayer::updatePlaybackStateTime(double newTimeMS) {
 
-    qDebug() << "playing: " << newTimeMS;
-
     currentTimeMS = newTimeMS;
 
     //Search for current index
@@ -383,8 +399,6 @@ void DialogVideoPlayer::updatePlaybackStateTime(double newTimeMS) {
 
 void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
 
-
-
     bool trigger_fragment_mode = settingPlayMode == PlayModeFragment &&
                                  (index >= ((currentFragment + 1) * samplesPerFragment) || index == -1);
 
@@ -409,12 +423,17 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
         return;
     }
 
-    bool trigger_segment_mode = settingPlayMode == PlayModeSegment && index == -1;
+    bool trigger_segment_mode = settingPlayMode == PlayModeSegment && currentSegment > 0 &&
+            (index >= segmentsM(SEGCOL_END, currentSegment - 1) || index == -1);
     if (trigger_segment_mode) {
-        stopPlaying();
+
+        if (settingLoop) {
+            updatePlaybackState(segmentsM(SEGCOL_START, currentSegment - 1), true);
+        } else {
+            stopPlaying();
+        }
         return;
     }
-
 
     // Display index
     currentIndex = index;
@@ -425,10 +444,20 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
 
     if (current_fragment != currentFragment) {
         currentFragment = current_fragment;
-        ui->spinBoxFragment->setValue(currentFragment);
         paintTimeLine();
         paintFixations();
     }
+
+    ui->spinBoxFragment->setValue(currentFragment);
+
+    // Calculate current segment
+    currentSegment = 0; // 0 means at start of file
+    for (uword i = 0; i < segmentsM.n_rows -1; ++i) {
+        if (currentIndex >= segmentsM(SEGCOL_START, i)) {
+            currentSegment = i;
+        }
+    }
+    ui->spinBoxSegment->setValue(currentSegment);
 
     paintCurrentVisualizationFrame();
     paintCurrentTimeLineLineFrame();
@@ -485,7 +514,6 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
         if (p_roughM->at(currentIndex, 6) > 0 && p_roughM->at(currentIndex, 7) > 0) {
             double width = (p_roughM->at(currentIndex, 6) + p_roughM->at(currentIndex, 7)) / 6;
             int penWidth = (int)floor(width * pen_size_multi);
-            qDebug() << " width: " << width << " pen width: " << penWidth;
             myPen.setWidth(penWidth);
         } else {
             myPen.setWidth(pen_size_multi);
@@ -624,7 +652,7 @@ void DialogVideoPlayer::paintFixations() {
             else
                 posStart = (p_fixAllM->at(i, FIXCOL_START) - start_index ) * positionMultiplier;
 
-            qDebug() << " positionM: " << positionMultiplier << " v " << p_fixAllM->at(i, FIXCOL_START);
+
             posEnd = ((p_fixAllM->at(i, FIXCOL_END) - start_index ) * positionMultiplier) - posStart;
 
             if (p_fixAllM->at(i, FIXCOL_SMOOTH_PURSUIT) == Consts::SMOOTHP_YES) {

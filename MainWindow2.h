@@ -65,7 +65,7 @@ private:
     mat smoothM;  // [time ms, interpolation(0 or 1), x, y]
     mat fixAllM;
     mat fixAllMPrevious; // Used to store when doing undo
-    mat experimentalSegmentsM;
+    mat segmentsM;
     mat autoFixAllM; // Automatic detection of fixation durations
 
     //pointers to above matrices

@@ -26,7 +26,7 @@ public:
     explicit DialogVideoPlayer(QWidget *parent = 0);
     ~DialogVideoPlayer();
 
-    void loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in);
+    void loadData(GrafixParticipant* participant, mat &p_roughM_in, mat &p_smoothM_in, mat &p_fixAllM_in, mat &p_segmentsM_in);
     void resizeEvent (QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
     void mousePressEvent(QMouseEvent *mouseEvent);
@@ -43,7 +43,7 @@ private:
     mat* p_roughM;
     mat* p_smoothM;
     mat* p_fixAllM;
-
+    mat segmentsM;
 
     int secsFragment;
     int hz;
@@ -65,6 +65,7 @@ private:
     double currentTimeMS;
     int currentIndex;
     int currentFragment;
+    int currentSegment;
 
     // Playing - Movie driven or by timer
     void stopPlaying();
