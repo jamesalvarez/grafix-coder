@@ -24,10 +24,11 @@ int main(int argc, char *argv[])
         w.showMaximized();
         if (!w.LoadProject()) return 1;
         return a.exec();
-    }catch (...) {  // Catches all the exceptions, but it doesn't show a message.
+    }catch (const std::exception &exc) {  // Catches all the exceptions, but it doesn't show a message.
+        std::cerr << exc.what();
         // If there is an error we delete settings.ini file to allow the app to start again.
-        QSettings settings("options.ini", QSettings::IniFormat);
-        settings.clear();
+        //QSettings settings("options.ini", QSettings::IniFormat);
+        //settings.clear();
     }
 
     return 0;

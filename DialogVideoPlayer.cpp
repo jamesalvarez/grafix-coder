@@ -163,11 +163,14 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
     settingChanged();
 
     updatePlaybackState(0, true);
+    qDebug() << " finish loading ";
     resizeDisplay();
 }
 
 void DialogVideoPlayer::resizeEvent (QResizeEvent *event) {
     QDialog::resizeEvent(event);
+
+    qDebug() << " resize event ";
     resizeDisplay();
 
     paintTimeLine();
@@ -215,6 +218,7 @@ void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
 }
 
 void DialogVideoPlayer::resizeDisplay() {
+
     // Calculate resize ratios for resizing
     vid_width = visualizationVideoItem->size().width();
     vid_height = visualizationVideoItem->size().height();
@@ -249,13 +253,19 @@ void DialogVideoPlayer::resizeDisplay() {
     //qDebug() << "offsetts: " << vid_offset_x << " " << vid_offset_y;
 
     screenLayerItem->setRect(0, 0, display_width, display_height);
-    ui->visualizationView->fitInView(screenLayerItem, Qt::KeepAspectRatio);
-    ui->visualizationView->centerOn(display_width / 2, display_height / 2);
 
-    // Move everything to centre
-    int x = ui->visualizationView->width() - display_width;
+
+
+
+    ui->visualizationView->fitInView(screenLayerItem, Qt::KeepAspectRatio);
+    //ui->visualizationView->centerOn(display_width / 2, display_height / 2);
+
+    qDebug() << "resizing: " << ui->visualizationView->size();
+    qDebug() << "screenLayerItem: " << screenLayerItem->rect();
+    qDebug() << "trasform: " << ui->visualizationView->transform();
 
     timeLineScene->setSceneRect(ui->timeLineView->rect());
+
 }
 
 void DialogVideoPlayer::spinBoxSegmentChanged(int value) {
@@ -343,7 +353,7 @@ void DialogVideoPlayer::stopPlaying() {
 
 
 void DialogVideoPlayer::startPlaying() {
-
+    resizeDisplay();
     playing = true;
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     if (ui->checkBoxMovie->isChecked()) {
@@ -462,7 +472,9 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
     currentTimeMS = p_roughM->at(qMax(0, currentIndex), 0 );
 
     ui->labelTime->setText(QString("Time: %1").arg(currentTimeMS / 1000));
+    ui->spinBoxIndex->blockSignals(true);
     ui->spinBoxIndex->setValue(currentIndex);
+    ui->spinBoxIndex->blockSignals(false);
 
     // Calculate current fragment
     int current_fragment = currentIndex > -1 ? (int)floor((double)currentIndex / samplesPerFragment) : -1;
