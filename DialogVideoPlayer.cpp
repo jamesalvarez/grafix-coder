@@ -19,7 +19,9 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     connect(ui->rbWholeFile, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
     connect(ui->checkBoxLoop, SIGNAL(clicked(bool)), this, SLOT(settingChanged()));
     connect(ui->checkBoxMovie, SIGNAL(clicked(bool)), this, SLOT(changeMovieMode()));
-
+    connect(ui->spinBoxFragment, SIGNAL(valueChanged(int)), this, SLOT(spinBoxFragmentChanged(int)));
+    connect(ui->spinBoxSegment, SIGNAL(valueChanged(int)), SLOT(spinBoxSegmentChanged(int)));
+            
     // Set up ui controls
     ui->checkBoxMovie->setEnabled(false);
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
@@ -87,10 +89,24 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     timeLineTimeItem->setPos(0, 0);
     timeLineScene->addItem(timeLineTimeItem);
 
+    // Set up pens
+    smoothPens = new QPen[2];
+    roughPens = new QPen[4];
+
+    smoothPens[0] = QPen(Qt::red, 1, Qt::SolidLine);
+    smoothPens[1] = QPen(Qt::blue, 1, Qt::SolidLine);
+    roughPens[0] = QPen(Qt::red, 1, Qt::SolidLine);
+    roughPens[1] = QPen(Qt::red, 1, Qt::SolidLine);
+    roughPens[2] = QPen(Qt::blue, 1, Qt::SolidLine);
+    roughPens[3] = QPen(Qt::blue, 1, Qt::SolidLine);
+
 }
 
 DialogVideoPlayer::~DialogVideoPlayer() {
+    playing = false;
     mediaPlayer->stop();
+    delete[] smoothPens;
+    delete[] roughPens;
     delete fixationsPixmapItem;
     delete fixationsScene;
     delete timeLineTimeItem;
@@ -117,6 +133,7 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
     expHeight = this->_participant->GetProject()->GetProjectSetting(Consts::SETTING_EXP_HEIGHT, Consts::ACTIVE_CONFIGURATION()).toInt();
 
     if (p_smoothM->is_empty()) {
+        settingPlaySmooth = false;
         ui->checkBoxSmooth->setChecked(false);
         ui->checkBoxSmooth->setEnabled(false);
     } else {
@@ -134,7 +151,7 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
 
 void DialogVideoPlayer::resizeEvent (QResizeEvent *event) {
     QDialog::resizeEvent(event);
-    fncCalculateAspectRatios();
+    resizeDisplay();
 
     paintTimeLine();
     paintFixations();
@@ -180,7 +197,7 @@ void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
     }
 }
 
-void DialogVideoPlayer::fncCalculateAspectRatios() {
+void DialogVideoPlayer::resizeDisplay() {
     // Calculate resize ratios for resizing
     vid_width = visualizationVideoItem->size().width();
     vid_height = visualizationVideoItem->size().height();
@@ -222,9 +239,25 @@ void DialogVideoPlayer::fncCalculateAspectRatios() {
     timeLineScene->setSceneRect(ui->timeLineView->rect());
 }
 
+void DialogVideoPlayer::spinBoxSegmentChanged(int value) {
+
+}
+
+void DialogVideoPlayer::spinBoxFragmentChanged(int value) {
+    int target_index = value * samplesPerFragment;
+    if (target_index < p_roughM->n_rows && target_index > -1) {
+        updatePlaybackState(target_index, true);
+    } else {
+        ui->spinBoxFragment->setValue(currentFragment);
+    }
+}
+
+
+
 void DialogVideoPlayer::closeEvent(QCloseEvent *event) {
-    QDialog::closeEvent(event);
     mediaPlayer->stop();
+    playing = false;
+    QDialog::closeEvent(event);
 }
 
 void DialogVideoPlayer::openFile() {
@@ -235,7 +268,7 @@ void DialogVideoPlayer::openFile() {
         mediaPlayer->setMedia(QUrl::fromLocalFile(fileName));
 
         if (mediaPlayer->isVideoAvailable()) {
-            fncCalculateAspectRatios();
+            resizeDisplay();
             ui->checkBoxMovie->setEnabled(true);
             ui->checkBoxMovie->setChecked(true);
             return;
@@ -336,47 +369,59 @@ void DialogVideoPlayer::updatePlaybackStateTime(double newTimeMS) {
 
 }
 
-void DialogVideoPlayer::updatePlaybackState(int index, bool resetAll) {
+void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
+
+
+
+    bool trigger_fragment_mode = settingPlayMode == PlayModeFragment &&
+            (index >= ((currentFragment + 1) * samplesPerFragment) || index == -1);
+
+    if (trigger_fragment_mode) {
+        if (settingLoop) {
+            updatePlaybackState(currentFragment * samplesPerFragment, true);
+        } else {
+            stopPlaying();
+        }
+        return;
+    }
+
+    bool trigger_whole_file_mode = settingPlayMode== PlayModeWholeFile &&
+            (index >= p_roughM->n_rows || index == -1);
+
+    if (trigger_whole_file_mode) {
+        if (settingLoop) {
+            updatePlaybackState(0, true);
+        } else {
+            stopPlaying();
+        }
+        return;
+    }
+
+    bool trigger_segment_mode = settingPlayMode == PlayModeSegment && index == -1;
+    if (trigger_segment_mode) {
+        stopPlaying();
+        return;
+    }
+
+
+    // Display index
     currentIndex = index;
     currentTimeMS = p_roughM->at(qMax(0, currentIndex), 0 );
-    //  If time is greater that biggest time in rough matrix...
-    if (currentIndex == -1) {
-
-        if (settingLoop) {
-
-            switch (settingPlayMode) {
-                case DialogVideoPlayer::PlayModeSegment:
-                    stopPlaying();
-                    break;
-                case DialogVideoPlayer::PlayModeFragment: {
-                    uword fragment_start = currentFragment * samplesPerFragment;
-                    updatePlaybackState(fragment_start, true);
-                }
-                break;
-                case DialogVideoPlayer::PlayModeWholeFile:
-                    updatePlaybackState(0, true);
-                    break;
-
-            }
-        }  else {
-            stopPlaying();
-            return;
-        }
-    }
 
     // Calculate current fragment
     int current_fragment = currentIndex > -1 ? (int)floor((double)currentIndex / samplesPerFragment) : -1;
 
     if (current_fragment != currentFragment) {
         currentFragment = current_fragment;
+        ui->spinBoxFragment->setValue(currentFragment);
         paintTimeLine();
         paintFixations();
     }
-    paintCurrentVisualizationFrame();
 
+    paintCurrentVisualizationFrame();
     paintCurrentTimeLineLineFrame();
 
-    if (resetAll) {
+    if (resetTimeSource) {
         if (ui->checkBoxMovie->isChecked()) {
             mediaPlayer->setPosition(currentTimeMS - firstSampleMS);
         } else {
@@ -488,56 +533,36 @@ void DialogVideoPlayer::paintNoFrameFound() {
 }
 
 void DialogVideoPlayer::paintTimeLine() {
-    qDebug() << "painting time line";
+
     QPixmap timeLinePixmap = QPixmap(ui->timeLineView->width(), ui->timeLineView->height());
     timeLinePixmap.fill(Qt::white);
-
     QPainter painter(&timeLinePixmap);
 
-    double height = timeLinePixmap.height();
     double width = timeLinePixmap.width();
-    double height2 = height / (double)expWidth;
+    double height = settingPlaySmooth ? timeLinePixmap.height() / (double)expWidth : timeLinePixmap.height();
+    mat *matrixToUse = settingPlaySmooth ? p_smoothM : p_roughM;
+    QPen *pensToUse = settingPlaySmooth ? smoothPens : roughPens;
+    int nPensToUse = settingPlaySmooth ? 2 : 4;
 
-    QPen redPen(Qt::red, 1, Qt::SolidLine);
-    QPen bluePen(Qt::blue, 1, Qt::SolidLine);
-
+    // Get starting index
     uword startIndex = currentFragment * samplesPerFragment;
 
-    qDebug() << "width" << width;
-    for (uword i = 0; i < (uword)samplesPerFragment; ++i) {
+    // Sanity check for number of rows
+    if (startIndex >= matrixToUse->n_rows) return;
 
+    // Get draw limit
+    uword limit = qMin(matrixToUse->n_rows - 1, startIndex + samplesPerFragment) - startIndex;
+
+
+    for (uword i = 0; i < limit; ++i) {
         uword index = i + startIndex;
         double x = (double)i * width / (double)samplesPerFragment;
 
-        if (settingPlaySmooth) {
-            if (p_roughM->at(index, 2 ) != -1) {
-                painter.setPen(redPen);
-                painter.drawPoint(x, p_roughM->at(i, 2 ) * height); // XL
-            }
-
-            if (p_roughM->at(index, 3 ) != -1) {
-                painter.setPen(redPen);
-                painter.drawPoint(x, p_roughM->at(i, 3 ) * height); // YL
-            }
-
-            if (p_roughM->at(index, 4 ) != -1) {
-                painter.setPen(bluePen);
-                painter.drawPoint(x, p_roughM->at(i, 4 ) * height); // XR
-            }
-
-            if (p_roughM->at(index, 5 ) != -1) {
-                painter.setPen(bluePen);
-                painter.drawPoint(x, p_roughM->at(i, 5 ) * height); // YR
-            }
-        } else {
-            if (p_smoothM->at(index, 2 ) != -1) {
-                painter.setPen(redPen);
-                painter.drawPoint(x, p_smoothM->at(i, 2 ) * height2);
-            }
-
-            if (p_smoothM->at(index, 3 ) != -1) {
-                painter.setPen(bluePen);
-                painter.drawPoint(x, p_smoothM->at(i, 3 ) * height2);
+        for(int j = 0; j < nPensToUse; ++j) {
+            uword col = (uword)j + 2;
+            if (matrixToUse->at(index, col) != -1) {
+                painter.setPen(pensToUse[j]);
+                painter.drawPoint(x, matrixToUse->at(index, col) * height);
             }
         }
     }

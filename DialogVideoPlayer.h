@@ -71,10 +71,13 @@ private:
     void startPlaying();
     int getMilliCount();
 
+    // Pens
+    QPen* smoothPens;
+    QPen* roughPens;
 
     // Update state of playback
     void updatePlaybackStateTime(double newTimeMS);
-    void updatePlaybackState(int index, bool resetAll);
+    void updatePlaybackState(int index, bool resetTimeSource);
     // Painting
     void paintCurrentVisualizationFrame();
     void paintCurrentTimeLineLineFrame();
@@ -93,7 +96,10 @@ private slots:
     void durationChanged(qint64 duration);
     void movieSliderReleased();
     void handleError();
-    void fncCalculateAspectRatios();
+    void resizeDisplay();
+
+    void spinBoxSegmentChanged(int value);
+    void spinBoxFragmentChanged(int value);
 
 private:
     int display_width;
