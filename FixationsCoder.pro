@@ -38,7 +38,6 @@ SOURCES += main.cpp \
     GPFixationOperations.cpp \
     DialogSmoothXY.cpp \
     DialogStatistics.cpp \
-    DialogVisualizationSegments.cpp \
     DialogSaveNewConfiguration.cpp \
     MainWindow2.cpp \
     GrafixSettingsLoader.cpp \
@@ -71,7 +70,6 @@ HEADERS  += \
     GPFixationOperations.h \
     DialogSmoothXY.h \
     DialogStatistics.h \
-    DialogVisualizationSegments.h \
     DialogSaveNewConfiguration.h \
     MainWindow2.h \
     GrafixSettingsLoader.h \
@@ -97,7 +95,6 @@ FORMS    += \
     DialogHeatMap.ui \
     DialogSmoothXY.ui \
     DialogStatistics.ui \
-    DialogVisualizationSegments.ui \
     DialogSaveNewConfiguration.ui \
     MainWindow2.ui \
     DialogVideoPlayer.ui

@@ -192,6 +192,7 @@ namespace Consts {
     const QString PSETTING_CONFIGURATION_CHANGE_DATE = "PSETTING_CONFIGURATION_CHANGE_DATE";
 
 
+
     const QString SETTING_SMOOTHING_SIGMA_S =              "SETTING_SMOOTHING_SIGMA_S";
     const QString SETTING_SMOOTHING_SIGMA_R =              "SETTING_SMOOTHING_SIGMA_R";
     const QString SETTING_SMOOTHING_USE_OTHER_EYE =         "SETTING_SMOOTH_USE_OTHER_EYE";
@@ -202,7 +203,10 @@ namespace Consts {
     const QString SETTING_NUMBER_CONFIGURATIONS =            "SETTING_NUMBER_CONFIGURATIONS";
     const QString SETTING_NUMBER_PARTICIPANTS =              "SETTING_NUMBER_PARTICIPANTS";
     const QString SETTING_LAST_SAVED =                       "SETTING_LAST_SAVED";
+    const QString SETTING_MOVIE_PATH =                       "SETTING_MOVIE_PATH";
+    const QString SETTING_IMAGE_PATHS =                      "SETTING_IMAGE_PATHS";
 
+    // Help
     const QString HELP_CREATE_MODE = "Create mode: Drag across display to create fixations.";
     const QString HELP_MERGE_MODE = "Merge mode: Drag across existing fixations to merge.";
     const QString HELP_PURSUIT_MODE = "Smooth pursuit mode: Drag across a fixation to mark as smooth pursuit";

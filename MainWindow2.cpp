@@ -36,7 +36,6 @@ MainWindow2::MainWindow2(QWidget *parent) : QMainWindow(parent), ui(new Ui::Main
     // Menu events
     connect( ui->actionConfiguration, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuDialogConfig() ) );
     connect( ui->actionNew_Open, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuProjectOpen() ) );
-    connect( ui->actionSegment, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuVisualizeSegments() ) );
     connect( ui->actionExport_Data, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuExport()));
     connect( ui->actionSmoothing, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuCalculateSmooth()));
     connect( ui->actionRecalculate_Fixations, SIGNAL( triggered() ), this, SLOT( fncPress_subMenuRecalculateFixations()));
@@ -1422,13 +1421,7 @@ void MainWindow2::fncPress_subMenuProjectOpen() {
     }
 }
 
-void MainWindow2::fncPress_subMenuVisualizeSegments() {
-    fncWaitForLoad();
-    DialogVisualizationSegments w;
-    w.setWindowTitle(tr("Visualize Segment"));
-    w.loadData(p_active_participant, roughM, smoothM, fixAllM, segmentsM);
-    w.exec();
-}
+
 
 void MainWindow2::fncPress_subMenuExport() {
     // Export the fixations in the middle of the segments
