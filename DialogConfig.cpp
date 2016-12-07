@@ -23,7 +23,7 @@ void DialogConfig::loadData(GrafixProject *project)
                                                   _configuration).toInt();
     _hz             = _project->GetProjectSetting(Consts::SETTING_HZ,
                                                   _configuration).toInt();
-    _secsSegment    = _project->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT,
+    _secsFragment    = _project->GetProjectSetting(Consts::SETTING_SECS_FRAGMENT,
                                                   _configuration).toInt();
     _degreePerPixel = _project->GetProjectSetting(Consts::SETTING_DEGREE_PER_PIX,
                                                   _configuration).toDouble();
@@ -34,28 +34,7 @@ void DialogConfig::loadData(GrafixProject *project)
 
 
     ui->spinBoxHz->setValue(_hz);
-
-    ui->combo_secsSegment->addItem("10", Consts::FRAGMENT_DURATION_10);
-    ui->combo_secsSegment->addItem("11", Consts::FRAGMENT_DURATION_11);
-    ui->combo_secsSegment->addItem("12", Consts::FRAGMENT_DURATION_12);
-    ui->combo_secsSegment->addItem("13", Consts::FRAGMENT_DURATION_13);
-    ui->combo_secsSegment->addItem("14", Consts::FRAGMENT_DURATION_14);
-    ui->combo_secsSegment->addItem("15", Consts::FRAGMENT_DURATION_15);
-    ui->combo_secsSegment->addItem("16", Consts::FRAGMENT_DURATION_16);
-    ui->combo_secsSegment->addItem("17", Consts::FRAGMENT_DURATION_17);
-    ui->combo_secsSegment->addItem("18", Consts::FRAGMENT_DURATION_18);
-    ui->combo_secsSegment->addItem("19", Consts::FRAGMENT_DURATION_19);
-    ui->combo_secsSegment->addItem("20", Consts::FRAGMENT_DURATION_20);
-    ui->combo_secsSegment->addItem("21", Consts::FRAGMENT_DURATION_21);
-    ui->combo_secsSegment->addItem("22", Consts::FRAGMENT_DURATION_22);
-    ui->combo_secsSegment->addItem("23", Consts::FRAGMENT_DURATION_23);
-    ui->combo_secsSegment->addItem("24", Consts::FRAGMENT_DURATION_24);
-    ui->combo_secsSegment->addItem("25", Consts::FRAGMENT_DURATION_25);
-
-    int index = ui->combo_secsSegment->findData( _secsSegment);  // Set value
-    if ( index != -1 ) { // -1 for not found
-       ui->combo_secsSegment->setCurrentIndex(index);
-    }
+    ui->spinBoxFragment->setValue(_secsFragment);
 
     ui->tWidth->setText(QString::number(_expWidth));
     ui->tHeight->setText(QString::number(_expHeight));
@@ -64,7 +43,7 @@ void DialogConfig::loadData(GrafixProject *project)
 
     // Events
     connect(ui->spinBoxHz , SIGNAL(valueChanged(int)),this,SLOT(fncChange_HZ(int)));
-    connect(ui->combo_secsSegment , SIGNAL(currentIndexChanged(int)),this,SLOT(fncChange_secsSegment(int)));
+    connect(ui->spinBoxFragment , SIGNAL(valueChanged(int)),this,SLOT(fncChange_secsSegment(int)));
     connect( ui->b_accept, SIGNAL( clicked() ), this, SLOT( fncPress_bAccept() ) );
     connect( ui->b_cancel, SIGNAL( clicked() ), this, SLOT( close() ) );
 
@@ -83,8 +62,7 @@ void DialogConfig::fncChange_HZ(int index)
 
 void DialogConfig::fncChange_secsSegment(int index)
 {
-    int value = ui->combo_secsSegment->itemData(index).toInt();
-    _secsSegment = value;
+    _secsFragment = ui->spinBoxFragment->value();
 }
 
 void DialogConfig::fncPress_bAccept()
@@ -94,7 +72,7 @@ void DialogConfig::fncPress_bAccept()
     _project->SetProjectSetting(Consts::SETTING_EXP_WIDTH, _configuration, ui->tWidth->text().toInt());
     _project->SetProjectSetting(Consts::SETTING_EXP_HEIGHT, _configuration, ui->tHeight->text().toInt());
     _project->SetProjectSetting(Consts::SETTING_DEGREE_PER_PIX, _configuration, ui->tDegreePerPixel->text().toDouble());
-    _project->SetProjectSetting(Consts::SETTING_SECS_FRAGMENT, _configuration, _secsSegment);
+    _project->SetProjectSetting(Consts::SETTING_SECS_FRAGMENT, _configuration, _secsFragment);
     _project->SetProjectSetting(Consts::SETTING_SMOOTHING_USE_OTHER_EYE, _configuration, ui->cbEyes->isChecked());
     this->close();
 }

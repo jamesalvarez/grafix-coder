@@ -67,25 +67,6 @@ namespace Consts {
     const QVariant DefaultSetting(QString setting);
 
     const int DEFAULT_SETTING_HZ = 120;
-
-    // FRAGMENT DURATIONS
-    const int FRAGMENT_DURATION_10 = 10; // seconds
-    const int FRAGMENT_DURATION_11 = 11; // seconds
-    const int FRAGMENT_DURATION_12 = 12; // seconds
-    const int FRAGMENT_DURATION_13 = 13; // seconds
-    const int FRAGMENT_DURATION_14 = 14; // seconds
-    const int FRAGMENT_DURATION_15 = 15; // seconds
-    const int FRAGMENT_DURATION_16 = 16; // seconds
-    const int FRAGMENT_DURATION_17 = 17; // seconds
-    const int FRAGMENT_DURATION_18 = 18; // seconds
-    const int FRAGMENT_DURATION_19 = 19; // seconds
-    const int FRAGMENT_DURATION_20 = 20; // seconds
-    const int FRAGMENT_DURATION_21 = 21; // seconds
-    const int FRAGMENT_DURATION_22 = 22; // seconds
-    const int FRAGMENT_DURATION_23 = 23; // seconds
-    const int FRAGMENT_DURATION_24 = 24; // seconds
-    const int FRAGMENT_DURATION_25 = 25; // seconds
-
     const int DEFAULT_SETTING_SECS_FRAGMENT = 15;
 
     const int DEFAULT_SETTING_EXP_WIDTH = 1024;  // Size of the experimental screen

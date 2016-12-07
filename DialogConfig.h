@@ -37,7 +37,7 @@ private:
     int     _hz;
     int     _expWidth;
     int     _expHeight;
-    int     _secsSegment;
+    int     _secsFragment;
     double  _degreePerPixel;
 };
 

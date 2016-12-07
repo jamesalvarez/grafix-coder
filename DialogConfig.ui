@@ -40,13 +40,6 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="2" colspan="3">
-    <widget class="QComboBox" name="combo_secsSegment">
-     <property name="toolTip">
-      <string>The number of seconds worth of data for each segment of display.</string>
-     </property>
-    </widget>
-   </item>
    <item row="4" column="2" colspan="2">
     <widget class="QLineEdit" name="tDegreePerPixel">
      <property name="toolTip">
@@ -249,6 +242,19 @@
      </property>
      <property name="value">
       <number>120</number>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="2">
+    <widget class="QSpinBox" name="spinBoxFragment">
+     <property name="minimum">
+      <number>10</number>
+     </property>
+     <property name="maximum">
+      <number>30</number>
+     </property>
+     <property name="value">
+      <number>15</number>
      </property>
     </widget>
    </item>
