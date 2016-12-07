@@ -162,6 +162,15 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
 
     settingChanged();
 
+    stopPlaying();
+
+    // Load media from settings
+    QString moviePath = _participant->GetProjectSetting(Consts::SETTING_MOVIE_PATH).toString();
+    loadMovie(moviePath);
+    QByteArray imagesPaths = _participant->GetProjectSetting(Consts::SETTING_IMAGE_PATHS).toByteArray();
+    pathsImages = QJsonDocument::fromJson(imagesPaths).object().toVariantMap();
+    qDebug() << pathsImages;
+
     updatePlaybackState(0, true);
     qDebug() << " finish loading ";
     resizeDisplay();
@@ -313,25 +322,39 @@ void DialogVideoPlayer::openMoviePress() {
 
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Movie"), QDir::homePath());
 
-    if (!fileName.isEmpty()) {
-        mediaPlayer->setMedia(QUrl::fromLocalFile(fileName));
-
-        // Wait to load...
-        while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia && mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
-            qApp->processEvents();
-        }
-
-        if (mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
-            resizeDisplay();
-            ui->checkBoxMovie->setEnabled(true);
-            ui->checkBoxMovie->setChecked(true);
-            return;
-        } else {
-            QMessageBox messageBox;
-            messageBox.critical(0, "Error", "An error has occured when loading this movie!");
-            messageBox.setFixedSize(500, 200);
-        }
+    if (!fileName.isEmpty() && loadMovie(fileName)) {
+        qDebug() << "setting " << fileName;
+        _participant->SetProjectSetting(Consts::SETTING_MOVIE_PATH, fileName);
     }
+}
+
+bool DialogVideoPlayer::loadMovie(QString path) {
+    qDebug() << "loading " << path;
+
+    QFileInfo check_file(path);
+    // check if file exists and if yes: Is it really a file and no directory?
+    if (!check_file.exists() || !check_file.isFile()) {
+        return false;
+    }
+
+    mediaPlayer->setMedia(QUrl::fromLocalFile(path));
+
+    // Wait to load...
+    while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia && mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
+        qApp->processEvents();
+    }
+
+    if (mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
+        resizeDisplay();
+        ui->checkBoxMovie->setEnabled(true);
+        ui->checkBoxMovie->setChecked(true);
+        return true;
+    } else {
+        QMessageBox messageBox;
+        messageBox.critical(0, "Error", "An error has occured when loading this movie!");
+        messageBox.setFixedSize(500, 200);
+    }
+    return false;
 }
 
 void DialogVideoPlayer::playButtonPress() {
@@ -346,6 +369,7 @@ void DialogVideoPlayer::playButtonPress() {
 }
 
 void DialogVideoPlayer::stopPlaying() {
+    qDebug() << "Stop Playing";
     playing = false;
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 }
@@ -353,6 +377,7 @@ void DialogVideoPlayer::stopPlaying() {
 
 
 void DialogVideoPlayer::startPlaying() {
+    qDebug() << "Start Playing";
     resizeDisplay();
     playing = true;
     ui->buttonPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
@@ -736,11 +761,13 @@ void DialogVideoPlayer::paintBackgroundImage(){
         return;
     }
 
-    int number =  segmentsM(currentSegment - 1, 0);
+    QString id =  QString((int)segmentsM(currentSegment - 1, SEGCOL_ID));
 
+    qDebug() << "paitning: " << id;
     // Find the correct id
-    if (pathsImages.contains(number)) {
-        QString path = pathsImages.value(number);
+    if (pathsImages.contains(id)) {
+        QString path = pathsImages.value(id).toString();
+        qDebug() << "Paitning at path " << path;
         QPixmap pixmap = QPixmap(path);
 
         QSize size(display_width , display_height);
@@ -766,16 +793,22 @@ void DialogVideoPlayer::loadImages(){
 
 void DialogVideoPlayer::openImageFilePress(){
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),tr("Files (*.*)"));
-    if (!fileName.isEmpty()){
-        int number =  segmentsM(currentSegment - 1, 0);
+    QFileInfo check_file(fileName);
+    if (!fileName.isEmpty() && check_file.exists() && check_file.isFile()){
+        QString number =  QString((int)segmentsM(currentSegment - 1, SEGCOL_ID));
         pathsImages[number] = fileName;
+        _participant->SetProjectSetting(Consts::SETTING_IMAGE_PATHS, QJsonDocument::fromVariant(pathsImages).toJson());
         paintBackgroundImage();
     }
 }
 
-
 void DialogVideoPlayer::changeMovieMode() {
     stopPlaying();
+    if (!ui->checkBoxMovie->isChecked()) {
+        paintBackgroundImage();
+    } else {
+        clearBackgroundImage();
+    }
 }
 
 void DialogVideoPlayer::settingChanged() {
@@ -789,10 +822,6 @@ void DialogVideoPlayer::settingChanged() {
 
     settingPlaySmooth = ui->checkBoxSmooth->isChecked();
     settingLoop = ui->checkBoxLoop->isChecked();
-
-    if (!ui->checkBoxMovie->isChecked()) {
-        paintBackgroundImage();
-    }
 }
 
 

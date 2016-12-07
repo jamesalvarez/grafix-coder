@@ -67,7 +67,7 @@ private:
     int currentFragment;
     int currentSegment;
 
-    QMap<int,QString> pathsImages;
+    QVariantMap pathsImages;
 
     // Playing - Movie driven or by timer
     void stopPlaying();
@@ -93,9 +93,9 @@ private:
 
 public slots:
     void openMoviePress();
+    bool loadMovie(QString path);
     void playButtonPress();
     void openImageFilePress();
-
 private slots:
     void changeMovieMode();
     void settingChanged();

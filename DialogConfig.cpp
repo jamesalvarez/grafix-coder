@@ -55,12 +55,12 @@ DialogConfig::~DialogConfig()
 }
 
 
-void DialogConfig::fncChange_HZ(int index)
+void DialogConfig::fncChange_HZ(int)
 {
     _hz = ui->spinBoxHz->value();
 }
 
-void DialogConfig::fncChange_secsSegment(int index)
+void DialogConfig::fncChange_secsSegment(int)
 {
     _secsFragment = ui->spinBoxFragment->value();
 }

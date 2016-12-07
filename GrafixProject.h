@@ -52,6 +52,12 @@ public:
     //Sets a setting from the participant setting (use MyConstants.SETTINGS_...)
     void        SetParticipantSetting(QString setting, QVariant value);
 
+    //Returns a setting from the participant setting (use MyConstants.SETTINGS_...)
+    QVariant    GetProjectSetting(QString setting);
+
+    //Sets a setting from the participant setting (use MyConstants.SETTINGS_...)
+    void        SetProjectSetting(QString setting, QVariant value);
+
     //Returns true if participant has matrix data for a given type
     bool        HasDataMatrix(Consts::MATRIX_TYPE type);
 

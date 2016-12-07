@@ -25,8 +25,8 @@ public:
 
 public slots:
 
-    void fncChange_secsSegment(int index);
-    void fncChange_HZ(int index);
+    void fncChange_secsSegment(int);
+    void fncChange_HZ(int);
     void fncPress_bAccept();
     
 private:

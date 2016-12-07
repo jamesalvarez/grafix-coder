@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Grafix Movie Player</string>
+   <string>Grafix Visualizer</string>
   </property>
   <property name="modal">
    <bool>true</bool>

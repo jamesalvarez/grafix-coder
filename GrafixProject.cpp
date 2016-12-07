@@ -98,6 +98,16 @@ QVariant GrafixParticipant::GetParticipantSetting(QString setting)
      return value;
 }
 
+void GrafixParticipant::SetProjectSetting(QString setting, QVariant value)
+{
+    this->_project->SetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION(), value);
+}
+
+QVariant GrafixParticipant::GetProjectSetting(QString setting)
+{
+     return this->_project->GetProjectSetting(setting, Consts::ACTIVE_CONFIGURATION());
+}
+
 GrafixParticipant::GrafixParticipant(GrafixProject* parent, QString directory)
 {
     this->_project = parent;
