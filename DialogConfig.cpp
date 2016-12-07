@@ -31,17 +31,9 @@ void DialogConfig::loadData(GrafixProject *project)
                                                   _configuration).toBool());
 
 
-    ui->combo_HZ->addItem("30", Consts::HZ_30);
-    ui->combo_HZ->addItem("50", Consts::HZ_50);
-    ui->combo_HZ->addItem("60", Consts::HZ_60);
-    ui->combo_HZ->addItem("120", Consts::HZ_120);
-    ui->combo_HZ->addItem("300", Consts::HZ_300);
-    ui->combo_HZ->addItem("1000", Consts::HZ_1000);
 
-    int index = ui->combo_HZ->findData( _hz);            // Set Value
-    if ( index != -1 ) { // -1 for not found
-       ui->combo_HZ->setCurrentIndex(index);
-    }
+
+    ui->spinBoxHz->setValue(_hz);
 
     ui->combo_secsSegment->addItem("10", Consts::FRAGMENT_DURATION_10);
     ui->combo_secsSegment->addItem("11", Consts::FRAGMENT_DURATION_11);
@@ -60,7 +52,7 @@ void DialogConfig::loadData(GrafixProject *project)
     ui->combo_secsSegment->addItem("24", Consts::FRAGMENT_DURATION_24);
     ui->combo_secsSegment->addItem("25", Consts::FRAGMENT_DURATION_25);
 
-    index = ui->combo_secsSegment->findData( _secsSegment);  // Set value
+    int index = ui->combo_secsSegment->findData( _secsSegment);  // Set value
     if ( index != -1 ) { // -1 for not found
        ui->combo_secsSegment->setCurrentIndex(index);
     }
@@ -71,7 +63,7 @@ void DialogConfig::loadData(GrafixProject *project)
 
 
     // Events
-    connect(ui->combo_HZ , SIGNAL(currentIndexChanged(int)),this,SLOT(fncChange_HZ(int)));
+    connect(ui->spinBoxHz , SIGNAL(valueChanged(int)),this,SLOT(fncChange_HZ(int)));
     connect(ui->combo_secsSegment , SIGNAL(currentIndexChanged(int)),this,SLOT(fncChange_secsSegment(int)));
     connect( ui->b_accept, SIGNAL( clicked() ), this, SLOT( fncPress_bAccept() ) );
     connect( ui->b_cancel, SIGNAL( clicked() ), this, SLOT( close() ) );
@@ -86,8 +78,7 @@ DialogConfig::~DialogConfig()
 
 void DialogConfig::fncChange_HZ(int index)
 {
-    int value = ui->combo_HZ->itemData(index).toInt();
-    _hz = value;
+    _hz = ui->spinBoxHz->value();
 }
 
 void DialogConfig::fncChange_secsSegment(int index)

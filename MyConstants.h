@@ -66,14 +66,6 @@ namespace Consts {
     const QList<QString> LIST_CONFIGURATION_SETTINGS();
     const QVariant DefaultSetting(QString setting);
 
-    // HZ
-    const int HZ_30 = 30;
-    const int HZ_50 = 50;
-    const int HZ_60 = 60;
-    const int HZ_120 = 120;
-    const int HZ_300 = 300;
-    const int HZ_1000 = 1000;
-
     const int DEFAULT_SETTING_HZ = 120;
 
     // FRAGMENT DURATIONS
