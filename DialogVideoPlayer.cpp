@@ -68,7 +68,6 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     timeLineScene = new QGraphicsScene(this);
     ui->timeLineView->setScene(timeLineScene);
 
-
     // Set up timeline pixmap
     timeLinePixmapItem = new QGraphicsPixmapItem();
     timeLineScene->addItem(timeLinePixmapItem);
@@ -361,10 +360,8 @@ void DialogVideoPlayer::playButtonPress() {
 
     if (playing) {
         stopPlaying();
-
     } else {
         startPlaying();
-
     }
 }
 
@@ -403,8 +400,8 @@ void DialogVideoPlayer::startPlaying() {
             updatePlaybackStateTime(current_movie_time);
             qApp->processEvents();
         }
-
-        mediaPlayer->stop();
+        stopPlaying();
+        mediaPlayer->pause();
     } else {
         clockStartTime = getMilliCount();
         playStartSampleMS = p_roughM->at(qMax(0, currentIndex), 0 );
@@ -413,6 +410,7 @@ void DialogVideoPlayer::startPlaying() {
             updatePlaybackStateTime(current_movie_time);
             qApp->processEvents();
         }
+        stopPlaying();
     }
 }
 
@@ -827,5 +825,7 @@ void DialogVideoPlayer::settingChanged() {
 
 void DialogVideoPlayer::handleError() {
     mediaPlayer->stop();
-    ui->buttonPlay->setEnabled(false);
+    ui->checkBoxMovie->setChecked(false);
+    ui->checkBoxMovie->setEnabled(false);
+    settingChanged();
 }
