@@ -58,11 +58,14 @@ private:
     PlayMode settingPlayMode;
     bool settingPlaySmooth;
     bool settingLoop;
+    double dotSizePercentage;
+    double actualDotSize;
 
     // State of playback
     bool playing;
     int playOnOff;
     double currentTimeMS;
+    double movieOffsetMS;
     int currentIndex;
     int currentFragment;
     int currentSegment;
@@ -77,8 +80,10 @@ private:
     // Pens
     QPen* smoothPens;
     QPen* roughPens;
+    QPen whitePen;
 
     // Update state of playback
+    void repaintAll();
     void updatePlaybackStateTime(double newTimeMS);
     void updatePlaybackState(int index, bool resetTimeSource);
     // Painting
@@ -99,6 +104,7 @@ public slots:
 private slots:
     void changeMovieMode();
     void settingChanged();
+    void sliderDotSizeChanged();
 
     void handleError();
     void resizeDisplay();
@@ -106,7 +112,7 @@ private slots:
     void spinBoxIndexChanged(int value);
     void spinBoxSegmentChanged(int value);
     void spinBoxFragmentChanged(int value);
-
+    void spinBoxTimeOffsetChanged(int value);
 private:
     int display_width;
     int display_height;

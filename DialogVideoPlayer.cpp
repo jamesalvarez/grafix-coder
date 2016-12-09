@@ -22,6 +22,8 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     connect(ui->spinBoxFragment, SIGNAL(valueChanged(int)), this, SLOT(spinBoxFragmentChanged(int)));
     connect(ui->spinBoxSegment, SIGNAL(valueChanged(int)), SLOT(spinBoxSegmentChanged(int)));
     connect(ui->spinBoxIndex, SIGNAL(valueChanged(int)), SLOT(spinBoxIndexChanged(int)));
+    connect(ui->spinBoxTimeOffset, SIGNAL(valueChanged(int)), SLOT(spinBoxTimeOffsetChanged(int)));
+    connect(ui->sliderDotSize, SIGNAL(valueChanged(int)), SLOT(sliderDotSizeChanged()));
 
     // Set up ui controls
     ui->checkBoxMovie->setEnabled(false);
@@ -41,7 +43,7 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     visualizationVideoItem = new QGraphicsVideoItem();
     visualizationVideoItem->setAspectRatioMode(Qt::KeepAspectRatio);
     mediaPlayer = new QMediaPlayer(this);
-    mediaPlayer->setNotifyInterval(1000);
+    mediaPlayer->setNotifyInterval(100);
     mediaPlayer->setVideoOutput(visualizationVideoItem);
     visualizationScene->addItem(visualizationVideoItem);
 
@@ -91,6 +93,7 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     // Set up pens
     smoothPens = new QPen[2];
     roughPens = new QPen[4];
+    whitePen = QPen(Qt::white, 3);
 
     smoothPens[0] = Consts::smoothPenX;
     smoothPens[1] = Consts::smoothPenY;
@@ -172,6 +175,12 @@ void DialogVideoPlayer::loadData(GrafixParticipant* participant, mat &p_roughM_i
 
     updatePlaybackState(0, true);
     qDebug() << " finish loading ";
+
+    dotSizePercentage = 5;
+    ui->sliderDotSize->blockSignals(true);
+    ui->sliderDotSize->setValue(dotSizePercentage * 10);
+    ui->sliderDotSize->blockSignals(false);
+
     resizeDisplay();
 }
 
@@ -179,12 +188,7 @@ void DialogVideoPlayer::resizeEvent (QResizeEvent *event) {
     QDialog::resizeEvent(event);
 
     qDebug() << " resize event ";
-    resizeDisplay();
-
-    paintTimeLine();
-    paintFixations();
-    paintCurrentTimeLineLineFrame();
-    paintCurrentVisualizationFrame();
+    repaintAll();
 
 }
 
@@ -282,6 +286,9 @@ void DialogVideoPlayer::resizeDisplay() {
 
     timeLineScene->setSceneRect(ui->timeLineView->rect());
 
+    actualDotSize = vid_width * dotSizePercentage / 100;
+
+
 }
 
 void DialogVideoPlayer::spinBoxSegmentChanged(int value) {
@@ -313,8 +320,12 @@ void DialogVideoPlayer::spinBoxIndexChanged(int value) {
 
 void DialogVideoPlayer::spinBoxFragmentChanged(int value) {
     int target_index = qBound(0, value * samplesPerFragment, (int)p_roughM->n_rows - 1);
-
     updatePlaybackState(target_index, true);
+}
+
+void DialogVideoPlayer::spinBoxTimeOffsetChanged(int value) {
+    movieOffsetMS = value;
+    repaintAll();
 }
 
 
@@ -402,13 +413,13 @@ void DialogVideoPlayer::startPlaying() {
             qApp->processEvents();
         }
 
-        mediaPlayer->setPosition(currentTimeMS - firstSampleMS);
+        mediaPlayer->setPosition(currentTimeMS + movieOffsetMS - firstSampleMS);
         mediaPlayer->play();
 
         while(mediaPlayer->state() == QMediaPlayer::PlayingState && playing) {
 
             // Get position in ms with offset since start of movie and map to data
-            double current_movie_time = (double)(mediaPlayer->position()) + firstSampleMS;
+            double current_movie_time = (double)(mediaPlayer->position()) + firstSampleMS - movieOffsetMS;
             updatePlaybackStateTime(current_movie_time);
             qApp->processEvents();
         }
@@ -431,6 +442,15 @@ int DialogVideoPlayer::getMilliCount() {
     ftime(&tb);
     int nCount = tb.millitm + (tb.time & 0xfffff) * 1000;
     return nCount;
+}
+
+void DialogVideoPlayer::repaintAll() {
+    resizeDisplay();
+
+    paintTimeLine();
+    paintFixations();
+    paintCurrentTimeLineLineFrame();
+    paintCurrentVisualizationFrame();
 }
 
 void DialogVideoPlayer::updatePlaybackStateTime(double newTimeMS) {
@@ -557,7 +577,7 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
 
     if (resetTimeSource) {
         if (ui->checkBoxMovie->isChecked()) {
-            mediaPlayer->setPosition(currentTimeMS - firstSampleMS);
+            mediaPlayer->setPosition(currentTimeMS + movieOffsetMS - firstSampleMS);
         } else {
             clockStartTime = getMilliCount();
             playStartSampleMS = p_roughM->at(qMax(0, currentIndex), 0 );
@@ -599,7 +619,6 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
     int nPensToUse = settingPlaySmooth ? 1 : 2;
     double width_multi = settingPlaySmooth ? (double)display_width / (double)expWidth : display_width;
     double height_multi = settingPlaySmooth ? (double)display_height / (double)expHeight : display_height;
-    double pen_size_multi = 20;
 
     for(int i = 0; i < nPensToUse; ++i) {
         myPen.setColor(pensToUse[i * 2].color());
@@ -607,16 +626,22 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
         // Pupil width
         if (p_roughM->n_cols >= 8 && p_roughM->at(currentIndex, 6) > 0 && p_roughM->at(currentIndex, 7) > 0) {
             double width = (p_roughM->at(currentIndex, 6) + p_roughM->at(currentIndex, 7)) / 6;
-            int penWidth = (int)floor(width * pen_size_multi);
+            int penWidth = (int)floor(width * actualDotSize);
             myPen.setWidth(penWidth);
         } else {
-            myPen.setWidth(pen_size_multi);
+            myPen.setWidth(actualDotSize);
         }
 
-        painter.setPen(myPen);
+
 
         uword index = 2 * (i + 1);
-        painter.drawPoint(matrixToUse->at(currentIndex, index) * width_multi, matrixToUse->at(currentIndex, index + 1) * height_multi);
+        int x = matrixToUse->at(currentIndex, index) * width_multi;
+        int y = matrixToUse->at(currentIndex, index + 1) * height_multi;
+
+        painter.setPen(myPen);
+        painter.drawPoint(x,y);
+        painter.setPen(whitePen);
+        painter.drawPoint(x,y);
     }
 
 
@@ -823,10 +848,16 @@ void DialogVideoPlayer::changeMovieMode() {
     stopPlaying();
     if (!ui->checkBoxMovie->isChecked()) {
         paintBackgroundImage();
+        ui->labelTimeOffset->setEnabled(false);
+        ui->spinBoxTimeOffset->setEnabled(false);
     } else {
         clearBackgroundImage();
+        ui->labelTimeOffset->setEnabled(true);
+        ui->spinBoxTimeOffset->setEnabled(true);
     }
 }
+
+
 
 void DialogVideoPlayer::settingChanged() {
     if (ui->rbFragment->isChecked()) {
@@ -843,7 +874,12 @@ void DialogVideoPlayer::settingChanged() {
     }
 
     settingLoop = ui->checkBoxLoop->isChecked();
+}
 
+void DialogVideoPlayer::sliderDotSizeChanged() {
+    dotSizePercentage = (double)ui->sliderDotSize->value() / (double)10;
+    resizeDisplay();
+    repaintAll();
 }
 
 
