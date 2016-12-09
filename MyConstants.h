@@ -2,6 +2,7 @@
 #define MYCONSTANTS_H
 
 #include <QPair>
+#include <QPen>
 #include <QString>
 #include <QList>
 #include <QVariant>
@@ -29,6 +30,13 @@
 #define SEGCOL_START 1
 #define SEGCOL_END 2
 
+// Indexes for rough matrix columns
+#define ROCOL_TS 0
+#define ROCOL_
+#define ROCOL_X_LEFT 2
+#define ROCOL_Y_LEFT 3
+#define ROCOL_X_RIGHT 4
+#define ROCOL_Y_RIGHT 5
 
 typedef struct config {
     QString first;
@@ -262,6 +270,14 @@ namespace Consts {
                                     " periods in which velocity does not exceed the velocity threshold.  Subsequent"
                                     " processing is applied to merge similar fixations and remove noisy or short"
                                     " fixations.";
+
+
+    const QPen smoothPenX = QPen(QColor(255, 0, 0, 127), 1, Qt::SolidLine);
+    const QPen smoothPenY = QPen(QColor(0, 0, 128, 127), 1, Qt::SolidLine);
+    const QPen roughPenLeftX = QPen(QColor(255, 0, 0, 127), 1, Qt::SolidLine);
+    const QPen roughPenLeftY = QPen(QColor(0, 0, 128, 127), 1, Qt::SolidLine);
+    const QPen roughPenRightX = QPen(QColor(255, 50, 0, 127), 1, Qt::SolidLine);
+    const QPen roughPenRightY = QPen(QColor(0, 50, 128, 127), 1, Qt::SolidLine);
 
 
     const int MAXSLIDER_SETTING_INTERP_LATENCY = 18000;

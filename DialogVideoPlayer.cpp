@@ -92,12 +92,12 @@ DialogVideoPlayer::DialogVideoPlayer(QWidget *parent) :
     smoothPens = new QPen[2];
     roughPens = new QPen[4];
 
-    smoothPens[0] = QPen(Qt::red, 1, Qt::SolidLine);
-    smoothPens[1] = QPen(Qt::blue, 1, Qt::SolidLine);
-    roughPens[0] = QPen(Qt::red, 1, Qt::SolidLine);
-    roughPens[1] = QPen(Qt::red, 1, Qt::SolidLine);
-    roughPens[2] = QPen(Qt::blue, 1, Qt::SolidLine);
-    roughPens[3] = QPen(Qt::blue, 1, Qt::SolidLine);
+    smoothPens[0] = Consts::smoothPenX;
+    smoothPens[1] = Consts::smoothPenY;
+    roughPens[0] = Consts::roughPenLeftX;
+    roughPens[1] = Consts::roughPenRightX;
+    roughPens[2] = Consts::roughPenLeftY;
+    roughPens[3] = Consts::roughPenRightY;
 
 }
 
@@ -241,9 +241,6 @@ void DialogVideoPlayer::resizeDisplay() {
 
     double ratioW = expWidth / vid_width;
     double ratioH = expHeight / vid_height;
-
-
-
 
     // smaller ratio will ensure that the image fits in the view
     if (ratioW > ratioH) {
@@ -509,7 +506,14 @@ void DialogVideoPlayer::updatePlaybackState(int index, bool resetTimeSource) {
     currentIndex = index;
     currentTimeMS = p_roughM->at(qMax(0, currentIndex), 0 );
 
-    ui->labelTime->setText(QString("Time: %1").arg(currentTimeMS / 1000));
+    // Display time since start
+    int milliseconds = currentTimeMS - firstSampleMS;
+    int minutes = floor(milliseconds / 60000);
+    milliseconds -= minutes * 60000;
+    int seconds = floor(milliseconds / 1000);
+    milliseconds -= seconds * 1000;
+
+    ui->labelTime->setText(QString("Time (m:s:ms): %1:%2:%3").arg(minutes).arg(seconds).arg(milliseconds));
     ui->spinBoxIndex->blockSignals(true);
     ui->spinBoxIndex->setValue(currentIndex);
     ui->spinBoxIndex->blockSignals(false);
@@ -598,7 +602,7 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
     double pen_size_multi = 20;
 
     for(int i = 0; i < nPensToUse; ++i) {
-        myPen.setColor(pensToUse[i].color());
+        myPen.setColor(pensToUse[i * 2].color());
 
         // Pupil width
         if (p_roughM->n_cols >= 8 && p_roughM->at(currentIndex, 6) > 0 && p_roughM->at(currentIndex, 7) > 0) {
@@ -833,8 +837,13 @@ void DialogVideoPlayer::settingChanged() {
         settingPlayMode = DialogVideoPlayer::PlayModeWholeFile;
     }
 
-    settingPlaySmooth = ui->checkBoxSmooth->isChecked();
+    if (settingPlaySmooth != ui->checkBoxSmooth->isChecked()) {
+        settingPlaySmooth = ui->checkBoxSmooth->isChecked();
+        paintTimeLine();
+    }
+
     settingLoop = ui->checkBoxLoop->isChecked();
+
 }
 
 
