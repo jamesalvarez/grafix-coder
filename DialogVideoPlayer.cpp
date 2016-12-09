@@ -228,16 +228,27 @@ void DialogVideoPlayer::mousePressEvent(QMouseEvent *mouseEvent) {
 void DialogVideoPlayer::resizeDisplay() {
 
     // Calculate resize ratios for resizing
-    vid_width = visualizationVideoItem->size().width();
-    vid_height = visualizationVideoItem->size().height();
+    vid_width = visualizationVideoItem->nativeSize().width();
+    vid_height = visualizationVideoItem->nativeSize().height();
+
+    if (vid_width <= 0) { vid_width = expWidth; }
+    if (vid_height <= 0) { vid_height = expHeight; }
+
+    visualizationVideoItem->setSize(QSizeF(vid_width, vid_height));
+
+    qDebug() << "exp width: " << expWidth << " exp height: " << expHeight;
+    qDebug() << "vid width: " << vid_width << " vid height: " << vid_height;
+
     double ratioW = expWidth / vid_width;
     double ratioH = expHeight / vid_height;
+
 
 
 
     // smaller ratio will ensure that the image fits in the view
     if (ratioW > ratioH) {
         //data is wider than video
+        qDebug() << "data wider than video";
 
         //make heights the same,
         display_height = vid_height;
@@ -255,10 +266,9 @@ void DialogVideoPlayer::resizeDisplay() {
         vid_offset_y = (display_height - vid_height) / 2;
     }
 
-    //qDebug() << "exp width: " << expWidth << " exp height: " << expHeight;
-    //qDebug() << "vid width: " << vid_width << " vid height: " << vid_height;
-    //qDebug() << "disp width: " << display_width << " disp height: " << display_height;
-    //qDebug() << "offsetts: " << vid_offset_x << " " << vid_offset_y;
+
+    qDebug() << "disp width: " << display_width << " disp height: " << display_height;
+    qDebug() << "offsetts: " << vid_offset_x << " " << vid_offset_y;
 
     screenLayerItem->setRect(0, 0, display_width, display_height);
 
@@ -266,6 +276,7 @@ void DialogVideoPlayer::resizeDisplay() {
 
 
     ui->visualizationView->fitInView(screenLayerItem, Qt::KeepAspectRatio);
+    visualizationVideoItem->setPos(vid_offset_x, vid_offset_y);
     //ui->visualizationView->centerOn(display_width / 2, display_height / 2);
 
     qDebug() << "resizing: " << ui->visualizationView->size();
@@ -342,6 +353,10 @@ bool DialogVideoPlayer::loadMovie(QString path) {
     while(mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia && mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
         qApp->processEvents();
     }
+
+
+
+
 
     if (mediaPlayer->mediaStatus() != QMediaPlayer::InvalidMedia) {
         resizeDisplay();
@@ -560,7 +575,7 @@ void DialogVideoPlayer::paintCurrentVisualizationFrame() {
     myPen.setCapStyle(Qt::RoundCap);
     painter.setPen(myPen);
 
-    if (show_fixation_numbers) {
+    if (show_fixation_numbers && p_fixAllM->n_rows > 0) {
         QFont serifFont("Times", 64, QFont::Bold);
         painter.setFont(serifFont);
         uvec fixIndex =  arma::find((*p_fixAllM).col(FIXCOL_START) <= currentIndex);

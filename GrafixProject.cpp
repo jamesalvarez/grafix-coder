@@ -208,14 +208,46 @@ QString GrafixParticipant::OpenAndCopyCSVFile(Consts::MATRIX_TYPE type, QWidget*
         {
         case Consts::MATRIX_ROUGH:
             {
-                int n_cols = GPMatrixFiles::getFileColumnCount(fileName);
-                if (n_cols == 6 || n_cols == 8 )
-                    file_is_ok = true;
-                else
-                {
-                    DialogGrafixError::AlertNewError("Error: Incorrect file format for rough file");
-                    file_is_ok = false;
+                mat roughM;
+
+                if (GPMatrixFiles::readFileSafe(roughM, fileName)) {
+                    //check for correct number of columns
+                    int n_cols = roughM.n_cols;
+                    if (n_cols == 6 || n_cols == 8 )
+                        file_is_ok = true;
+                    else
+                    {
+                        DialogGrafixError::AlertNewError("Error: Incorrect file format for rough file");
+                        file_is_ok = false;
+                    }
+
+                    //check for microseconds
+                    if (roughM.n_rows > 2) {
+                        double difference = roughM(1,0) - roughM(0,0);
+                        double expected_diff = 1000 / this->GetProjectSetting(Consts::SETTING_HZ).toInt();
+                        if ((difference - expected_diff) > 1000) {
+
+                            QMessageBox::StandardButton reply;
+                            reply = QMessageBox::question(parent, "Convert timestamp?",
+                                                          "This file seems to contain microsecond data - would you like to convert it?",
+                                                        QMessageBox::Yes|QMessageBox::No);
+                            if (reply == QMessageBox::Yes) {
+                                qDebug() << "Yes was clicked";
+
+                                for(uword i = 0; i < roughM.n_rows; ++i) {
+                                    roughM(i,0) = roughM(i, 0) / 1000;
+                                }
+                                GPMatrixFiles::saveFileSafe(roughM, fileName);
+                            }
+                        }
+                    }
                 }
+
+
+
+
+
+
             }
             break;
         default:
