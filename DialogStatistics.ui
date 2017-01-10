@@ -145,7 +145,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Mean (secs)</string>
+    <string>Mean (ms)</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_6">

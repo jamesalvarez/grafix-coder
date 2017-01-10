@@ -12,6 +12,8 @@ QT += core gui widgets printsupport multimediawidgets opengl
 QMAKE_CXXFLAGS += -Wno-unused-local-typedefs -Wno-unnamed-type-template-args
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-local-typedefs -Wno-unnamed-type-template-args
 
+QMAKE_MAC_SDK = macosx10.12
+
 #osx deployment target
 macx: QMAKE_CFLAGS += -mmacosx-version-min=10.6
 macx: QMAKE_CXXFLAGS += -mmacosx-version-min=10.6
